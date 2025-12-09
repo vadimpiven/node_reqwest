@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "name": "meta",
+  "scripts": {
+    "test:nextest": "cargo llvm-cov nextest --lcov --output-path lcov.info",
+    "test:doctest": "cargo test --doc",
+    "test:rustdoc": "cargo doc --no-deps --document-private-items",
+    "test": "pnpm run test:nextest -r --locked && pnpm run test:doctest -r --locked && pnpm run test:rustdoc -r --locked",
+    "dev-test": "pnpm run test:nextest && pnpm run test:doctest && pnpm run test:rustdoc"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "name": "node-reqwest",
+  "version": "0.0.0",
+  "description": "Node.js bindings for reqwest - Rust HTTP client library",
+  "keywords": [
+    "fetch",
+    "http",
+    "https",
+    "client",
+    "http client",
+    "request",
+    "reqwest",
+    "node"
+  ],
+  "author": "Vadim Piven <vadim@piven.tech> (https://piven.tech)",
+  "homepage": "https://github.com/vadimpiven/node_reqwest",
+  "bugs": {
+    "url": "https://github.com/vadimpiven/node_reqwest/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vadimpiven/node_reqwest.git"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
+  "license": "Apache-2.0 OR MIT",
+  "type": "module",
+  "types": "./export_dist/index.d.ts",
+  "main": "./export_dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./export_dist/index.d.ts",
+      "import": "./export_dist/index.js",
+      "require": "./export_dist/index.cjs"
+    }
+  },
+  "files": [
+    "export/**/*",
+    "export_dist/**/*"
+  ],
+  "binary": {
+    "module_name": "node_reqwest",
+    "module_path": "./dist/napi-v{napi_build_version}/",
+    "host": " https://github.com/",
+    "remote_path": "./vadimpiven/{module_name}/releases/download/v{version}/",
+    "package_name": "{module_name}-v{version}-napi-v{napi_build_version}-{platform}-{arch}.tar.gz",
+    "napi_versions": [
+      8
+    ]
+  },
+  "dependencies": {
+    "@mapbox/node-pre-gyp": "catalog:"
+  },
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@rollup/plugin-node-resolve": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "cargo-cp-artifact": "catalog:",
+    "electron": "catalog:",
+    "rimraf": "catalog:",
+    "rollup-plugin-node-externals": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
+  },
+  "scripts": {
+    "bump-version": "cargo run -p meta --bin npm_version -r --locked",
+    "type-check": "pnpm exec tsc --noEmit",
+    "build:cargo": "pnpm exec cargo-cp-artifact -nc ./dist/napi-v8/node_reqwest.node -- cargo build --message-format=json",
+    "build:ts": "vite build",
+    "build": "pnpm run build:cargo -r --locked && pnpm run build:ts",
+    "pretest": "pnpm run build",
+    "test:unittest": "pnpm exec vitest run --coverage",
+    "test:electron": "pnpm exec playwright test packages/impl/tests/electron",
+    "test:ts": "pnpm run type-check && pnpm run test:unittest && pnpm run test:electron",
+    "test:nextest": "cargo llvm-cov nextest --lcov --output-path lcov.info",
+    "test:rustdoc": "cargo doc --no-deps --document-private-items",
+    "test:rust": "pnpm run test:nextest -r --locked && pnpm run test:rustdoc -r --locked",
+    "test": "pnpm run test:ts && pnpm run test:rust",
+    "dev-build": "pnpm run build:cargo && pnpm run build:ts",
+    "predev-test": "pnpm run dev-build",
+    "dev-test:ts": "pnpm run test:ts",
+    "dev-test:rust": "pnpm run test:nextest && pnpm run test:rustdoc",
+    "dev-test": "pnpm run dev-test:ts && pnpm run dev-test:rust",
+    "do-pack": "pnpm run dev-build && pnpm exec rimraf package.tgz && pnpm pack --out package.tgz",
+    "pack": "pnpm exec node-pre-gyp package",
+    "install:skip": "node -p \"process.exit(+!(require('./package.json').version === '0.0.0'))\"",
+    "install": "node-pre-gyp install --update-binary --fallback-to-build=false || pnpm run install:skip"
+  }
+}

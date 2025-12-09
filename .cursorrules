@@ -1,0 +1,1 @@
+Always use pnpm for package management and script execution. Do not use npm or yarn unless explicitly instructed.

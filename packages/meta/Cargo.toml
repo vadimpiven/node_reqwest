@@ -1,0 +1,18 @@
+[package]
+name = "meta"
+edition.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+chrono.workspace = true
+indoc.workspace = true
+tauri-winres.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+
+[build-dependencies]
+anyhow.workspace = true

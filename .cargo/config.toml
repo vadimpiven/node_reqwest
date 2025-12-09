@@ -1,0 +1,13 @@
+[build]
+rustflags = ["-C", "force-frame-pointers=yes"]
+rustdocflags = ["-D", "warnings"]
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.'cfg(target_arch = "x86_64")']
+rustflags = ["-C", "target-feature=+sse3,+ssse3,+sse4.1,+sse4.2,+popcnt,+cmpxchg16b"]
+
+[alias]
+llvm-cov = ["bin", "cargo-llvm-cov"]
+nextest = ["bin", "cargo-nextest"]

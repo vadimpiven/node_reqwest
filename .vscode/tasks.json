@@ -1,0 +1,44 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install Samply",
+      "type": "shell",
+      "command": "cargo binstall samply -y",
+      "problemMatcher": []
+    },
+    {
+      "label": "Perf-profile Electron",
+      "type": "shell",
+      "command": "samply",
+      "osx": {
+        "args": [
+          "record",
+          "${workspaceRoot}/packages/impl/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+          "${workspaceRoot}/packages/impl/tests/electron/main.ts"
+        ]
+      },
+      "windows": {
+        "args": [
+          "record",
+          "${workspaceRoot}/packages/impl/node_modules/electron/dist/electron.exe",
+          "${workspaceRoot}/packages/impl/tests/electron/main.ts"
+        ]
+      },
+      "linux": {
+        "args": [
+          "record",
+          "${workspaceRoot}/packages/impl/node_modules/electron/dist/electron",
+          "${workspaceRoot}/packages/impl/tests/electron/main.ts"
+        ]
+      },
+      "dependsOn": ["Install Samply"],
+      "problemMatcher": [],
+      "options": {
+        "env": {
+          "RUST_BACKTRACE": "1"
+        }
+      }
+    }
+  ]
+}

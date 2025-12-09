@@ -1,0 +1,3 @@
+cargo deny check
+pnpm run fix
+git update-index --again

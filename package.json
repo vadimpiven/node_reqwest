@@ -1,0 +1,52 @@
+{
+  "private": true,
+  "name": "workspace",
+  "type": "module",
+  "packageManager": "pnpm@10.24.0",
+  "engines": {
+    "pnpm": "^10.24.0",
+    "node": "^22.19.0",
+    "runtime": {
+      "name": "node",
+      "version": "^22.19.0",
+      "onFail": "download"
+    }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@playwright/test": "catalog:",
+    "@taplo/cli": "catalog:",
+    "@types/node": "catalog:",
+    "husky": "catalog:"
+  },
+  "scripts": {
+    "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y && cargo bin --install",
+    "postinstall": "node scripts/setup-path.ts && node packages/impl/node_modules/electron/install.js",
+    "rustup:update": "rustup update",
+    "rustup:install": "rustup toolchain install nightly --profile minimal --component clippy --component rustfmt",
+    "rustup:binstall": "cargo binstall cargo-deny cargo-cache -y",
+    "rustup": "pnpm run rustup:update && pnpm run rustup:install && pnpm run rustup:binstall && cargo clean",
+    "check:biome": "pnpm exec biome check . --log-level warn",
+    "check:taplo": "pnpm exec taplo check",
+    "check:clippy": "cargo +nightly clippy -r --locked -- -D warnings",
+    "check:rustfmt": "cargo +nightly fmt --check",
+    "check": "pnpm run check:biome && pnpm run check:taplo && pnpm run check:clippy && pnpm run check:rustfmt",
+    "fix:biome": "pnpm run check:biome --fix",
+    "fix:taplo": "pnpm exec taplo format",
+    "fix:clippy": "cargo +nightly clippy -r --fix --allow-dirty",
+    "fix:rustfmt": "cargo +nightly fmt",
+    "fix": "pnpm run fix:biome && pnpm run fix:taplo && pnpm run fix:clippy && pnpm run fix:rustfmt",
+    "prepare": "husky",
+    "check-updates:pnpm": "(pnpm outdated --recursive --sort-by name || exit 0)",
+    "check-updates:cargo": "cargo +nightly update --breaking -Z unstable-options --dry-run",
+    "check-updates": "pnpm run check-updates:pnpm && pnpm run check-updates:cargo",
+    "update:pnpm": "pnpm update --recursive --workspace && pnpm audit --fix && pnpm install",
+    "update:cargo": "cargo cache --autoclean && cargo clean && cargo update",
+    "update": "pnpm run update:pnpm && pnpm run update:cargo",
+    "pretest": "pnpm run check",
+    "test": "pnpm run --recursive test",
+    "predev-test": "pnpm run fix",
+    "dev-test": "pnpm run --recursive dev-test"
+  },
+  "dependencies": {}
+}

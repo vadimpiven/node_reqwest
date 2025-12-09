@@ -1,0 +1,12 @@
+# Documentation: https://rust-lang.github.io/rustfmt/
+
+# Stable
+style_edition = "2024"
+match_block_trailing_comma = true
+newline_style = "Unix"
+single_line_let_else_max_width = 60
+
+# Unstable
+unstable_features = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"

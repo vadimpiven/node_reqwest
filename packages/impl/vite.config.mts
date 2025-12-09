@@ -1,0 +1,38 @@
+import { resolve } from 'node:path';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import nodeExternals from 'rollup-plugin-node-externals';
+import dts from 'vite-plugin-dts';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  build: {
+    lib: {
+      entry: resolve('export/index.ts'),
+      fileName: 'index',
+      formats: ['es', 'cjs']
+    },
+    outDir: 'export_dist',
+    emptyOutDir: true,
+    sourcemap: true,
+    rollupOptions: {}
+  },
+  test: {
+    watch: false,
+    pool: 'threads',
+    maxWorkers: 1,
+    isolate: false,
+    coverage: {
+      provider: 'istanbul',
+      reporter: ['lcov']
+    },
+    include: ['tests/unittest/**/*.test.ts']
+  },
+  plugins: [
+    nodeExternals(),
+    nodeResolve(),
+    dts({
+      staticImport: true,
+      entryRoot: 'export'
+    })
+  ]
+});

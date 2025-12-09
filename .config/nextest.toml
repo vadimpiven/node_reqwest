@@ -1,0 +1,2 @@
+[profile.default]
+default-filter = "not test(disabled_test)"

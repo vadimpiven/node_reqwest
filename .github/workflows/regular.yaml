@@ -1,0 +1,42 @@
+name: Build and test
+on:
+  pull_request:
+    types: [ opened, reopened, synchronize ]
+    branches:
+      - 'main'
+  push:
+    branches:
+      - 'main'
+  workflow_dispatch: { }
+
+jobs:
+  build-and-test:
+    name: Build and test
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
+          - os: macos-15-intel
+          - os: macos-15
+          - os: windows-2025
+    runs-on: ${{ matrix.os }}
+    permissions:
+      packages: read
+      contents: read
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+      
+      - name: Setup development environment
+        uses: ./.github/actions/setup-agent
+      
+      - name: Build and test
+        uses: ./.github/actions/cross-platform-shell
+        with:
+          run: pnpm run test
