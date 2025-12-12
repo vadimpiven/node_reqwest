@@ -1,0 +1,35 @@
+name: Build and publish
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: { }
+
+permissions:
+  id-token: write
+  packages: read
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
+          - os: macos-15-intel
+          - os: macos-15
+          - os: windows-2025
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+      
+      - name: Setup development environment
+        uses: ./.github/actions/setup-agent
