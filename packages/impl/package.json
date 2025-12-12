@@ -88,7 +88,7 @@
     "dev-test:ts": "pnpm run test:ts",
     "dev-test:rust": "pnpm run test:nextest && pnpm run test:rustdoc",
     "dev-test": "pnpm run dev-test:ts && pnpm run dev-test:rust",
-    "do-pack": "pnpm run dev-build && pnpm exec shx rm package.tgz && pnpm pack --out package.tgz",
+    "do-pack": "pnpm run dev-build && pnpm exec shx rm -f package.tgz && pnpm pack --out package.tgz",
     "pack": "pnpm exec node-pre-gyp package",
     "install:skip": "node -p \"process.exit(+!(require('./package.json').version === '0.0.0'))\"",
     "install": "node-pre-gyp install --update-binary --fallback-to-build=false || pnpm run install:skip"
