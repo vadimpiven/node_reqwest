@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { codecovVitePlugin } from '@codecov/vite-plugin';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import nodeExternals from 'rollup-plugin-node-externals';
 import dts from 'vite-plugin-dts';
@@ -33,6 +34,11 @@ export default defineConfig({
     dts({
       staticImport: true,
       entryRoot: 'export'
+    }),
+    codecovVitePlugin({
+      enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
+      bundleName: 'node-reqwest',
+      uploadToken: process.env.CODECOV_TOKEN
     })
   ]
 });
