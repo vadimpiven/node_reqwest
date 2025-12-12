@@ -1,3 +1,6 @@
-test-report.junit.xml
+coverage-unittest/
+coverage-electron/
 export_dist/
 test-results/
+report-electron.junit.xml
+report-unittest.junit.xml

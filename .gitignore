@@ -4,7 +4,6 @@ package.tgz
 profile.json.gz
 .bin/
 .path/
-coverage/
 dist/
 node_modules/
 target/
