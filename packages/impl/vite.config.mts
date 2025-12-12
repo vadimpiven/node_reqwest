@@ -24,8 +24,10 @@ export default defineConfig({
     isolate: false,
     coverage: {
       provider: 'istanbul',
-      reporter: ['lcov']
+      reporter: ['lcov'],
+      reportsDirectory: './coverage-unittest'
     },
+    reporters: ['default', ['junit', { outputFile: 'report-unittest.junit.xml' }]],
     include: ['tests/unittest/**/*.test.ts']
   },
   plugins: [

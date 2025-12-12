@@ -13,9 +13,10 @@ catalog:
   cargo-cp-artifact: ^0.1.9
   electron: ^39.2.6
   husky: ^9.1.7
+  monocart-reporter: ^2.9.23
   prettier: ^3.7.4
-  rimraf: ^6.1.2
   rollup-plugin-node-externals: ^8.1.2
+  shx: ^0.4.0
   typescript: ^5.9.3
   vite: ^7.2.7
   vite-plugin-dts: ^4.5.4
