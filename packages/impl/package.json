@@ -74,7 +74,7 @@
     "build:ts": "vite build",
     "build": "pnpm run build:cargo -r --locked && pnpm run build:ts",
     "pretest": "pnpm run build",
-    "test:unittest": "pnpm exec vitest run --coverage",
+    "test:unittest": "pnpm exec vitest run --coverage --reporter=junit --outputFile=test-report.junit.xml",
     "test:electron": "pnpm exec playwright test packages/impl/tests/electron",
     "test:ts": "pnpm run type-check && pnpm run test:unittest && pnpm run test:electron",
     "test:nextest": "cargo llvm-cov nextest --lcov --output-path lcov.info",
