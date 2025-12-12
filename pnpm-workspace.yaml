@@ -11,7 +11,7 @@ catalog:
   '@types/node': ^22.19.2
   '@vitest/coverage-istanbul': ^4.0.15
   cargo-cp-artifact: ^0.1.9
-  electron: ^39.2.6
+  electron: ^39.2.7
   husky: ^9.1.7
   monocart-reporter: ^2.9.23
   prettier: ^3.7.4
