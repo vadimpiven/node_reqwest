@@ -53,6 +53,7 @@
     "@mapbox/node-pre-gyp": "catalog:"
   },
   "devDependencies": {
+    "@codecov/vite-plugin": "catalog:",
     "@playwright/test": "catalog:",
     "@rollup/plugin-node-resolve": "catalog:",
     "@types/node": "catalog:",
