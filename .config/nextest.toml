@@ -1,2 +1,7 @@
 [profile.default]
 default-filter = "not test(disabled_test)"
+
+[profile.default.junit]
+path = "junit.xml" # Relative to target/nextest/default/
+store-failure-output = true
+store-success-output = false

@@ -2,6 +2,7 @@
 lcov.info
 package.tgz
 profile.json.gz
+report-rust.junit.xml
 .bin/
 .path/
 dist/
