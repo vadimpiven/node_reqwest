@@ -1,3 +1,4 @@
+# common
 .DS_Store
 lcov.info
 package.tgz
@@ -8,3 +9,11 @@ report-rust.junit.xml
 dist/
 node_modules/
 target/
+
+# packages/impl
+report-electron.junit.xml
+report-unittest.junit.xml
+coverage-electron/
+coverage-unittest/
+export_dist/
+test-results/
