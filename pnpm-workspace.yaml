@@ -23,7 +23,9 @@ catalog:
   vitest: ^4.0.15
 
 strictDepBuilds: true
-onlyBuiltDependencies: null
+onlyBuiltDependencies:
+  - esbuild
+  - electron
 ignoredBuiltDependencies: null
 
 minimumReleaseAge: 1440 # 24 hours
