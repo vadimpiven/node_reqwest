@@ -22,4 +22,12 @@ catalog:
   vite-plugin-dts: ^4.5.4
   vitest: ^4.0.15
 
+strictDepBuilds: true
 onlyBuiltDependencies: null
+ignoredBuiltDependencies: null
+
+minimumReleaseAge: 1440 # 24 hours
+minimumReleaseAgeExclude: null
+
+trustPolicy: no-downgrade
+trustPolicyExclude: null
