@@ -10,4 +10,6 @@ runs:
   steps:
     - name: Sign and notarize stub
       shell: bash
-      run: echo "TODO: Implement sign and notarize for ${{ inputs.binary-path }}"
+      env:
+        BINARY_PATH: ${{ inputs.binary-path }}
+      run: echo "TODO: Implement sign and notarize for $BINARY_PATH"
