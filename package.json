@@ -20,7 +20,7 @@
     "husky": "catalog:"
   },
   "scripts": {
-    "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y && cargo bin --install",
+    "preinstall": "cargo binstall cargo-binstall cargo-run-bin --force -y && cargo bin --install",
     "postinstall": "node scripts/setup-path.ts && node packages/impl/node_modules/electron/install.js",
     "rustup:update": "rustup update",
     "rustup:install": "rustup toolchain install nightly --profile minimal --component clippy --component rustfmt",

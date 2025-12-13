@@ -1,0 +1,95 @@
+name: Build and publish
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: { }
+
+permissions:
+  id-token: write
+  packages: read
+  contents: write
+
+jobs:
+  build:
+    name: Build and draft release
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
+          - os: macos-15-intel
+          - os: macos-15
+          - os: windows-2025
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+      
+      - name: Setup development environment
+        uses: ./.github/actions/setup-agent
+      
+      - name: Build node addon
+        uses: ./.github/actions/cross-platform-shell
+        with:
+          run: |
+            pnpm -F "{packages/impl}" run bump-version
+            pnpm -F "{packages/impl}" run build
+      
+      - id: metadata
+        shell: bash
+        run: |
+            ADDON_PATH="${GITHUB_WORKSPACE}/packages/impl/dist/napi-v8/node_reqwest.node"
+            echo "addon-path=${ADDON_PATH}" >> "$GITHUB_OUTPUT"
+      
+      # TODO: sign and notarize steps.metadata.outputs.addon-path
+      
+      - name: Pack node addon
+        uses: ./.github/actions/cross-platform-shell
+        with:
+          run: pnpm -F "{packages/impl}" run pack
+      
+      - name: Upload packaged node addon
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          files: packages/impl/build/stage/**/*.tar.gz
+          draft: true
+  
+  publish:
+    name: Finalize release and publish
+    timeout-minutes: 45
+    needs:
+      - build
+    if: needs.build.result == 'success'
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+      
+      - name: Setup development environment
+        uses: ./.github/actions/setup-agent
+      
+      - name: Build export wrapper
+        uses: ./.github/actions/cross-platform-shell
+        with:
+          run: |
+            pnpm -F "{packages/impl}" run bump-version
+            pnpm -F "{packages/impl}" run build:ts
+      
+      - name: Finalize Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          draft: false
+
+      - name: Publish package
+        uses: ./.github/actions/cross-platform-shell
+        with:
+          run: pnpm -F "{packages/impl}" publish --no-git-checks --access public
