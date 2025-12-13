@@ -72,7 +72,7 @@
     "bump-version": "cargo run -p meta --bin npm_version -r --locked",
     "type-check": "pnpm exec tsc --noEmit",
     "build:cargo": "pnpm exec cargo-cp-artifact -nc ./dist/napi-v8/node_reqwest.node -- cargo build --message-format=json",
-    "build:ts": "vite build",
+    "build:ts": "vite build && pnpm pack --out package.tar.gz",
     "build": "pnpm run build:cargo -r --locked && pnpm run build:ts",
     "pretest": "pnpm run build",
     "test:unittest": "pnpm exec vitest run --coverage",
@@ -88,8 +88,8 @@
     "dev-test:ts": "pnpm run test:ts",
     "dev-test:rust": "pnpm run test:nextest && pnpm run test:rustdoc",
     "dev-test": "pnpm run dev-test:ts && pnpm run dev-test:rust",
-    "do-pack": "pnpm run dev-build && pnpm exec shx rm -f package.tgz && pnpm pack --out package.tgz",
-    "pack": "pnpm exec node-pre-gyp package",
+    "pack-addon": "pnpm exec node-pre-gyp package",
+    "publish": "npm publish package.tar.gz --access public",
     "install:skip": "node -p \"process.exit(+!(require('./package.json').version === '0.0.0'))\"",
     "install": "node-pre-gyp install --update-binary --fallback-to-build=false || pnpm run install:skip"
   }

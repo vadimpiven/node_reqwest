@@ -38,7 +38,7 @@ jobs:
         uses: ./.github/actions/setup-agent
       
       - name: Build and test
-        uses: ./.github/actions/cross-platform-shell
+        uses: ./.github/actions/platform-shell
         with:
           run: pnpm run test
       

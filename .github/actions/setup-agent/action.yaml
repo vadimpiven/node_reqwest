@@ -15,21 +15,13 @@ runs:
       uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
       with:
         version: '10.24.0'
-
-    - name: Get pnpm store directory
-      shell: bash
-      id: pnpm-store-dir
-      run: echo "dir=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
     
-    - name: Restore pnpm cache
-      uses: actions/cache@a7833574556fa59680c1b7cb190c1735db73ebf0 # v5.0.0
+    - name: Install node with correct .npmrc
+      uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
       with:
-        path: |
-          ~/.pnpm-store
-          ${{ steps.pnpm-store-dir.outputs.dir }}
-        key: ${{ runner.os }}-${{ runner.arch }}-pnpm-v0-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ runner.arch }}-pnpm-v0-
+        node-version: '22.19.0'
+        registry-url: 'https://registry.npmjs.org'
+        cache: 'pnpm'
     
     - name: Setup MSVC developer command prompt
       if: runner.os == 'Windows'
@@ -40,30 +32,13 @@ runs:
       with:
         toolchain: 'nightly'
         components: 'clippy, rustfmt'
-    
-    - name: Restore Rust cache
-      uses: actions/cache@a7833574556fa59680c1b7cb190c1735db73ebf0 # v5.0.0
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-${{ runner.arch }}-rust-v0-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ runner.arch }}-rust-v0-
+        cache: true
     
     - name: Install Cargo binstall
       uses: cargo-bins/cargo-binstall@8110b3aa84cb581a90696bc57469b0656f972494 # v1.16.3
     
     - name: Run pnpm install script
-      uses: ./.github/actions/cross-platform-shell
+      uses: ./.github/actions/platform-shell
       with:
         run: |
           pnpm install --frozen-lockfile --prefer-offline
-
-    - name: Install Playwright dependencies
-      if: runner.os == 'Linux'
-      shell: bash
-      run: pnpm exec playwright install-deps

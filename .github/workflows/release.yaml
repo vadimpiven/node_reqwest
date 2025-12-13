@@ -35,20 +35,23 @@ jobs:
         uses: ./.github/actions/setup-agent
       
       - name: Build node addon
-        uses: ./.github/actions/cross-platform-shell
+        uses: ./.github/actions/platform-shell
         with:
           run: |
             pnpm -F "{packages/impl}" run bump-version
             pnpm -F "{packages/impl}" run build
       
-      # TODO: sign and notarize ${{ github.workspace }}/packages/impl/dist/napi-v8/node_reqwest.node
+      - name: Sign and notarize
+        uses: ./.github/actions/sign-notarize
+        with:
+          binary-path: ${{ github.workspace }}/packages/impl/dist/napi-v8/node_reqwest.node
       
       - name: Pack node addon
-        uses: ./.github/actions/cross-platform-shell
+        uses: ./.github/actions/platform-shell
         with:
-          run: pnpm -F "{packages/impl}" run pack
+          run: pnpm -F "{packages/impl}" run pack-addon
       
-      - name: Upload packaged node addon
+      - name: Upload node addon
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           files: packages/impl/build/stage/**/*.tar.gz
@@ -72,18 +75,23 @@ jobs:
         uses: ./.github/actions/setup-agent
       
       - name: Build export wrapper
-        run: |
-          pnpm -F "{packages/impl}" run bump-version
-          pnpm -F "{packages/impl}" run build:ts
+        uses: ./.github/actions/platform-shell
+        with:
+          run: |
+            pnpm -F "{packages/impl}" run bump-version
+            pnpm -F "{packages/impl}" run build:ts
       
-      - name: Finalize Release
+      - name: Upload final package
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
+          files: packages/impl/package.tar.gz
           draft: false
-
-      - name: Publish package
-        run: pnpm -F "{packages/impl}" publish --no-git-checks --access public --provenance
-
+      
+      - name: Publish to npmjs.org
+        uses: ./.github/actions/platform-shell
+        with:
+          run: pnpm -F "{packages/impl}" run publish
+      
       - name: Verify release installation
         shell: bash
         run: |
