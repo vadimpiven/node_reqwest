@@ -35,16 +35,19 @@ jobs:
         uses: ./.github/actions/setup-agent
       
       - name: Build node addon
-        uses: ./.github/actions/cross-platform-shell
+        uses: ./.github/actions/platform-shell
         with:
           run: |
             pnpm -F "{packages/impl}" run bump-version
             pnpm -F "{packages/impl}" run build
       
-      # TODO: sign and notarize ${{ github.workspace }}/packages/impl/dist/napi-v8/node_reqwest.node
+      - name: Sign and notarize binary
+        uses: ./.github/actions/sign-notarize
+        with:
+          binary-path: ${{ github.workspace }}/packages/impl/dist/napi-v8/node_reqwest.node
       
       - name: Pack node addon
-        uses: ./.github/actions/cross-platform-shell
+        uses: ./.github/actions/platform-shell
         with:
           run: pnpm -F "{packages/impl}" run pack
       
@@ -72,9 +75,11 @@ jobs:
         uses: ./.github/actions/setup-agent
       
       - name: Build export wrapper
-        run: |
-          pnpm -F "{packages/impl}" run bump-version
-          pnpm -F "{packages/impl}" run build:ts
+        uses: ./.github/actions/platform-shell
+        with:
+          run: |
+            pnpm -F "{packages/impl}" run bump-version
+            pnpm -F "{packages/impl}" run build:ts
       
       - name: Finalize Release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0

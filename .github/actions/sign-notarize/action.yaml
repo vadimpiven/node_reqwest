@@ -1,0 +1,10 @@
+name: 'Sign and Notarize Binary'
+description: 'Code sign and notarize binaries on macOS and Windows'
+inputs:
+  binary-path:
+    description: 'Path to the binary file to sign'
+    required: true
+
+runs:
+  using: 'composite'
+  steps: null # TODO

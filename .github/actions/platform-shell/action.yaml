@@ -1,4 +1,4 @@
-name: 'Cross-platform shell'
+name: 'Platform shell'
 description: 'Run shell commands in Bash or MSVC powershell'
 
 inputs:
