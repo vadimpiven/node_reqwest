@@ -20,7 +20,7 @@
     "husky": "catalog:"
   },
   "scripts": {
-    "preinstall:cargo": "cargo binstall cargo-binstall cargo-run-bin --force -y && cargo bin --install",
+    "preinstall:cargo": "cargo binstall cargo-binstall cargo-run-bin -y && cargo bin --install",
     "preinstall:npm": "npm install -g npm@latest",
     "preinstall": "pnpm run preinstall:cargo && pnpm run preinstall:npm",
     "postinstall": "node scripts/setup-path.ts && pnpm exec playwright install-deps",
