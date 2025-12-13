@@ -7,4 +7,7 @@ inputs:
 
 runs:
   using: 'composite'
-  steps: null # TODO
+  steps:
+    - name: Sign and notarize stub
+      shell: bash
+      run: echo "TODO: Implement sign and notarize for ${{ inputs.binary-path }}"
