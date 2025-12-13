@@ -90,7 +90,7 @@ jobs:
       - name: Publish to npmjs.org
         uses: ./.github/actions/platform-shell
         with:
-          run: pnpm -F "{packages/impl}" run publish
+          run: pnpm -F "{packages/impl}" run publish --provenance
       
       - name: Verify release installation
         shell: bash
