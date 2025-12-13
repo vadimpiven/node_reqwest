@@ -46,9 +46,19 @@ jobs:
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: >-
+            packages/impl/coverage-electron/lcov.info,
+            packages/impl/coverage-unittest/lcov.info,
+            packages/impl/lcov.info,
+            packages/meta/lcov.info,
       
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: >-
+            packages/impl/report-electron.junit.xml,
+            packages/impl/report-rust.junit.xml,
+            packages/impl/report-unittest.junit.xml,
+            packages/meta/report-rust.junit.xml,
