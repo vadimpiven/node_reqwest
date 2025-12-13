@@ -89,7 +89,6 @@
     "dev-test:rust": "pnpm run test:nextest && pnpm run test:rustdoc",
     "dev-test": "pnpm run dev-test:ts && pnpm run dev-test:rust",
     "pack-addon": "pnpm exec node-pre-gyp package",
-    "publish": "npm publish package.tar.gz --access public",
     "install:skip": "node -p \"process.exit(+!(require('./package.json').version === '0.0.0'))\"",
     "install": "node-pre-gyp install --update-binary --fallback-to-build=false || pnpm run install:skip"
   }

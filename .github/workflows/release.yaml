@@ -88,9 +88,11 @@ jobs:
           draft: false
       
       - name: Publish to npmjs.org
-        uses: ./.github/actions/platform-shell
-        with:
-          run: pnpm -F "{packages/impl}" run publish --provenance
+        shell: bash
+        working-directory: packages/impl
+        run: |
+          npm install -g npm@latest
+          npm publish package.tar.gz --access public --provenance
       
       - name: Verify release installation
         shell: bash
