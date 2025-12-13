@@ -41,13 +41,7 @@ jobs:
             pnpm -F "{packages/impl}" run bump-version
             pnpm -F "{packages/impl}" run build
       
-      - id: metadata
-        shell: bash
-        run: |
-            ADDON_PATH="${GITHUB_WORKSPACE}/packages/impl/dist/napi-v8/node_reqwest.node"
-            echo "addon-path=${ADDON_PATH}" >> "$GITHUB_OUTPUT"
-      
-      # TODO: sign and notarize steps.metadata.outputs.addon-path
+      # TODO: sign and notarize ${{ github.workspace }}/packages/impl/dist/napi-v8/node_reqwest.node
       
       - name: Pack node addon
         uses: ./.github/actions/cross-platform-shell
@@ -78,11 +72,9 @@ jobs:
         uses: ./.github/actions/setup-agent
       
       - name: Build export wrapper
-        uses: ./.github/actions/cross-platform-shell
-        with:
-          run: |
-            pnpm -F "{packages/impl}" run bump-version
-            pnpm -F "{packages/impl}" run build:ts
+        run: |
+          pnpm -F "{packages/impl}" run bump-version
+          pnpm -F "{packages/impl}" run build:ts
       
       - name: Finalize Release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
@@ -90,6 +82,11 @@ jobs:
           draft: false
 
       - name: Publish package
-        uses: ./.github/actions/cross-platform-shell
-        with:
-          run: pnpm -F "{packages/impl}" publish --no-git-checks --access public
+        run: pnpm -F "{packages/impl}" publish --no-git-checks --access public --provenance
+
+      - name: Verify release installation
+        shell: bash
+        run: |
+          cd $(mktemp -d)
+          npm init -y
+          npm install node-reqwest@${GITHUB_REF_NAME#v}
