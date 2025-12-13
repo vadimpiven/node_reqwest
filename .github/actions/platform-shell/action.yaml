@@ -13,7 +13,7 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: ${{ inputs.run }}
-
+    
     - name: Run command (Linux)
       if: runner.os == 'Linux'
       shell: bash
