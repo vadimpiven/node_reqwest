@@ -12,4 +12,5 @@ runs:
       shell: bash
       env:
         BINARY_PATH: ${{ inputs.binary-path }}
-      run: echo "TODO: Implement sign and notarize for $BINARY_PATH"
+      run: |
+        echo "TODO: Implement sign and notarize for $BINARY_PATH"
