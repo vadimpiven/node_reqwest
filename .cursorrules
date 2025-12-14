@@ -1,1 +1,8 @@
 Always use pnpm for package management and script execution. Do not use npm or yarn unless explicitly instructed.
+
+Dependencies must always be defined in the workspace root:
+- For Node.js, use `catalog:` in `pnpm-workspace.yaml`.
+- For Rust, use `[workspace.dependencies]` in `Cargo.toml`.
+Packages should then reference these workspace-defined dependencies.
+
+When running tests during development, always use the `dev-test` script (e.g., `pnpm dev-test`) to ensure all configured checks (unit tests, doctests, linting, etc.) are executed.
