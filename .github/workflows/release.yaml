@@ -6,8 +6,6 @@ on:
   workflow_dispatch: { }
 
 permissions:
-  id-token: write
-  packages: read
   contents: write
 
 jobs:
@@ -63,7 +61,9 @@ jobs:
     needs:
       - build
     if: needs.build.result == 'success'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
     steps:
       - name: Checkout target branch
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
