@@ -60,14 +60,17 @@ jobs:
             packages/meta/report-rust.junit.xml,
   
   zizmor:
-    runs-on: ubuntu-24.04
+    name: Check CI scripts
+    timeout-minutes: 15
     permissions:
       security-events: write
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          persist-credentials: false
+          ref: ${{ github.ref }}
+          fetch-depth: 1
       
-      - name: Run zizmor 🌈
+      - name: Run zizmor
         uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4 # v0.3.0
