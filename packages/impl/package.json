@@ -42,7 +42,7 @@
   "binary": {
     "module_name": "node_reqwest",
     "module_path": "./dist/napi-v{napi_build_version}/",
-    "host": " https://github.com/",
+    "host": "https://github.com/",
     "remote_path": "./vadimpiven/{module_name}/releases/download/v{version}/",
     "package_name": "{module_name}-v{version}-napi-v{napi_build_version}-{platform}-{arch}.tar.gz",
     "napi_versions": [
