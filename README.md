@@ -1,6 +1,14 @@
+![NPM Version](https://img.shields.io/npm/v/node-reqwest)
+![GitHub branch status](https://img.shields.io/github/checks-status/vadimpiven/node_reqwest/main)
+![Codecov](https://img.shields.io/codecov/c/github/vadimpiven/node_reqwest/main)
+![Codacy Badge](https://app.codacy.com/project/badge/Grade/c2a3e94fec0b44cbb8d63f763eb455e6)
+![Sonar Tech Debt](https://img.shields.io/sonar/tech_debt/vadimpiven_node_reqwest/main?server=https%3A%2F%2Fsonarcloud.io)
+
 # node-reqwest
 
-Node.js bindings for reqwest - Rust HTTP client library
+Node.js bindings for [reqwest](https://crates.io/crates/reqwest) - Rust HTTP client library.
+This library provides support for system proxy and trusted system CA certificates without additional configuration.
+The build is made in a fashion that allows usage by Electron-based applications.
 
 ## Build requirements
 
@@ -19,3 +27,6 @@ pnpm install
 pnpm run rustup
 pnpm run dev-test
 ```
+
+VSCode [recommended extensions](.vscode/extensions.json) make development experience better.
+Check VSCode [debug configurations](.vscode/launch.json) for debugging and [tasks](.vscode/tasks.json) for performance analysis.

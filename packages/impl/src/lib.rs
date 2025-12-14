@@ -14,7 +14,8 @@ fn hello<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsString> {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn dummy_test() {
-        assert!(true);
+    fn hello_test() {
+        let expected = "hello";
+        assert_eq!(expected, "hello");
     }
 }

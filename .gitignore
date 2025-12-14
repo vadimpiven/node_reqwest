@@ -1,7 +1,7 @@
 # common
 .DS_Store
 lcov.info
-package.tgz
+package.tar.gz
 profile.json.gz
 report-rust.junit.xml
 .bin/
@@ -11,9 +11,10 @@ node_modules/
 target/
 
 # packages/impl
-report-electron.junit.xml
-report-unittest.junit.xml
-coverage-electron/
-coverage-unittest/
-export_dist/
-test-results/
+packages/impl/report-electron.junit.xml
+packages/impl/report-unittest.junit.xml
+packages/impl/build/
+packages/impl/coverage-electron/
+packages/impl/coverage-unittest/
+packages/impl/export_dist/
+packages/impl/test-results/

@@ -111,7 +111,7 @@ pub fn npm_version(version: &Version) {
 /// - <https://stackoverflow.com/questions/74509880/add-exe-file-details-to-binary-of-compiled-rust-code>
 /// - <https://learn.microsoft.com/en-us/windows/win32/menurc/versioninfo-resource>
 ///
-/// # Wargning
+/// # Warning
 ///
 /// Intended for use only in build.rs
 pub fn cdylib_win_rc(product: &str, version: &Version, filename: &str) {

@@ -1,0 +1,131 @@
+name: Build and publish
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: { }
+
+permissions:
+  contents: write
+
+jobs:
+  build-addon:
+    name: Build addon
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
+          - os: macos-15-intel
+          - os: macos-15
+          - os: windows-2025
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+      
+      - name: Setup development environment
+        uses: ./.github/actions/setup-agent
+      
+      - name: Build node addon
+        uses: ./.github/actions/platform-shell
+        with:
+          run: |
+            pnpm -F "{packages/impl}" run bump-version
+            pnpm -F "{packages/impl}" run build
+      
+      - name: Sign and notarize
+        uses: ./.github/actions/sign-notarize
+        with:
+          binary-path: ${{ github.workspace }}/packages/impl/dist/napi-v8/node_reqwest.node
+      
+      - name: Pack node addon
+        uses: ./.github/actions/platform-shell
+        with:
+          run: pnpm -F "{packages/impl}" run pack-addon
+      
+      - name: Upload node addon
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          files: packages/impl/build/stage/**/*.tar.gz
+          draft: true
+  
+  build-package:
+    name: Build package
+    timeout-minutes: 30
+    needs:
+      - build-addon
+    if: needs.build-addon.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+      
+      - name: Setup development environment
+        uses: ./.github/actions/setup-agent
+      
+      - name: Build export wrapper
+        uses: ./.github/actions/platform-shell
+        with:
+          run: |
+            pnpm -F "{packages/impl}" run bump-version
+            pnpm -F "{packages/impl}" run build:ts
+      
+      - name: Upload package artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: package-tarball
+          path: packages/impl/package.tar.gz
+          retention-days: 1
+      
+      - name: Finalize release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          files: packages/impl/package.tar.gz
+          draft: false
+  
+  publish-npm:
+    name: Publish package
+    timeout-minutes: 15
+    needs:
+      - build-package
+    if: needs.build-package.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+    steps:
+      - name: Install Node.js with correct .npmrc
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: 'latest'
+          check-latest: true
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      
+      - name: Update npm CLI
+        shell: bash
+        run: npm install -g npm@latest
+      
+      - name: Download package artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: package-tarball
+      
+      - name: Publish to npmjs.org
+        shell: bash
+        run: npm publish package.tar.gz --access public --provenance
+      
+      - name: Verify release installation
+        shell: bash
+        run: |
+          cd $(mktemp -d)
+          npm init -y
+          npm install node-reqwest@${GITHUB_REF_NAME#v}

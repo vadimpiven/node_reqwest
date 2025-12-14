@@ -23,9 +23,6 @@ jobs:
           - os: macos-15
           - os: windows-2025
     runs-on: ${{ matrix.os }}
-    permissions:
-      packages: read
-      contents: read
     steps:
       - name: Checkout target branch
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -37,7 +34,7 @@ jobs:
         uses: ./.github/actions/setup-agent
       
       - name: Build and test
-        uses: ./.github/actions/cross-platform-shell
+        uses: ./.github/actions/platform-shell
         with:
           run: pnpm run test
       
@@ -45,9 +42,32 @@ jobs:
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: >-
+            packages/impl/coverage-electron/lcov.info,
+            packages/impl/coverage-unittest/lcov.info,
+            packages/impl/lcov.info,
+            packages/meta/lcov.info,
       
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: >-
+            packages/impl/report-electron.junit.xml,
+            packages/impl/report-rust.junit.xml,
+            packages/impl/report-unittest.junit.xml,
+            packages/meta/report-rust.junit.xml,
+  
+  zizmor:
+    runs-on: ubuntu-24.04
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      
+      - name: Run zizmor 🌈
+        uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4 # v0.3.0
