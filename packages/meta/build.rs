@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 //! Module with build instructions to extract version tag or commit hash from git.
 
 use std::{

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';

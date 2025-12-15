@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 //! Module with the relevant metadata and helper methods for build.rs files.
 
 use std::{env, fmt, path::Path, process::Command};
@@ -184,5 +186,15 @@ mod tests {
         // Commit hash (should fail)
         let result = Version::parse("c24f925");
         assert_eq!(None, result);
+    }
+
+    #[test]
+    fn version_formatting_test() {
+        let version = Version {
+            major: 1,
+            minor: 0,
+            patch: 82,
+        };
+        assert_eq!("1.0.82", version.to_string());
     }
 }

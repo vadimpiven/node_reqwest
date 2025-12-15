@@ -6,3 +6,7 @@ Dependencies must always be defined in the workspace root:
 Packages should then reference these workspace-defined dependencies.
 
 When running tests during development, always use the `dev-test` script (e.g., `pnpm dev-test`) to ensure all configured checks (unit tests, doctests, linting, etc.) are executed.
+
+All new source files must include the following SPDX identifier at the top:
+`SPDX-License-Identifier: Apache-2.0 OR MIT`
+Use the appropriate comment style for the file type (e.g., `//` for Rust/TS/JS, `#` for TOML/YAML/Shell).
