@@ -1,7 +1,6 @@
 This project is dual-licensed under either of Apache 2.0 or MIT terms:
 
 - Apache-2.0 Software License: https://www.apache.org/licenses/LICENSE-2.0
-
 - MIT Software License: https://opensource.org/licenses/MIT
 
 Unless required by applicable law or agreed to in writing, software

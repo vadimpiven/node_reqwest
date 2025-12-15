@@ -17,4 +17,5 @@ serde_json = { workspace = true }
 tokio = { workspace = true }
 
 [build-dependencies]
+anyhow.workspace = true
 meta = { workspace = true }

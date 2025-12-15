@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 //! Node.js bindings for reqwest - Rust HTTP client library
+
 use mimalloc::MiMalloc;
 
 #[global_allocator]

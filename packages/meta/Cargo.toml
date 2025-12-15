@@ -7,12 +7,15 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+anyhow.workspace = true
 chrono.workspace = true
 indoc.workspace = true
 tauri-winres.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true
+tempfile.workspace = true
+with_dir.workspace = true
 
 [build-dependencies]
 anyhow.workspace = true

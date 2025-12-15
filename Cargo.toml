@@ -63,18 +63,12 @@ meta = { path = "packages/meta" }
 mimalloc = { version = "0.1.48", features = ["v3"] }
 neon = { version = "1.1.1", features = ["napi-8", "serde", "tokio"] }
 pretty_assertions = { version = "1.4.1", features = ["unstable"] }
-reqwest = { version = "0.12.25", default-features = false, features = [
-    "charset",
-    "gzip",
-    "http2",
-    "json",
-    "native-tls",
-    "system-proxy",
-] }
 serde = { version = "1.0.228" }
 serde_json = { version = "1.0.145" }
 tauri-winres = { version = "0.3.5" }
+tempfile = { version = "3.23.0" }
 tokio = { version = "1.48.0", features = ["rt-multi-thread"] }
+with_dir = { version = "0.1.4" }
 
 [workspace.metadata.bin]
 cargo-nextest = { version = "0.9.114", locked = true }
