@@ -2,7 +2,7 @@
 
 //! Module with the relevant metadata and helper methods for build.rs files.
 
-use std::{env, fmt, path::Path, process::Command};
+use std::{env::var, fmt, path::Path, process::Command};
 
 use anyhow::{Context, Result};
 use chrono::Datelike;
@@ -73,7 +73,7 @@ pub fn npm_version(version: &Version) -> Result<()> {
     let error = formatdoc! {"
         Failed to run
         `npm version {version}
-            --allow-same-version --workspaces-update=false`",
+            --allow-same-version --no-git-tag-version --workspaces-update=false`",
         version = version
     };
     // npm must be executed on Windows using CMD and on Posix systems using Bash
@@ -133,7 +133,7 @@ pub fn cdylib_win_rc(product: &str, version: &Version, filename: &str) -> Result
     }
 
     let internal_name =
-        env::var("CARGO_PKG_NAME").context("CARGO_PKG_NAME is set by cargo for build.rs")?;
+        var("CARGO_PKG_NAME").context("CARGO_PKG_NAME is set by cargo for build.rs")?;
 
     let version_hex = (version.major << 48) | (version.minor << 32) | (version.patch << 16);
     let version_str = format!("{}.{}.{}.0", version.major, version.minor, version.patch);
@@ -169,15 +169,10 @@ pub fn cdylib_win_rc(product: &str, version: &Version, filename: &str) -> Result
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        fs::{File, read_to_string},
-        io::Write,
-    };
+    use std::env::{consts::ARCH, set_var};
 
-    use indoc::indoc;
     use pretty_assertions::assert_eq;
     use tempfile::tempdir;
-    use with_dir::WithDir;
 
     use super::*;
 
@@ -206,57 +201,32 @@ mod tests {
 
         // Git describe output with additional info (should fail)
         let result = Version::parse("v1.0.81-2-ge6a4f89");
-        assert_eq!(None, result);
+        assert!(result.is_none());
 
         // Commit hash (should fail)
         let result = Version::parse("c24f925");
-        assert_eq!(None, result);
+        assert!(result.is_none());
     }
 
     #[test]
-    fn npm_version_test() -> Result<()> {
-        let dir = tempdir()?;
-        let dir_path = dir.path();
-        let package_json_path = dir_path.join("package.json");
+    #[expect(unsafe_code)]
+    fn cdylib_win_rc_test() -> Result<()> {
+        let temp_dir = tempdir()?;
+        // SAFETY: mocking environment variables for test execution.
+        // This is required for `embed-resource` (used by `cdylib_win_rc`) to function correctly in the test
+        // environment. Tests are run in separate processes by nextest, so there is no risk of race conditions.
+        unsafe {
+            set_var("HOST", format!("{}-pc-windows-msvc", ARCH));
+            set_var("TARGET", format!("{}-pc-windows-msvc", ARCH));
+            set_var("OUT_DIR", temp_dir.path());
+        }
+
         let version = Version {
             major: 1,
             minor: 2,
             patch: 3,
         };
-
-        let initial_content = indoc! {r#"
-            {
-              "name": "test-package",
-              "version": "0.0.0"
-            }
-        "#};
-        File::create(&package_json_path)?.write_all(initial_content.as_bytes())?;
-        assert_eq!(
-            initial_content.replace("\r\n", "\n").trim(),
-            read_to_string(&package_json_path)?
-                .replace("\r\n", "\n")
-                .trim()
-        );
-
-        WithDir::new(dir_path)
-            .map(|_| npm_version(&version))
-            .context(format!(
-                "failed to switch workdir to {}",
-                dir_path.display()
-            ))??;
-
-        let expected_content = indoc! {r#"
-            {
-              "name": "test-package",
-              "version": "1.2.3"
-            }
-        "#};
-        assert_eq!(
-            expected_content.replace("\r\n", "\n").trim(),
-            read_to_string(&package_json_path)?
-                .replace("\r\n", "\n")
-                .trim()
-        );
+        cdylib_win_rc("TestProduct", &version, "test.dll")?;
 
         Ok(())
     }

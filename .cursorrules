@@ -12,8 +12,8 @@ All new source files must include the following SPDX identifier at the top:
 `SPDX-License-Identifier: Apache-2.0 OR MIT`
 Use the appropriate comment style for the file type (e.g., `//` for Rust/TS/JS, `#` for TOML/YAML/Shell).
 
-Always place `use` or `import` statements at the top of the file or module.
+Always place `use` or `import` statements at the top of the file or module. Do not place them inside functions (even for tests).
 
-Prefer `use` statements to specifying namespace when there are no naming conflicts.
+Prefer using explicit `use` statements rather than calling functions/types via their module namespace (e.g., use `use std::env::var;` and call `var(...)` instead of `env::var(...)`), unless there is a naming conflict.
 
 Always place the expected value as the first argument in assertions (e.g., `assert_eq!(expected, actual)`).
