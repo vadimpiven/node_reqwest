@@ -1,4 +1,20 @@
 ---
 exclude_paths:
-  - "**/scripts/**"
-  - "**/tests/**"
+  - "packages/impl/tests/**"
+  - "packages/meta/tests/**"
+  - "scripts/**"
+  - "Cargo.lock"
+  - "pnpm-lock.yaml"
+
+engines:
+  clippy:
+    rules:
+      - name: too_many_lines
+        params:
+          threshold: 120
+      - name: type_complexity
+        params:
+          threshold: 120
+      - name: cognitive_complexity
+        params:
+          threshold: 120

@@ -1,0 +1,3 @@
+too-many-lines-threshold = 120
+type-complexity-threshold = 120
+cognitive-complexity-threshold = 120
