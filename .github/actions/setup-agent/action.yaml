@@ -33,6 +33,7 @@ runs:
         components: 'clippy, rustfmt'
         cache-directories: |
           .bin
+          ~/.cargo/bin
     
     - name: Install Cargo binstall
       uses: cargo-bins/cargo-binstall@8110b3aa84cb581a90696bc57469b0656f972494 # v1.16.3

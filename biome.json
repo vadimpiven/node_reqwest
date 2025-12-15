@@ -21,9 +21,6 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "complexity": {
-        "noBannedTypes": "off"
-      },
       "correctness": {
         "useImportExtensions": "error"
       },

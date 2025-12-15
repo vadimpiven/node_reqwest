@@ -35,6 +35,8 @@ jobs:
       
       - name: Build and test
         uses: ./.github/actions/platform-shell
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           run: pnpm run test
       
@@ -43,6 +45,16 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: >-
+            packages/impl/coverage-electron/lcov.info,
+            packages/impl/coverage-unittest/lcov.info,
+            packages/impl/lcov.info,
+            packages/meta/lcov.info,
+      
+      - name: Upload coverage reports to Codacy
+        uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: >-
             packages/impl/coverage-electron/lcov.info,
             packages/impl/coverage-unittest/lcov.info,
             packages/impl/lcov.info,
