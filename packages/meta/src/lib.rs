@@ -4,6 +4,7 @@
 
 use std::{env, fmt, path::Path, process::Command};
 
+use anyhow::{Context, Result};
 use chrono::Datelike;
 use indoc::formatdoc;
 use tauri_winres::{VersionInfo, WindowsResource};
@@ -68,7 +69,7 @@ impl Version {
 }
 
 /// Override package.json version with the given version
-pub fn npm_version(version: &Version) {
+pub fn npm_version(version: &Version) -> Result<()> {
     let error = formatdoc! {"
         Failed to run
         `npm version {version}
@@ -90,6 +91,7 @@ pub fn npm_version(version: &Version) {
                             'version',
                             '{version}',
                             '--allow-same-version',
+                            '--no-git-tag-version',
                             '--workspaces-update=false'
                         ], {{
                             stdio: 'inherit',
@@ -102,10 +104,12 @@ pub fn npm_version(version: &Version) {
             version = version
         })
         .status()
-        .expect(&error)
+        .context(error.clone())? // use clonned error context
         .success()
         .then_some(())
-        .expect(&error);
+        .context(error)?; // use error context
+
+    Ok(())
 }
 
 /// Compile resource.rc file to resource.res file and add it to linker input as described in:
@@ -116,7 +120,7 @@ pub fn npm_version(version: &Version) {
 /// # Warning
 ///
 /// Intended for use only in build.rs
-pub fn cdylib_win_rc(product: &str, version: &Version, filename: &str) {
+pub fn cdylib_win_rc(product: &str, version: &Version, filename: &str) -> Result<()> {
     const ENGLISH_US: u16 = 0x0409;
 
     const VS_FFI_FILEFLAGSMASK: u64 = 0x0000_003F;
@@ -125,11 +129,11 @@ pub fn cdylib_win_rc(product: &str, version: &Version, filename: &str) {
     const VFT2_UNKNOWN: u64 = 0x0000_0000;
 
     if !cfg!(target_env = "msvc") {
-        return;
+        return Ok(());
     }
 
     let internal_name =
-        env::var("CARGO_PKG_NAME").expect("CARGO_PKG_NAME is set by cargo for build.rs");
+        env::var("CARGO_PKG_NAME").context("CARGO_PKG_NAME is set by cargo for build.rs")?;
 
     let version_hex = (version.major << 48) | (version.minor << 32) | (version.patch << 16);
     let version_str = format!("{}.{}.{}.0", version.major, version.minor, version.patch);
@@ -157,14 +161,35 @@ pub fn cdylib_win_rc(product: &str, version: &Version, filename: &str) {
     res.set("ProductVersion", &version_str);
     res.set("FileVersion", &version_str);
 
-    res.compile().expect("failed to compile windows resource");
+    res.compile()
+        .context("failed to compile windows resource")?;
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        fs::{File, read_to_string},
+        io::Write,
+    };
+
+    use indoc::indoc;
     use pretty_assertions::assert_eq;
+    use tempfile::tempdir;
+    use with_dir::WithDir;
 
     use super::*;
+
+    #[test]
+    fn version_formatting_test() {
+        let version = Version {
+            major: 1,
+            minor: 0,
+            patch: 82,
+        };
+        assert_eq!("1.0.82", version.to_string());
+    }
 
     #[test]
     fn version_parsing_test() {
@@ -189,12 +214,50 @@ mod tests {
     }
 
     #[test]
-    fn version_formatting_test() {
+    fn npm_version_test() -> Result<()> {
+        let dir = tempdir()?;
+        let dir_path = dir.path();
+        let package_json_path = dir_path.join("package.json");
         let version = Version {
             major: 1,
-            minor: 0,
-            patch: 82,
+            minor: 2,
+            patch: 3,
         };
-        assert_eq!("1.0.82", version.to_string());
+
+        let initial_content = indoc! {r#"
+            {
+              "name": "test-package",
+              "version": "0.0.0"
+            }
+        "#};
+        File::create(&package_json_path)?.write_all(initial_content.as_bytes())?;
+        assert_eq!(
+            initial_content.replace("\r\n", "\n").trim(),
+            read_to_string(&package_json_path)?
+                .replace("\r\n", "\n")
+                .trim()
+        );
+
+        WithDir::new(dir_path)
+            .map(|_| npm_version(&version))
+            .context(format!(
+                "failed to switch workdir to {}",
+                dir_path.display()
+            ))??;
+
+        let expected_content = indoc! {r#"
+            {
+              "name": "test-package",
+              "version": "1.2.3"
+            }
+        "#};
+        assert_eq!(
+            expected_content.replace("\r\n", "\n").trim(),
+            read_to_string(&package_json_path)?
+                .replace("\r\n", "\n")
+                .trim()
+        );
+
+        Ok(())
     }
 }
