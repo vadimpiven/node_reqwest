@@ -35,6 +35,8 @@ jobs:
       
       - name: Build and test
         uses: ./.github/actions/platform-shell
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           run: pnpm run test
       
