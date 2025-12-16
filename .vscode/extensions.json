@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "natqe.reload",
+    "streetsidesoftware.code-spell-checker",
     "gruntfuggly.todo-tree",
     "fill-labs.dependi",
     "christian-kohler.npm-intellisense",
