@@ -23,13 +23,13 @@ catalog:
   vitest: ^4.0.15
 
 strictDepBuilds: true
-onlyBuiltDependencies:
-  - esbuild
-  - electron
-ignoredBuiltDependencies: null
+allowBuilds:
+  esbuild: true
+  electron: true
 
 minimumReleaseAge: 1440 # 24 hours
 minimumReleaseAgeExclude: null
 
+blockExoticSubdeps: true
 trustPolicy: no-downgrade
 trustPolicyExclude: null
