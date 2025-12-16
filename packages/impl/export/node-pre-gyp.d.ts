@@ -1,3 +1,3 @@
 declare module '@mapbox/node-pre-gyp' {
-  function find(_packageRoot: string): string;
+  function find(packageRoot: string): string;
 }
