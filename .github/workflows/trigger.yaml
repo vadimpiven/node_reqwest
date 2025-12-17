@@ -1,0 +1,44 @@
+name: Trigger release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: read
+
+jobs:
+  bump-and-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Get latest tag
+        id: get-latest-tag
+        uses: actions-ecosystem/action-get-latest-tag@b7c32daec3395a9616f88548363a42652b22d435 # v1.6.0
+
+      - name: Bump version
+        id: bump-semver
+        uses: actions-ecosystem/action-bump-semver@34e334551143a5301f38c830e44a22273c6ff5c5 # v1.0.0
+        with:
+          current_version: ${{ steps.get-latest-tag.outputs.tag }}
+          level: ${{ inputs.version }}
+
+      - name: Bump version and push tag
+        uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
+        with:
+          github_token: ${{ secrets.TRIGGER_TOKEN }}
+          custom_tag: ${{ steps.bump-semver.outputs.new_version }}
+          tag_prefix: v

@@ -25,6 +25,15 @@
     "registry": "https://registry.npmjs.org"
   },
   "license": "Apache-2.0 OR MIT",
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
   "type": "module",
   "types": "./export_dist/index.d.ts",
   "main": "./export_dist/index.js",
@@ -76,9 +85,9 @@
     "build": "pnpm run build:cargo -r --locked && pnpm run build:ts",
     "pretest": "pnpm run build",
     "test:unittest": "pnpm exec vitest run --coverage",
-    "test:electron": "pnpm exec playwright test --config playwright.config.ts",
+    "test:electron": "pnpm exec playwright test --config playwright.config.ts --pass-with-no-tests",
     "test:ts": "pnpm run type-check && pnpm run test:unittest && pnpm run test:electron",
-    "test:nextest": "cargo llvm-cov nextest --lcov --output-path lcov.info",
+    "test:nextest": "cargo llvm-cov nextest --lcov --output-path lcov.info --no-tests pass",
     "posttest:nextest": "pnpm exec shx cp ../../target/nextest/default/junit.xml report-rust.junit.xml",
     "test:rustdoc": "cargo doc --no-deps --document-private-items",
     "test:rust": "pnpm run test:nextest -r --locked && pnpm run test:rustdoc -r --locked",

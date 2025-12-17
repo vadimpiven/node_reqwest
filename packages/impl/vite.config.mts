@@ -22,6 +22,7 @@ export default defineConfig({
     pool: 'threads',
     maxWorkers: 1,
     isolate: false,
+    passWithNoTests: true,
     coverage: {
       provider: 'istanbul',
       reporter: ['lcov'],

@@ -1,6 +1,11 @@
 name: 'Setup Agent Environment'
 description: 'Sets up the development environment with Node.js and Rust'
 
+inputs:
+  github-token:
+    description: 'GitHub token for authenticated API requests (increases rate limits)'
+    required: true
+
 runs:
   using: 'composite'
   steps:
@@ -9,6 +14,7 @@ runs:
       run: |
         echo "HUSKY=0" >> "$GITHUB_ENV"
         echo "CARGO_INCREMENTAL=0" >> "$GITHUB_ENV"
+        echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
         echo "RUST_BACKTRACE=1" >> "$GITHUB_ENV"
     
     - name: Install pnpm
@@ -30,16 +36,20 @@ runs:
       uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
       with:
         toolchain: 'nightly'
-        components: 'clippy, rustfmt'
+        components: 'clippy, rustfmt, llvm-tools-preview'
         cache-directories: |
           .bin
           ~/.cargo/bin
     
     - name: Install Cargo binstall
       uses: cargo-bins/cargo-binstall@8110b3aa84cb581a90696bc57469b0656f972494 # v1.16.3
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
     
     - name: Run pnpm install script
       uses: ./.github/actions/platform-shell
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
       with:
         run: |
           pnpm install --frozen-lockfile --prefer-offline

@@ -21,6 +21,7 @@ jobs:
           - os: macos-15-intel
           - os: macos-15
           - os: windows-2025
+          - os: windows-11-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout target branch
@@ -31,6 +32,8 @@ jobs:
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build node addon
         uses: ./.github/actions/platform-shell
@@ -61,7 +64,7 @@ jobs:
     needs:
       - build-addon
     if: needs.build-addon.result == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout target branch
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -71,6 +74,8 @@ jobs:
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build export wrapper
         uses: ./.github/actions/platform-shell
@@ -98,7 +103,7 @@ jobs:
     needs:
       - build-package
     if: needs.build-package.result == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
     steps:

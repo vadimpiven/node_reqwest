@@ -7,6 +7,8 @@ on:
   push:
     branches:
       - 'main'
+  schedule:
+    - cron: '32 4 * * *'
   workflow_dispatch: { }
 
 jobs:
@@ -22,6 +24,7 @@ jobs:
           - os: macos-15-intel
           - os: macos-15
           - os: windows-2025
+          # - os: windows-11-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout target branch
@@ -32,6 +35,8 @@ jobs:
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build and test
         uses: ./.github/actions/platform-shell
@@ -74,7 +79,7 @@ jobs:
   sonar:
     name: SonarQube check
     timeout-minutes: 30
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
@@ -95,7 +100,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       security-events: write
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
