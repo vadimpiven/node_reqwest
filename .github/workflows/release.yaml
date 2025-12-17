@@ -62,7 +62,7 @@ jobs:
     needs:
       - build-addon
     if: needs.build-addon.result == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout target branch
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -99,7 +99,7 @@ jobs:
     needs:
       - build-package
     if: needs.build-package.result == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
     steps:
