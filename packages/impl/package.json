@@ -25,6 +25,15 @@
     "registry": "https://registry.npmjs.org"
   },
   "license": "Apache-2.0 OR MIT",
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
   "type": "module",
   "types": "./export_dist/index.d.ts",
   "main": "./export_dist/index.js",
