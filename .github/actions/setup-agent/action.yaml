@@ -9,7 +9,6 @@ runs:
       run: |
         echo "HUSKY=0" >> "$GITHUB_ENV"
         echo "CARGO_INCREMENTAL=0" >> "$GITHUB_ENV"
-        echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
         echo "RUST_BACKTRACE=1" >> "$GITHUB_ENV"
     
     - name: Install pnpm
