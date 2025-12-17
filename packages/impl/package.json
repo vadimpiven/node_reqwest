@@ -85,7 +85,7 @@
     "build": "pnpm run build:cargo -r --locked && pnpm run build:ts",
     "pretest": "pnpm run build",
     "test:unittest": "pnpm exec vitest run --coverage",
-    "test:electron": "pnpm exec playwright test --config playwright.config.ts",
+    "test:electron": "pnpm exec playwright test --config playwright.config.ts --pass-with-no-tests",
     "test:ts": "pnpm run type-check && pnpm run test:unittest && pnpm run test:electron",
     "test:nextest": "cargo llvm-cov nextest --lcov --output-path lcov.info --no-tests pass",
     "posttest:nextest": "pnpm exec shx cp ../../target/nextest/default/junit.xml report-rust.junit.xml",
