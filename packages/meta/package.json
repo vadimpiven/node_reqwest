@@ -5,7 +5,7 @@
     "shx": "catalog:"
   },
   "scripts": {
-    "test:nextest": "cargo llvm-cov nextest --lcov --output-path lcov.info",
+    "test:nextest": "cargo llvm-cov nextest --lcov --output-path lcov.info --no-tests pass",
     "posttest:nextest": "pnpm exec shx cp ../../target/nextest/default/junit.xml report-rust.junit.xml",
     "test:doctest": "cargo test --doc",
     "test:rustdoc": "cargo doc --no-deps --document-private-items",
