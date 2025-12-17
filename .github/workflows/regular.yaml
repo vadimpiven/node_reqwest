@@ -35,6 +35,8 @@ jobs:
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build and test
         uses: ./.github/actions/platform-shell

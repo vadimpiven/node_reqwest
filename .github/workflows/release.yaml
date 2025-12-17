@@ -32,6 +32,8 @@ jobs:
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build node addon
         uses: ./.github/actions/platform-shell
@@ -72,6 +74,8 @@ jobs:
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build export wrapper
         uses: ./.github/actions/platform-shell
