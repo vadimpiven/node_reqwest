@@ -5,13 +5,14 @@ on:
       - 'v*'
   workflow_dispatch: { }
 
-permissions:
-  contents: write
-
 jobs:
   build-addon:
     name: Build addon
     timeout-minutes: 45
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -52,6 +53,11 @@ jobs:
         with:
           run: pnpm -F "{packages/impl}" run pack-addon
       
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
+        with:
+          subject-path: packages/impl/build/stage/**/*.tar.gz
+      
       - name: Upload node addon
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
@@ -61,6 +67,10 @@ jobs:
   build-package:
     name: Build package
     timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     needs:
       - build-addon
     if: needs.build-addon.result == 'success'
@@ -84,6 +94,11 @@ jobs:
             pnpm -F "{packages/impl}" run bump-version
             pnpm -F "{packages/impl}" run build:ts
       
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
+        with:
+          subject-path: packages/impl/package.tar.gz
+      
       - name: Upload package artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
@@ -100,12 +115,12 @@ jobs:
   publish-npm:
     name: Publish package
     timeout-minutes: 15
+    permissions:
+      id-token: write
     needs:
       - build-package
     if: needs.build-package.result == 'success'
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
     steps:
       - name: Install Node.js with correct .npmrc
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
