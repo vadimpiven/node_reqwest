@@ -29,7 +29,6 @@ allowBuilds:
 
 minimumReleaseAge: 1440 # 24 hours
 minimumReleaseAgeExclude: null
-
-blockExoticSubdeps: true
 trustPolicy: no-downgrade
 trustPolicyExclude: null
+blockExoticSubdeps: true
