@@ -114,8 +114,9 @@ jobs:
 
   repro-issue:
     name: Issue reproduction
+    permissions: {}
     runs-on: windows-11-arm
-    steps:
+    steps:      
       - name: Setup MSVC developer command prompt
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
@@ -123,23 +124,27 @@ jobs:
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
         with:
-          toolchain: 'nightly'
-          components: 'clippy, rustfmt, llvm-tools-preview'
-
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
+          toolchain: 'nightly-2025-12-17'
+          components: 'llvm-tools-preview'
 
       - name: Create reproduction project
         shell: pwsh
         run: |
           cargo new reproduction
 
-      - name: Reproduce failure
+      - name: Generate coverage data
         shell: pwsh
         working-directory: reproduction
         env:
-          RUSTFLAGS: "-C instrument-coverage"
+          RUSTFLAGS: '-C instrument-coverage'
+          LLVM_PROFILE_FILE: 'default.profraw'
         run: |
           cargo build
           ./target/debug/reproduction.exe
-          cargo llvm-cov --no-clean --lcov --output-path lcov.info
+
+      - name: Process coverage data
+        shell: pwsh
+        working-directory: reproduction
+        run: |
+          $LLVM_BIN = "$(Split-Path (rustc --print target-libdir) -Parent)\bin"
+          & "$LLVM_BIN\llvm-profdata.exe" merge -sparse default.profraw -o default.profdata
