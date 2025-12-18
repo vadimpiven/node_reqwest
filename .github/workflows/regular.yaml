@@ -111,3 +111,35 @@ jobs:
       
       - name: Run zizmor
         uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4 # v0.3.0
+
+  repro-issue:
+    name: Issue reproduction
+    runs-on: windows-11-arm
+    steps:
+      - name: Setup MSVC developer command prompt
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+      
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
+        with:
+          toolchain: 'nightly'
+          components: 'clippy, rustfmt, llvm-tools-preview'
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Create reproduction project
+        shell: pwsh
+        run: |
+          cargo new reproduction
+
+      - name: Reproduce failure
+        shell: pwsh
+        working-directory: reproduction
+        env:
+          RUSTFLAGS: "-C instrument-coverage"
+        run: |
+          cargo build
+          ./target/debug/reproduction.exe
+          cargo llvm-cov --no-clean --lcov --output-path lcov.info
