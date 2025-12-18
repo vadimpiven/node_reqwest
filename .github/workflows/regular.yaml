@@ -24,7 +24,7 @@ jobs:
           - os: macos-15-intel
           - os: macos-15
           - os: windows-2025
-          # - os: windows-11-arm
+          # - os: windows-11-arm <https://github.com/taiki-e/cargo-llvm-cov/issues/436>
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout target branch
