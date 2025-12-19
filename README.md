@@ -23,7 +23,7 @@ The build is made in a fashion that allows usage by Electron-based applications.
 ```bash
 pnpm install
 pnpm run rustup
-pnpm run dev-test
+pnpm test
 ```
 
 VSCode [recommended extensions](.vscode/extensions.json) make development experience better.

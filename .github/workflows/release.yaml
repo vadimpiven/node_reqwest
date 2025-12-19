@@ -44,7 +44,7 @@ jobs:
         with:
           run: |
             pnpm -F "{packages/impl}" run bump-version
-            pnpm -F "{packages/impl}" run build
+            pnpm -F "{packages/impl}" run ci-build
       
       - name: Sign and notarize
         uses: ./.github/actions/sign-notarize

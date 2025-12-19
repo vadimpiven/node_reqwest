@@ -6,7 +6,7 @@ Dependencies must always be defined in the workspace root:
 Packages should then reference these workspace-defined dependencies (e.g., `dependency.workspace = true`).
 NEVER add a dependency version directly to a package crate; always add it to the workspace root first.
 
-When running tests during development, always use the `dev-test` script (e.g., `pnpm dev-test`) to ensure all configured checks (unit tests, doctests, linting, etc.) are executed.
+When running tests during development, always use the `test` script (e.g., `pnpm test`) to ensure all configured checks (unit tests, doctests, linting, etc.) are executed.
 
 All new source files must include the following SPDX identifier at the top:
 `SPDX-License-Identifier: Apache-2.0 OR MIT`

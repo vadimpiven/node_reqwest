@@ -48,10 +48,12 @@
     "update:pnpm": "pnpm update --recursive --workspace && pnpm audit --fix && pnpm install",
     "update:cargo": "cargo cache --autoclean && cargo clean && cargo update",
     "update": "pnpm run update:pnpm && pnpm run update:cargo",
-    "pretest": "pnpm run check",
-    "test": "pnpm run --recursive test",
-    "predev-test": "pnpm run fix",
-    "dev-test": "pnpm run --recursive dev-test"
+    "ci-build": "pnpm run --recursive ci-build",
+    "preci-test": "pnpm run check",
+    "ci-test": "pnpm run --recursive ci-test",
+    "build": "pnpm run --recursive build",
+    "pretest": "pnpm run fix",
+    "test": "pnpm run --recursive test"
   },
   "dependencies": {}
 }
