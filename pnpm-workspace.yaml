@@ -8,11 +8,12 @@ catalog:
   '@playwright/test': 1.57.0
   '@rollup/plugin-node-resolve': ^16.0.3
   '@taplo/cli': ^0.7.0
-  '@types/node': ^22.19.2
+  '@types/node': ^22.19.3
   '@vitest/coverage-istanbul': ^4.0.15
   cargo-cp-artifact: ^0.1.9
   electron: ^39.2.7
   husky: ^9.1.7
+  markdownlint-cli2: ^0.20.0
   monocart-reporter: ^2.9.23
   prettier: ^3.7.4
   rollup-plugin-node-externals: ^8.1.2
@@ -30,5 +31,6 @@ allowBuilds:
 minimumReleaseAge: 1440 # 24 hours
 minimumReleaseAgeExclude: null
 trustPolicy: no-downgrade
-trustPolicyExclude: null
+trustPolicyExclude:
+  - undici-types
 blockExoticSubdeps: true

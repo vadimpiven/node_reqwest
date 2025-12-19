@@ -17,7 +17,8 @@
     "@playwright/test": "catalog:",
     "@taplo/cli": "catalog:",
     "@types/node": "catalog:",
-    "husky": "catalog:"
+    "husky": "catalog:",
+    "markdownlint-cli2": "catalog:"
   },
   "scripts": {
     "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y && cargo bin --install",
@@ -28,14 +29,16 @@
     "rustup": "pnpm run rustup:update && pnpm run rustup:install && pnpm run rustup:binstall && cargo clean",
     "check:biome": "pnpm exec biome check . --log-level warn",
     "check:taplo": "pnpm exec taplo check",
+    "check:markdownlint": "pnpm exec markdownlint-cli2",
     "check:clippy": "cargo +nightly clippy -r --locked -- -D warnings",
     "check:rustfmt": "cargo +nightly fmt --check",
-    "check": "pnpm run check:biome && pnpm run check:taplo && pnpm run check:clippy && pnpm run check:rustfmt",
+    "check": "pnpm run check:biome && pnpm run check:taplo && pnpm run check:markdownlint && pnpm run check:clippy && pnpm run check:rustfmt",
     "fix:biome": "pnpm run check:biome --fix",
     "fix:taplo": "pnpm exec taplo format",
+    "fix:markdownlint": "pnpm exec markdownlint-cli2 --fix",
     "fix:clippy": "cargo +nightly clippy -r --fix --allow-dirty",
     "fix:rustfmt": "cargo +nightly fmt",
-    "fix": "pnpm run fix:biome && pnpm run fix:taplo && pnpm run fix:clippy && pnpm run fix:rustfmt",
+    "fix": "pnpm run fix:biome && pnpm run fix:taplo && pnpm run fix:markdownlint && pnpm run fix:clippy && pnpm run fix:rustfmt",
     "prepare": "husky",
     "check-updates:pnpm": "(pnpm outdated --recursive --sort-by name || exit 0)",
     "check-updates:cargo": "cargo +nightly update --breaking -Z unstable-options --dry-run",
