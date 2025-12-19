@@ -23,6 +23,7 @@ runs:
         INPUT_SCRIPT: ${{ inputs.run }}
       run: |
         SCRIPT_PATH=$(mktemp)
+        trap 'rm -f "$SCRIPT_PATH"' EXIT
         echo "$INPUT_SCRIPT" > "$SCRIPT_PATH"
         chmod +x "$SCRIPT_PATH"
         xvfb-run --auto-servernum -- "$SCRIPT_PATH"
