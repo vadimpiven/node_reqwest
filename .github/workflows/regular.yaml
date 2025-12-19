@@ -15,6 +15,9 @@ jobs:
   build-and-test:
     name: Build and test
     timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -40,15 +43,13 @@ jobs:
       
       - name: Build and test
         uses: ./.github/actions/platform-shell
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           run: pnpm run test
       
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
           report_type: coverage
           files: >-
             packages/impl/coverage-electron/lcov.info,
@@ -69,7 +70,7 @@ jobs:
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
           report_type: test_results
           files: >-
             packages/impl/report-electron.junit.xml,

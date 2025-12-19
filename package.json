@@ -2,9 +2,9 @@
   "private": true,
   "name": "workspace",
   "type": "module",
-  "packageManager": "pnpm@10.26.0",
+  "packageManager": "pnpm@10.26.1",
   "engines": {
-    "pnpm": "^10.26.0",
+    "pnpm": "^10.26.1",
     "node": "^22.19.0",
     "runtime": {
       "name": "node",
