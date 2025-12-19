@@ -1,12 +1,9 @@
 {
   "private": true,
   "name": "meta",
-  "devDependencies": {
-    "shx": "catalog:"
-  },
+  "devDependencies": {},
   "scripts": {
-    "test:nextest": "cargo llvm-cov nextest --lcov --output-path lcov.info --no-tests pass",
-    "posttest:nextest": "pnpm exec shx cp ../../target/nextest/default/junit.xml report-rust.junit.xml",
+    "test:nextest": "cargo llvm-cov nextest --profile meta --lcov --output-path lcov.info --no-tests pass",
     "test:doctest": "cargo test --doc",
     "test:rustdoc": "cargo doc --no-deps --document-private-items",
     "test": "pnpm run test:nextest -r --locked && pnpm run test:doctest -r --locked && pnpm run test:rustdoc -r --locked",
