@@ -57,16 +57,7 @@ jobs:
             packages/impl/lcov.info,
             packages/meta/lcov.info,
       
-      - name: Upload coverage reports to Codacy
-        uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
-        with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          coverage-reports: >-
-            packages/impl/coverage-electron/lcov.info,
-            packages/impl/coverage-unittest/lcov.info,
-            packages/impl/lcov.info,
-            packages/meta/lcov.info,
-      
+
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
