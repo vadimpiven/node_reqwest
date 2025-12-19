@@ -12,7 +12,9 @@ runs:
     - name: Run command (macOS)
       if: runner.os == 'macOS'
       shell: bash
-      run: ${{ inputs.run }}
+      env:
+        INPUT_SCRIPT: ${{ inputs.run }}
+      run: eval "$INPUT_SCRIPT"
     
     - name: Run command (Linux)
       if: runner.os == 'Linux'
@@ -28,4 +30,6 @@ runs:
     - name: Run command (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
-      run: ${{ inputs.run }}
+      env:
+        INPUT_SCRIPT: ${{ inputs.run }}
+      run: Invoke-Expression $env:INPUT_SCRIPT

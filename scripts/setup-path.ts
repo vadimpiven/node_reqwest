@@ -14,7 +14,7 @@ const outputBin = path.join(outputDir, isWindows ? 'node.exe' : 'node');
 try {
   fs.mkdirSync(outputDir, { recursive: true });
 } catch (err) {
-  console.error(`Failed to create directory ${outputDir}:`, err);
+  console.error('Failed to create directory %s:', outputDir, err);
   process.exit(1);
 }
 
@@ -23,7 +23,7 @@ if (fs.existsSync(outputBin)) {
   try {
     fs.unlinkSync(outputBin);
   } catch (err) {
-    console.error(`Failed to remove existing file ${outputBin}:`, err);
+    console.error('Failed to remove existing file %s:', outputBin, err);
     process.exit(1);
   }
 }
@@ -32,9 +32,9 @@ if (fs.existsSync(outputBin)) {
 try {
   // On Windows, 'file' argument is required for file symlinks
   fs.symlinkSync(nodePath, outputBin, isWindows ? 'file' : undefined);
-  console.log(`Symlinked node: ${nodePath} -> ${outputBin}`);
+  console.log('Symlinked node: %s -> %s', nodePath, outputBin);
 } catch (err) {
-  console.error(`Failed to symlink node from ${nodePath} to ${outputBin}:`, err);
+  console.error('Failed to symlink node from %s to %s:', nodePath, outputBin, err);
   if (isWindows) {
     console.error('On Windows, you may need to enable Developer Mode or run as Administrator to create symlinks.');
   }
