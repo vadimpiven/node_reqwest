@@ -2,9 +2,9 @@
   "private": true,
   "name": "workspace",
   "type": "module",
-  "packageManager": "pnpm@10.26.0",
+  "packageManager": "pnpm@10.26.1",
   "engines": {
-    "pnpm": "^10.26.0",
+    "pnpm": "^10.26.1",
     "node": "^22.19.0",
     "runtime": {
       "name": "node",
@@ -17,7 +17,8 @@
     "@playwright/test": "catalog:",
     "@taplo/cli": "catalog:",
     "@types/node": "catalog:",
-    "husky": "catalog:"
+    "husky": "catalog:",
+    "markdownlint-cli2": "catalog:"
   },
   "scripts": {
     "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y && cargo bin --install",
@@ -28,14 +29,18 @@
     "rustup": "pnpm run rustup:update && pnpm run rustup:install && pnpm run rustup:binstall && cargo clean",
     "check:biome": "pnpm exec biome check . --log-level warn",
     "check:taplo": "pnpm exec taplo check",
+    "check:markdownlint": "pnpm exec markdownlint-cli2",
     "check:clippy": "cargo +nightly clippy -r --locked -- -D warnings",
     "check:rustfmt": "cargo +nightly fmt --check",
-    "check": "pnpm run check:biome && pnpm run check:taplo && pnpm run check:clippy && pnpm run check:rustfmt",
+    "check:zizmor": "cargo bin zizmor -q .github",
+    "check": "pnpm run check:biome && pnpm run check:taplo && pnpm run check:markdownlint && pnpm run check:clippy && pnpm run check:rustfmt && pnpm run check:zizmor",
     "fix:biome": "pnpm run check:biome --fix",
     "fix:taplo": "pnpm exec taplo format",
+    "fix:markdownlint": "pnpm exec markdownlint-cli2 --fix",
     "fix:clippy": "cargo +nightly clippy -r --fix --allow-dirty",
     "fix:rustfmt": "cargo +nightly fmt",
-    "fix": "pnpm run fix:biome && pnpm run fix:taplo && pnpm run fix:clippy && pnpm run fix:rustfmt",
+    "fix:zizmor": "pnpm run check:zizmor",
+    "fix": "pnpm run fix:biome && pnpm run fix:taplo && pnpm run fix:markdownlint && pnpm run fix:clippy && pnpm run fix:rustfmt && pnpm run fix:zizmor",
     "prepare": "husky",
     "check-updates:pnpm": "(pnpm outdated --recursive --sort-by name || exit 0)",
     "check-updates:cargo": "cargo +nightly update --breaking -Z unstable-options --dry-run",
@@ -43,10 +48,12 @@
     "update:pnpm": "pnpm update --recursive --workspace && pnpm audit --fix && pnpm install",
     "update:cargo": "cargo cache --autoclean && cargo clean && cargo update",
     "update": "pnpm run update:pnpm && pnpm run update:cargo",
-    "pretest": "pnpm run check",
-    "test": "pnpm run --recursive test",
-    "predev-test": "pnpm run fix",
-    "dev-test": "pnpm run --recursive dev-test"
+    "ci-build": "pnpm run --recursive ci-build",
+    "preci-test": "pnpm run check",
+    "ci-test": "pnpm run --recursive ci-test",
+    "build": "pnpm run --recursive build",
+    "pretest": "pnpm run fix",
+    "test": "pnpm run --recursive test"
   },
   "dependencies": {}
 }

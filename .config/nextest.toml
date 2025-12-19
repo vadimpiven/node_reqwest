@@ -1,7 +1,8 @@
 [profile.default]
 default-filter = "not test(disabled_test)"
 
-[profile.default.junit]
-path = "junit.xml" # Relative to target/nextest/default/
-store-failure-output = true
-store-success-output = false
+[profile.impl.junit]
+path = "../../../packages/impl/report-rust.junit.xml"
+
+[profile.meta.junit]
+path = "../../../packages/meta/report-rust.junit.xml"

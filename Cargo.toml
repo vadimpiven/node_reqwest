@@ -73,3 +73,4 @@ with_dir = { version = "0.1.4" }
 [workspace.metadata.bin]
 cargo-nextest = { version = "0.9.115", locked = true }
 cargo-llvm-cov = { version = "0.6.21", locked = true }
+zizmor = { version = "1.7.0", locked = true }

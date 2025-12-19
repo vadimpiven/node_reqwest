@@ -8,15 +8,15 @@ catalog:
   '@playwright/test': 1.57.0
   '@rollup/plugin-node-resolve': ^16.0.3
   '@taplo/cli': ^0.7.0
-  '@types/node': ^22.19.2
+  '@types/node': ^22.19.3
   '@vitest/coverage-istanbul': ^4.0.15
   cargo-cp-artifact: ^0.1.9
   electron: ^39.2.7
   husky: ^9.1.7
+  markdownlint-cli2: ^0.20.0
   monocart-reporter: ^2.9.23
   prettier: ^3.7.4
   rollup-plugin-node-externals: ^8.1.2
-  shx: ^0.4.0
   typescript: ^5.9.3
   vite: ^7.2.7
   vite-plugin-dts: ^4.5.4
@@ -27,8 +27,9 @@ allowBuilds:
   esbuild: true
   electron: true
 
-minimumReleaseAge: 1440 # 24 hours
+minimumReleaseAge: 10080 # 7 days (synced with dependabot cooldown)
 minimumReleaseAgeExclude: null
 trustPolicy: no-downgrade
-trustPolicyExclude: null
+trustPolicyExclude:
+  - undici-types
 blockExoticSubdeps: true

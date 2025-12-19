@@ -5,6 +5,8 @@ on:
       - 'v*'
   workflow_dispatch: { }
 
+permissions: {}
+
 jobs:
   build-addon:
     name: Build addon
@@ -30,6 +32,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           fetch-depth: 1
+          persist-credentials: false
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
@@ -41,7 +44,7 @@ jobs:
         with:
           run: |
             pnpm -F "{packages/impl}" run bump-version
-            pnpm -F "{packages/impl}" run build
+            pnpm -F "{packages/impl}" run ci-build
       
       - name: Sign and notarize
         uses: ./.github/actions/sign-notarize
@@ -81,6 +84,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           fetch-depth: 1
+          persist-credentials: false
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
