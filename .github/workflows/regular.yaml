@@ -11,6 +11,8 @@ on:
     - cron: '32 4 * * *'
   workflow_dispatch: { }
 
+permissions: {}
+
 jobs:
   build-and-test:
     name: Build and test
@@ -58,7 +60,6 @@ jobs:
             packages/impl/lcov.info,
             packages/meta/lcov.info,
       
-
       - name: Upload test results to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
@@ -69,22 +70,20 @@ jobs:
             packages/impl/report-rust.junit.xml,
             packages/impl/report-unittest.junit.xml,
             packages/meta/report-rust.junit.xml,
-  
-  sonar:
-    name: SonarQube check
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
+
+  zizmor:
+    name: Check CI scripts
+    timeout-minutes: 15
     permissions:
-      contents: read
+      security-events: write
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           ref: ${{ github.ref }}
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
       
-      - name: SonarQube scan
-        uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9 # v7.0.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4 # v0.3.0

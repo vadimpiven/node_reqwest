@@ -5,6 +5,8 @@ on:
       - 'v*'
   workflow_dispatch: { }
 
+permissions: {}
+
 jobs:
   build-addon:
     name: Build addon
