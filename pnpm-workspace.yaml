@@ -28,7 +28,7 @@ allowBuilds:
   esbuild: true
   electron: true
 
-minimumReleaseAge: 1440 # 24 hours
+minimumReleaseAge: 10080 # 7 days (synced with dependabot cooldown)
 minimumReleaseAgeExclude: null
 trustPolicy: no-downgrade
 trustPolicyExclude:

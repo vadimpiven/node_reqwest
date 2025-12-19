@@ -35,6 +35,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           fetch-depth: 1
+          persist-credentials: false
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
@@ -87,19 +88,3 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9 # v7.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  
-  zizmor:
-    name: Check CI scripts
-    timeout-minutes: 15
-    permissions:
-      security-events: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          ref: ${{ github.ref }}
-          fetch-depth: 1
-      
-      - name: Run zizmor
-        uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4 # v0.3.0

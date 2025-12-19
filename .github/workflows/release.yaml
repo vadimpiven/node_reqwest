@@ -30,6 +30,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           fetch-depth: 1
+          persist-credentials: false
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
@@ -81,6 +82,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           fetch-depth: 1
+          persist-credentials: false
       
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
