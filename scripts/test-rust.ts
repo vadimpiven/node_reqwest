@@ -19,6 +19,12 @@ if (process.platform === 'win32' && process.arch === 'arm64') {
 console.log('> %s %s', command, commandArgs.join(' '));
 const result = spawnSync(command, commandArgs, { stdio: 'inherit' });
 
+if (result.status === 0 && commandArgs.includes('llvm-cov') && !args.includes('--no-report')) {
+  commandArgs = ['llvm-cov', 'report'];
+  console.log('> %s %s', command, commandArgs.join(' '));
+  spawnSync(command, commandArgs, { stdio: 'inherit' });
+}
+
 if (result.status !== null && result.status !== 0) {
   process.exit(result.status);
 } else if (result.error) {

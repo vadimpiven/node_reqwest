@@ -25,7 +25,7 @@ export default defineConfig({
     passWithNoTests: true,
     coverage: {
       provider: 'istanbul',
-      reporter: ['lcov'],
+      reporter: ['lcov', 'text'],
       reportsDirectory: './coverage-unittest'
     },
     reporters: ['default', ['junit', { outputFile: 'report-unittest.junit.xml' }]],
