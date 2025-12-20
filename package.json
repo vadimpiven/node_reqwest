@@ -12,6 +12,13 @@
       "onFail": "download"
     }
   },
+  "rust": {
+    "components": [
+      "clippy",
+      "rustfmt",
+      "llvm-tools-preview"
+    ]
+  },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@playwright/test": "catalog:",
@@ -24,7 +31,7 @@
     "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y && cargo bin --install",
     "postinstall": "node scripts/setup-path.ts && pnpm exec playwright install-deps",
     "rustup:update": "rustup update",
-    "rustup:install": "rustup toolchain install nightly --profile minimal --component clippy --component rustfmt --component llvm-tools-preview",
+    "rustup:install": "node scripts/setup-rust.ts",
     "rustup:binstall": "cargo binstall cargo-deny cargo-cache -y",
     "rustup": "pnpm run rustup:update && pnpm run rustup:install && pnpm run rustup:binstall && cargo clean",
     "check:biome": "pnpm exec biome check . --log-level warn",
