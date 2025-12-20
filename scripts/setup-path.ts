@@ -36,7 +36,9 @@ try {
 } catch (err) {
   console.error('Failed to symlink node from %s to %s:', nodePath, outputBin, err);
   if (isWindows) {
-    console.error('On Windows, you may need to enable Developer Mode or run as Administrator to create symlinks.');
+    console.error(
+      'On Windows, you may need to enable Developer Mode or run as Administrator to create symlinks.'
+    );
   }
   process.exit(1);
 }

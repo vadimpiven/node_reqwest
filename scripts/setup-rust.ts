@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { runCommand } from './run-command.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
@@ -35,10 +35,4 @@ const args = [
   ...components.flatMap((c) => ['--component', c])
 ];
 
-console.log('> rustup %s', args.join(' '));
-const result = spawnSync('rustup', args, { stdio: 'inherit' });
-
-if (result.status !== 0) {
-  console.error('rustup failed with exit code %d', result.status);
-  process.exit(result.status ?? 1);
-}
+await runCommand('rustup', args);

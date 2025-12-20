@@ -2,7 +2,13 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type ElectronApplication, _electron as electron, expect, type Page, test } from '@playwright/test';
+import {
+  type ElectronApplication,
+  _electron as electron,
+  expect,
+  type Page,
+  test
+} from '@playwright/test';
 import { addCoverageReport } from 'monocart-reporter';
 
 const __filename = fileURLToPath(import.meta.url);
