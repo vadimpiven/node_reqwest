@@ -2,21 +2,8 @@ name: 'Init Workflow'
 description: 'Defines central configurations and constants for workflows'
 
 outputs:
-  regular-matrix:
+  matrix:
     description: 'Matrix for regular runs'
-    value: |
-      {
-        "os": [
-          "ubuntu-24.04",
-          "ubuntu-24.04-arm",
-          "macos-15-intel",
-          "macos-15",
-          "windows-2025"
-        ]
-      }
-    # windows-11-arm <https://github.com/taiki-e/cargo-llvm-cov/issues/436>
-  release-matrix:
-    description: 'Matrix for release runs'
     value: |
       {
         "os": [

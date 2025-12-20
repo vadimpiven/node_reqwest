@@ -12,7 +12,7 @@ jobs:
     name: Init
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.init-workflow.outputs.release-matrix }}
+      matrix: ${{ steps.init-workflow.outputs.matrix }}
       env: ${{ steps.init-workflow.outputs.env }}
       pnpm-version: ${{ steps.init-workflow.outputs.pnpm-version }}
       node-version: ${{ steps.init-workflow.outputs.node-version }}

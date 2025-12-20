@@ -36,7 +36,7 @@ const args = [
 ];
 
 console.log('> rustup %s', args.join(' '));
-const result = spawnSync('rustup', args, { stdio: 'inherit', shell: true });
+const result = spawnSync('rustup', args, { stdio: 'inherit' });
 
 if (result.status !== 0) {
   console.error('rustup failed with exit code %d', result.status);

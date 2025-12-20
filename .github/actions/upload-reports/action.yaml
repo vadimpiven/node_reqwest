@@ -38,8 +38,8 @@ runs:
             .join(',');
         };
         
-        process.stdout.write(\`coverage=\${expand(process.env.COVERAGE_PATTERN)}\n\`);
-        process.stdout.write(\`reports=\${expand(process.env.REPORTS_PATTERN)}\n\`);
+        console.log('coverage=%s', expand(process.env.COVERAGE_PATTERN));
+        console.log('reports=%s', expand(process.env.REPORTS_PATTERN));
         EOF
 
     - name: Upload coverage reports to Codecov
