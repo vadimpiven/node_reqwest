@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { ensureError } from './run-script.ts';
 
 const isWindows = process.platform === 'win32';
 
@@ -15,8 +16,9 @@ export async function makeSymlink(target: string, link: string): Promise<void> {
   // Ensure the directory exists
   try {
     await fs.mkdir(linkDir, { recursive: true });
-  } catch (err) {
-    throw new Error(`Failed to create directory ${linkDir}: ${err}`);
+  } catch (err: unknown) {
+    const error = ensureError(err);
+    throw new Error(`Failed to create directory ${linkDir}: ${error.message}`);
   }
 
   // Remove existing symlink/file if it exists
@@ -27,8 +29,9 @@ export async function makeSymlink(target: string, link: string): Promise<void> {
   if (exists) {
     try {
       await fs.unlink(link);
-    } catch (err) {
-      throw new Error(`Failed to remove existing file ${link}: ${err}`);
+    } catch (err: unknown) {
+      const error = ensureError(err);
+      throw new Error(`Failed to remove existing file ${link}: ${error.message}`);
     }
   }
 
@@ -37,10 +40,11 @@ export async function makeSymlink(target: string, link: string): Promise<void> {
     // On Windows, 'file' argument is required for file symlinks
     await fs.symlink(target, link, isWindows ? 'file' : undefined);
     console.log('Symlinked: %s -> %s', target, link);
-  } catch (err) {
+  } catch (err: unknown) {
+    const error = ensureError(err);
     const message = isWindows
-      ? `Failed to symlink from ${target} to ${link}. Enable Developer Mode to create symlinks: ${err}`
-      : `Failed to symlink from ${target} to ${link}: ${err}`;
+      ? `Failed to symlink from ${target} to ${link}. Enable Developer Mode to create symlinks: ${error.message}`
+      : `Failed to symlink from ${target} to ${link}: ${error.message}`;
     throw new Error(message);
   }
 }

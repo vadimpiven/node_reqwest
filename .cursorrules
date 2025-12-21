@@ -3,4 +3,4 @@
 - When creating new files, ensure the appropriate SPDX license header is included.
 - Prioritize workspace-level dependency management as outlined in the root configs.
 - Maintain concise, friendly, and professional attitude when assisting with development tasks.
-- MANDATORY: Always run `pnpm run fix` before presenting code or documentation changes to the developer to ensure all project rules (Markdown, linting, formatting) are satisfied.
+- **CRITICAL**: AI agents MUST execute `pnpm run fix` after EVERY modification of code or documentation, and before signaling completion, to ensure strict adherence to project standards (linting, formatting, license headers).

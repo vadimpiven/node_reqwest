@@ -1,2 +1,5 @@
 [profile.default]
 default-filter = "not test(disabled_test)"
+
+[profile.default.junit]
+path = "junit.xml"
