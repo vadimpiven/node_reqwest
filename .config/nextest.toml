@@ -1,8 +1,2 @@
 [profile.default]
 default-filter = "not test(disabled_test)"
-
-[profile.impl.junit]
-path = "../../../packages/impl/report-rust.junit.xml"
-
-[profile.meta.junit]
-path = "../../../packages/meta/report-rust.junit.xml"

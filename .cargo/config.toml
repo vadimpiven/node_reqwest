@@ -9,5 +9,7 @@ rustflags = ["-C", "target-feature=+crt-static"]
 rustflags = ["-C", "target-feature=+sse3,+ssse3,+sse4.1,+sse4.2,+popcnt,+cmpxchg16b"]
 
 [alias]
+cache = ["bin", "cargo-cache"]
+deny = ["bin", "cargo-deny"]
 llvm-cov = ["bin", "cargo-llvm-cov"]
 nextest = ["bin", "cargo-nextest"]

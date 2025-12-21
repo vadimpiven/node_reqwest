@@ -85,7 +85,7 @@
     "test:unittest": "pnpm exec vitest run --coverage",
     "test:electron": "pnpm exec playwright test --config playwright.config.ts --pass-with-no-tests",
     "test:ts": "pnpm run type-check && pnpm run test:unittest && pnpm run test:electron",
-    "test:nextest": "node ../../scripts/test-rust.ts --profile impl",
+    "test:nextest": "node ../../scripts/test-rust.ts",
     "test:rustdoc": "cargo doc --no-deps --document-private-items",
     "test:rust": "pnpm run test:nextest && pnpm run test:rustdoc",
     "pretest": "pnpm run build",

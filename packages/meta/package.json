@@ -3,7 +3,7 @@
   "name": "meta",
   "devDependencies": {},
   "scripts": {
-    "test:nextest": "node ../../scripts/test-rust.ts --profile meta",
+    "test:nextest": "node ../../scripts/test-rust.ts",
     "test:doctest": "cargo test --doc",
     "test:rustdoc": "cargo doc --no-deps --document-private-items",
     "test": "pnpm run test:nextest && pnpm run test:doctest && pnpm run test:rustdoc",

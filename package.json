@@ -12,13 +12,6 @@
       "onFail": "download"
     }
   },
-  "rust": {
-    "components": [
-      "clippy",
-      "rustfmt",
-      "llvm-tools-preview"
-    ]
-  },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@playwright/test": "catalog:",
@@ -30,27 +23,23 @@
   "scripts": {
     "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y && cargo bin --install",
     "postinstall": "node scripts/setup-path.ts && pnpm exec playwright install-deps",
-    "rustup:update": "rustup update",
-    "rustup:install": "node scripts/setup-rust.ts",
-    "rustup:binstall": "cargo binstall cargo-deny cargo-cache -y",
-    "rustup": "pnpm run rustup:update && pnpm run rustup:install && pnpm run rustup:binstall && cargo clean",
     "check:biome": "pnpm exec biome check . --log-level warn",
     "check:taplo": "pnpm exec taplo check",
     "check:markdownlint": "pnpm exec markdownlint-cli2",
-    "check:clippy": "cargo +nightly clippy -r --locked -- -D warnings",
-    "check:rustfmt": "cargo +nightly fmt --check",
+    "check:clippy": "cargo clippy -r --locked -- -D warnings",
+    "check:rustfmt": "cargo fmt --check",
     "check:zizmor": "cargo bin zizmor -q .github",
     "check": "pnpm run check:biome && pnpm run check:taplo && pnpm run check:markdownlint && pnpm run check:clippy && pnpm run check:rustfmt && pnpm run check:zizmor",
     "fix:biome": "pnpm run check:biome --fix",
     "fix:taplo": "pnpm exec taplo format",
     "fix:markdownlint": "pnpm exec markdownlint-cli2 --fix",
-    "fix:clippy": "cargo +nightly clippy -r --fix --allow-dirty",
-    "fix:rustfmt": "cargo +nightly fmt",
+    "fix:clippy": "cargo clippy -r --fix --allow-dirty",
+    "fix:rustfmt": "cargo fmt",
     "fix:zizmor": "pnpm run check:zizmor",
     "fix": "pnpm run fix:biome && pnpm run fix:taplo && pnpm run fix:markdownlint && pnpm run fix:clippy && pnpm run fix:rustfmt && pnpm run fix:zizmor",
     "prepare": "husky",
     "check-updates:pnpm": "(pnpm outdated --recursive --sort-by name || exit 0)",
-    "check-updates:cargo": "cargo +nightly update --breaking -Z unstable-options --dry-run",
+    "check-updates:cargo": "cargo update --breaking -Z unstable-options --dry-run",
     "check-updates": "pnpm run check-updates:pnpm && pnpm run check-updates:cargo",
     "update:pnpm": "pnpm update --recursive --workspace && pnpm audit --fix && pnpm install",
     "update:cargo": "cargo cache --autoclean && cargo clean && cargo update",

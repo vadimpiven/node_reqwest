@@ -6,7 +6,6 @@ resolver = "3"
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.92.0"
 
 [profile.dev]
 opt-level = 1
@@ -73,4 +72,7 @@ with_dir = { version = "0.1.4" }
 [workspace.metadata.bin]
 cargo-nextest = { version = "0.9.115", locked = true }
 cargo-llvm-cov = { version = "0.6.21", locked = true }
+cargo-deny = { version = "0.18.9" }
+cargo-cache = { version = "0.8.3" }
+samply = { version = "0.13.1" }
 zizmor = { version = "1.7.0", locked = true }

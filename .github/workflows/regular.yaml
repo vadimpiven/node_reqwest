@@ -22,7 +22,6 @@ jobs:
       env: ${{ steps.init-workflow.outputs.env }}
       pnpm-version: ${{ steps.init-workflow.outputs.pnpm-version }}
       node-version: ${{ steps.init-workflow.outputs.node-version }}
-      rust-components: ${{ steps.init-workflow.outputs.rust-components }}
       test-coverage: ${{ steps.init-workflow.outputs.test-coverage }}
       test-reports: ${{ steps.init-workflow.outputs.test-reports }}
     steps:
@@ -63,7 +62,6 @@ jobs:
           env: ${{ needs.init.outputs.env }}
           pnpm-version: ${{ needs.init.outputs.pnpm-version }}
           node-version: ${{ needs.init.outputs.node-version }}
-          rust-components: ${{ needs.init.outputs.rust-components }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build and test

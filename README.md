@@ -24,7 +24,6 @@ The build is made in a fashion that allows usage by Electron-based applications.
 
 ```bash
 pnpm install
-pnpm run rustup
 pnpm test
 ```
 

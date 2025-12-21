@@ -2,12 +2,6 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Install Samply",
-      "type": "shell",
-      "command": "cargo binstall samply -y",
-      "problemMatcher": []
-    },
-    {
       "label": "Perf-profile Electron",
       "type": "shell",
       "command": "samply",
@@ -32,7 +26,6 @@
           "${workspaceRoot}/packages/impl/tests/electron/main.ts"
         ]
       },
-      "dependsOn": ["Install Samply"],
       "problemMatcher": [],
       "options": {
         "env": {
