@@ -1,19 +1,6 @@
-Always use pnpm for package management and script execution. Do not use npm or yarn unless explicitly instructed.
-
-Dependencies must always be defined in the workspace root:
-- For Node.js, use `catalog:` in `pnpm-workspace.yaml`.
-- For Rust, use `[workspace.dependencies]` in `Cargo.toml`.
-Packages should then reference these workspace-defined dependencies (e.g., `dependency.workspace = true`).
-NEVER add a dependency version directly to a package crate; always add it to the workspace root first.
-
-When running tests during development, always use the `test` script (e.g., `pnpm test`) to ensure all configured checks (unit tests, doctests, linting, etc.) are executed.
-
-All new source files must include the following SPDX identifier at the top:
-`SPDX-License-Identifier: Apache-2.0 OR MIT`
-Use the appropriate comment style for the file type (e.g., `//` for Rust/TS/JS, `#` for TOML/YAML/Shell).
-
-Always place `use` or `import` statements at the top of the file or module. Do not place them inside functions (even for tests).
-
-Prefer using explicit `use` statements rather than calling functions/types via their module namespace (e.g., use `use std::env::var;` and call `var(...)` instead of `env::var(...)`), unless there is a naming conflict.
-
-Always place the expected value as the first argument in assertions (e.g., `assert_eq!(expected, actual)`).
+- Follow all coding and contribution standards defined in `CONTRIBUTING.md`.
+- Always use `pnpm` for any command execution or package management tasks.
+- When creating new files, ensure the appropriate SPDX license header is included.
+- Prioritize workspace-level dependency management as outlined in the root configs.
+- Maintain concise, friendly, and professional attitude when assisting with development tasks.
+- MANDATORY: Always run `pnpm run fix` before presenting code or documentation changes to the developer to ensure all project rules (Markdown, linting, formatting) are satisfied.
