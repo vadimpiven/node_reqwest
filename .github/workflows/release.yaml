@@ -8,6 +8,26 @@ on:
 permissions: {}
 
 jobs:
+  init:
+    name: Init
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.init-workflow.outputs.matrix }}
+      env: ${{ steps.init-workflow.outputs.env }}
+      pnpm-version: ${{ steps.init-workflow.outputs.pnpm-version }}
+      node-version: ${{ steps.init-workflow.outputs.node-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+          persist-credentials: false
+      
+      - name: Init workflow constants
+        id: init-workflow
+        uses: ./.github/actions/init-workflow
+  
   build-addon:
     name: Build addon
     timeout-minutes: 45
@@ -15,19 +35,14 @@ jobs:
       contents: write
       id-token: write
       attestations: write
+    needs:
+      - init
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-24.04
-          - os: ubuntu-24.04-arm
-          - os: macos-15-intel
-          - os: macos-15
-          - os: windows-2025
-          - os: windows-11-arm
+      matrix: ${{ fromJSON(needs.init.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout target branch
+      - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           ref: ${{ github.ref }}
@@ -37,6 +52,9 @@ jobs:
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
         with:
+          env: ${{ needs.init.outputs.env }}
+          pnpm-version: ${{ needs.init.outputs.pnpm-version }}
+          node-version: ${{ needs.init.outputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build node addon
@@ -75,11 +93,12 @@ jobs:
       id-token: write
       attestations: write
     needs:
+      - init
       - build-addon
     if: needs.build-addon.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout target branch
+      - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           ref: ${{ github.ref }}
@@ -89,6 +108,9 @@ jobs:
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
         with:
+          env: ${{ needs.init.outputs.env }}
+          pnpm-version: ${{ needs.init.outputs.pnpm-version }}
+          node-version: ${{ needs.init.outputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build export wrapper
@@ -103,30 +125,24 @@ jobs:
         with:
           subject-path: packages/impl/package.tar.gz
       
-      - name: Upload package artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        with:
-          name: package-tarball
-          path: packages/impl/package.tar.gz
-          retention-days: 1
-      
       - name: Finalize release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           files: packages/impl/package.tar.gz
           draft: false
   
-  publish-npm:
+  npm-publish:
     name: Publish package
     timeout-minutes: 15
     permissions:
+      contents: read
       id-token: write
     needs:
       - build-package
     if: needs.build-package.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Install Node.js with correct .npmrc
+      - name: Install latest Node.js with correct .npmrc
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: 'latest'
@@ -139,13 +155,32 @@ jobs:
         run: npm install -g npm@latest
       
       - name: Download package artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-        with:
-          name: package-tarball
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download $GITHUB_REF_NAME --pattern package.tar.gz
       
       - name: Publish to npmjs.org
         shell: bash
         run: npm publish package.tar.gz --access public --provenance
+  
+  verify-installation:
+    name: Verify release installation
+    timeout-minutes: 5
+    needs:
+      - init
+      - npm-publish
+    if: needs.npm-publish.result == 'success'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.init.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: ${{ needs.init.outputs.node-version }}
+          package-manager-cache: false
       
       - name: Verify release installation
         shell: bash

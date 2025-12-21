@@ -1,0 +1,51 @@
+name: 'Init Workflow'
+description: 'Defines central configurations and constants for workflows'
+
+outputs:
+  matrix:
+    description: 'Matrix for regular runs'
+    value: |
+      {
+        "os": [
+          "ubuntu-24.04",
+          "ubuntu-24.04-arm",
+          "macos-15-intel",
+          "macos-15",
+          "windows-2025",
+          "windows-11-arm"
+        ]
+      }
+  env:
+    description: 'Environment variables'
+    value: |
+      {
+        "HUSKY": "0",
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_GIT_FETCH_WITH_CLI": "true",
+        "RUST_BACKTRACE": "1"
+      }
+  pnpm-version:
+    description: 'pnpm version'
+    value: ${{ steps.parse.outputs.pnpm-version }}
+  node-version:
+    description: 'Node.js version'
+    value: ${{ steps.parse.outputs.node-version }}
+  test-coverage:
+    description: 'Globs for coverage reports'
+    value: 'packages/**/lcov.info'
+  test-reports:
+    description: 'Globs for test reports'
+    value: 'packages/**/report-*.junit.xml'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Parse versions from package.json
+      id: parse
+      shell: bash
+      run: |
+        PNPM_VERSION=$(jq -r '.engines.pnpm | ltrimstr("^")' package.json)
+        NODE_VERSION=$(jq -r '.engines.node | ltrimstr("^")' package.json)
+        
+        echo "pnpm-version=$PNPM_VERSION" >> "$GITHUB_OUTPUT"
+        echo "node-version=$NODE_VERSION" >> "$GITHUB_OUTPUT"

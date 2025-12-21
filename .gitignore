@@ -6,6 +6,7 @@ profile.json.gz
 report-rust.junit.xml
 .bin/
 .path/
+.venv/
 dist/
 node_modules/
 target/

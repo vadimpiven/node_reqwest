@@ -12,7 +12,7 @@ export default defineConfig({
         coverage: {
           lcov: true,
           outputDir: './coverage-electron',
-          reports: ['lcov'],
+          reports: ['lcov', 'text'],
           entryFilter: (entry: { url: string }) => {
             return entry.url.includes('packages/impl/export');
           },

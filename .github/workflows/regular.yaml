@@ -14,25 +14,42 @@ on:
 permissions: {}
 
 jobs:
+  init:
+    name: Init
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.init-workflow.outputs.matrix }}
+      env: ${{ steps.init-workflow.outputs.env }}
+      pnpm-version: ${{ steps.init-workflow.outputs.pnpm-version }}
+      node-version: ${{ steps.init-workflow.outputs.node-version }}
+      test-coverage: ${{ steps.init-workflow.outputs.test-coverage }}
+      test-reports: ${{ steps.init-workflow.outputs.test-reports }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+          persist-credentials: false
+      
+      - name: Init workflow constants
+        id: init-workflow
+        uses: ./.github/actions/init-workflow
+  
   build-and-test:
     name: Build and test
     timeout-minutes: 45
     permissions:
       contents: read
       id-token: write
+    needs:
+      - init
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-24.04
-          - os: ubuntu-24.04-arm
-          - os: macos-15-intel
-          - os: macos-15
-          - os: windows-2025
-          # - os: windows-11-arm <https://github.com/taiki-e/cargo-llvm-cov/issues/436>
+      matrix: ${{ fromJSON(needs.init.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout target branch
+      - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           ref: ${{ github.ref }}
@@ -42,6 +59,9 @@ jobs:
       - name: Setup development environment
         uses: ./.github/actions/setup-agent
         with:
+          env: ${{ needs.init.outputs.env }}
+          pnpm-version: ${{ needs.init.outputs.pnpm-version }}
+          node-version: ${{ needs.init.outputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build and test
@@ -49,27 +69,11 @@ jobs:
         with:
           run: pnpm run ci-test
       
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+      - name: Upload reports
+        uses: ./.github/actions/upload-reports
         with:
-          use_oidc: true
-          report_type: coverage
-          files: >-
-            packages/impl/coverage-electron/lcov.info,
-            packages/impl/coverage-unittest/lcov.info,
-            packages/impl/lcov.info,
-            packages/meta/lcov.info,
-      
-      - name: Upload test results to Codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
-        with:
-          use_oidc: true
-          report_type: test_results
-          files: >-
-            packages/impl/report-electron.junit.xml,
-            packages/impl/report-rust.junit.xml,
-            packages/impl/report-unittest.junit.xml,
-            packages/meta/report-rust.junit.xml,
+          test-coverage: ${{ needs.init.outputs.test-coverage }}
+          test-reports: ${{ needs.init.outputs.test-reports }}
 
   zizmor:
     name: Check CI scripts

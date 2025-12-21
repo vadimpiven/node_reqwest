@@ -15,7 +15,6 @@ catalog:
   husky: ^9.1.7
   markdownlint-cli2: ^0.20.0
   monocart-reporter: ^2.9.23
-  prettier: ^3.7.4
   rollup-plugin-node-externals: ^8.1.2
   typescript: ^5.9.3
   vite: ^7.2.7

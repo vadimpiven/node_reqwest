@@ -1,7 +1,6 @@
 [package]
 name = "node_reqwest"
 edition.workspace = true
-rust-version.workspace = true
 
 [lints]
 workspace = true

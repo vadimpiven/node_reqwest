@@ -1,7 +1,6 @@
 [package]
 name = "meta"
 edition.workspace = true
-rust-version.workspace = true
 
 [lints]
 workspace = true
