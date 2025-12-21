@@ -12,6 +12,7 @@ The build is made in a fashion that allows usage by Electron-based applications.
 ## Build requirements
 
 - [pnpm](https://pnpm.io/installation) for workspace management
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) for python integration
 - C++ development toolchain (required by Rust)
   - Windows: [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)
   - macOS: `xcode-select --install`

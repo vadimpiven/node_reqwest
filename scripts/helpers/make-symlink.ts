@@ -22,17 +22,11 @@ export async function makeSymlink(target: string, link: string): Promise<void> {
   }
 
   // Remove existing symlink/file if it exists
-  const exists = await fs
-    .access(link)
-    .then(() => true)
-    .catch(() => false);
-  if (exists) {
-    try {
-      await fs.unlink(link);
-    } catch (err: unknown) {
-      const error = ensureError(err);
-      throw new Error(`Failed to remove existing file ${link}: ${error.message}`);
-    }
+  try {
+    await fs.rm(link, { force: true, recursive: true });
+  } catch (err: unknown) {
+    const error = ensureError(err);
+    throw new Error(`Failed to remove existing file ${link}: ${error.message}`);
   }
 
   // Create the symlink
