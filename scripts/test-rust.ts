@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 import process from 'node:process';
-import { runCommand } from './run-command.ts';
+import { runCommand } from './helpers/run-command.ts';
 
 const args = process.argv.slice(2);
 
@@ -21,5 +21,5 @@ await runCommand('cargo', [
   ...args
 ]);
 if (!args.includes('--no-report')) {
-  await runCommand('cargo', ['llvm-cov', 'report']);
+  await runCommand('cargo', ['llvm-cov', 'report', ...args]);
 }
