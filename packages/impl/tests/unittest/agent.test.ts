@@ -54,36 +54,6 @@ describe('Agent (Mock Implementation)', () => {
     await dispatcher.close();
   });
 
-  test('Agent handles connect options (servername)', async () => {
-    const server = await buildServer();
-    const dispatcher = makeAgent({
-      connect: {
-        servername: 'custom-server'
-      }
-    });
-    const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
-
-    const { statusCode } = await request(origin, { dispatcher });
-    expect(statusCode).toBe(200);
-
-    await dispatcher.close();
-  });
-
-  test('Agent handles timeout options', async () => {
-    const server = await buildServer((_req, res) => {
-      setTimeout(() => res.end('ok'), 2000); // Wait long enough
-    });
-
-    const dispatcher = makeAgent({
-      headersTimeout: 100 // Test headers timeout to be faster
-    });
-    const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
-
-    await expect(request(origin, { dispatcher })).rejects.toThrow(errors.HeadersTimeoutError);
-
-    await dispatcher.destroy();
-  });
-
   test('Agent handles close and destroy', async () => {
     const server = await buildServer();
     const dispatcher = makeAgent();

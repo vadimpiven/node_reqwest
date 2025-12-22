@@ -198,6 +198,29 @@ describe('ConnectionOptions coverage', () => {
     await dispatcher.close();
   });
 
+  test('should support custom CA', async () => {
+    const server = createHttpsServer({ key, cert }, (_req, res) => {
+      res.end('https ca ok');
+    });
+    server.listen(0);
+    await once(server, 'listening');
+    servers.push(server);
+
+    const dispatcher = makeAgent({
+      connect: {
+        ca: cert,
+        servername: 'localhost',
+        rejectUnauthorized: false
+      }
+    });
+
+    const origin = `https://localhost:${(server.address() as AddressInfo).port}`;
+    const { statusCode, body } = await request(origin, { dispatcher });
+    expect(statusCode).toBe(200);
+    expect(await body.text()).toBe('https ca ok');
+    await dispatcher.close();
+  });
+
   test('should support keepAliveInitialDelay', async () => {
     const dispatcher = makeAgent({
       connect: {

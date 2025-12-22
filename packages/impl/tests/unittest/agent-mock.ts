@@ -5,7 +5,9 @@ import {
   type Dispatcher,
   errors,
   Agent as UndiciAgent,
+  Pool as UndiciPool,
   ProxyAgent as UndiciProxyAgent,
+  type RetryHandler as UndiciRetryHandler,
   interceptors as undiciInterceptors
 } from 'undici';
 import type {
@@ -54,18 +56,68 @@ function prepare(options: AgentOptions | ProxyAgentOptions = {}) {
 
   const withRetry = (agent: Dispatcher) => {
     if (retry !== undefined && retry !== null) {
-      const retryOptions =
+      const retryOptions: UndiciRetryHandler.RetryOptions =
         typeof retry === 'number'
           ? { maxRetries: retry }
           : {
               maxRetries: retry.maxRetries,
               maxTimeout: retry.maxTimeout,
-              methods: retry.methods,
+              methods: retry.methods as Dispatcher.HttpMethod[],
               minTimeout: retry.minTimeout,
               retryAfter: retry.retryAfter,
               statusCodes: retry.statusCodes,
               timeoutFactor: retry.timeoutFactor
             };
+
+      // Workaround for undici ignoring retryAfter: false in its default retry function
+      if (typeof retry !== 'number' && retry.retryAfter === false) {
+        retryOptions.retry = (
+          err: Error & { statusCode?: number; code?: string; headers?: Record<string, string> },
+          { state, opts }: UndiciRetryHandler.RetryContext,
+          cb: UndiciRetryHandler.OnRetryCallback
+        ) => {
+          const { statusCode, code } = err;
+          const { method, retryOptions: ro } = opts;
+          const { counter } = state;
+          const {
+            maxRetries = 5,
+            minTimeout = 500,
+            maxTimeout = 30000,
+            timeoutFactor = 2,
+            statusCodes = [500, 502, 503, 504, 429],
+            errorCodes = [
+              'ECONNRESET',
+              'ECONNREFUSED',
+              'ENOTFOUND',
+              'ENETDOWN',
+              'ENETUNREACH',
+              'EHOSTDOWN',
+              'EHOSTUNREACH',
+              'EPIPE',
+              'UND_ERR_SOCKET'
+            ],
+            methods: allowedMethods = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE', 'TRACE']
+          } = ro ?? {};
+
+          if (code && code !== 'UND_ERR_REQ_RETRY' && !errorCodes.includes(code)) {
+            return cb(err);
+          }
+          if (allowedMethods && !allowedMethods.includes(method as Dispatcher.HttpMethod)) {
+            return cb(err);
+          }
+          if (statusCode != null && statusCodes && !statusCodes.includes(statusCode)) {
+            return cb(err);
+          }
+          if (counter > maxRetries) {
+            return cb(err);
+          }
+
+          // Ignore Retry-After header
+          const retryTimeout = Math.min(minTimeout * timeoutFactor ** (counter - 1), maxTimeout);
+          setTimeout(() => cb(null), retryTimeout);
+        };
+      }
+
       return agent.compose(undiciInterceptors.retry(retryOptions));
     }
     return agent;
@@ -110,9 +162,9 @@ export const makeProxyAgent = (options: ProxyAgentOptions): Dispatcher => {
     // Native undici ProxyAgent property names for TLS overrides
     proxyTls: getConnectorOptions(proxy),
     requestTls: getConnectorOptions(request),
-    // We use a factory to ensure our Dispatcher settings are applied to tunneled connections
-    factory: (_origin, opts) => {
-      return new UndiciAgent({
+    // We use a factory to ensure our Dispatcher settings are applied to connections
+    factory: (origin, opts) => {
+      return new UndiciPool(origin, {
         ...commonDispatcherOptions,
         allowH2: request?.allowH2,
         ...opts

@@ -65,20 +65,25 @@ describe('Agent Timeouts', () => {
   });
 
   test('should support keepAliveTimeout', async () => {
-    const server = await buildServer();
+    const ports: number[] = [];
+    const server = await buildServer((req, res) => {
+      ports.push(req.socket.remotePort as number);
+      res.end('ok');
+    });
     const dispatcher = makeAgent({
-      keepAliveTimeout: 100
+      keepAliveTimeout: 10
     });
     const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
 
-    await request(origin, { dispatcher });
+    const res1 = await request(origin, { dispatcher });
+    await res1.body.text();
 
     // Wait for keep-alive to expire
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     // After timeout, the connection should have been closed/re-created
-    const { statusCode } = await request(origin, { dispatcher });
-    expect(statusCode).toBe(200);
+    const res2 = await request(origin, { dispatcher });
+    expect(res2.statusCode).toBe(200);
 
     await dispatcher.close();
   });
