@@ -72,6 +72,8 @@
     "monocart-reporter": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "typescript": "catalog:",
+    "undici": "catalog:",
+    "undici-types": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
