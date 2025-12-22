@@ -2,16 +2,12 @@
 
 import {
   buildConnector,
+  type Dispatcher,
   errors,
   Agent as UndiciAgent,
   ProxyAgent as UndiciProxyAgent
 } from 'undici';
-import type {
-  AgentConstructor,
-  AgentOptions,
-  ConnectionOptions,
-  ProxyOptions
-} from '../../export/index.ts';
+import type { AgentConstructor, AgentOptions, ConnectionOptions } from '../../export/index.ts';
 
 /**
  * Implementation of Agent via undici.
@@ -91,41 +87,39 @@ export const Agent: AgentConstructor = function Agent(options?: AgentOptions) {
     keepAliveTimeout
   };
 
+  let agent: Dispatcher;
   if (proxy) {
-    let proxyOptions: ProxyOptions;
-    if (typeof proxy === 'string') {
-      proxyOptions = { uri: proxy };
-    } else {
-      proxyOptions = proxy;
-    }
-
-    const { uri, headers, token, proxyTls, requestTls } = proxyOptions;
-
+    const uri = typeof proxy === 'string' ? proxy : proxy.uri;
     if (!uri) {
       throw new errors.InvalidArgumentError('Proxy uri is mandatory');
     }
 
-    return new UndiciProxyAgent({
+    const proxyOptions = typeof proxy === 'object' ? proxy : { uri };
+    agent = new UndiciProxyAgent({
       ...commonDispatcherOptions,
       uri,
-      headers: headers ?? undefined,
-      token: token ?? undefined,
-      // Connector for the connection to the proxy itself
-      connect: getConnector(proxyTls),
-      // Factory for creating the agent that handles connections through the proxy
+      headers: proxyOptions.headers ?? undefined,
+      token: proxyOptions.token ?? undefined,
+      connect: getConnector(proxyOptions.proxyTls),
       factory: (_origin, _opts) => {
         return new UndiciAgent({
           ...commonDispatcherOptions,
-          // Connector for the tunneled connection to the target
-          connect: getConnector(requestTls)
+          connect: getConnector(proxyOptions.requestTls)
         });
       }
     });
+  } else {
+    agent = new UndiciAgent({
+      ...commonDispatcherOptions,
+      connect: getConnector()
+    });
   }
 
-  return new UndiciAgent({
-    ...commonDispatcherOptions,
-    // Connector for direct connections
-    connect: getConnector()
-  });
+  if (Array.isArray(interceptors) && interceptors.length > 0) {
+    // Reverse the interceptors so the first one in the array runs first.
+    // In Undici's .compose(), the last interceptor passed is the outermost.
+    return agent.compose([...interceptors].reverse());
+  }
+
+  return agent;
 } as unknown as AgentConstructor;
