@@ -5,7 +5,7 @@ import { createServer, type Server } from 'node:https';
 import type { AddressInfo } from 'node:net';
 import { request } from 'undici';
 import { afterEach, describe, expect, test } from 'vitest';
-import { Agent as MockAgent } from './agent-mock.ts';
+import { makeAgent } from './agent-mock.ts';
 
 // Self-signed certificates from Undici test suite
 const key = `-----BEGIN RSA PRIVATE KEY-----
@@ -80,7 +80,7 @@ describe('Agent HTTPS/TLS', () => {
 
   test('should handle HTTPS with rejectUnauthorized: false', async () => {
     const server = await buildServer();
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       connect: {
         rejectUnauthorized: false
       }
@@ -94,7 +94,7 @@ describe('Agent HTTPS/TLS', () => {
 
   test('should handle HTTPS with explicit CA and rejectUnauthorized: false', async () => {
     const server = await buildServer();
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       connect: {
         ca: cert,
         rejectUnauthorized: false

@@ -10,7 +10,7 @@ import path from 'node:path';
 import type { TLSSocket } from 'node:tls';
 import { errors, request } from 'undici';
 import { afterEach, describe, expect, test } from 'vitest';
-import { Agent as MockAgent } from './agent-mock.ts';
+import { makeAgent } from './agent-mock.ts';
 
 // Reuse the same certs as in https.test.ts
 const key = `-----BEGIN RSA PRIVATE KEY-----
@@ -87,7 +87,7 @@ describe('ConnectionOptions coverage', () => {
     await once(server, 'listening');
     servers.push(server);
 
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       connect: { socketPath }
     });
 
@@ -100,7 +100,7 @@ describe('ConnectionOptions coverage', () => {
 
   test('should support connection timeout', async () => {
     // We expect ConnectTimeoutError if we use a non-routable IP and short timeout
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       connect: { timeout: 1 }
     });
 
@@ -115,7 +115,7 @@ describe('ConnectionOptions coverage', () => {
 
   test('should support custom lookup', async () => {
     let lookupCalled = false;
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       connect: {
         lookup: (hostname, _options, callback) => {
           lookupCalled = true;
@@ -143,7 +143,7 @@ describe('ConnectionOptions coverage', () => {
   });
 
   test('should support localAddress', async () => {
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       connect: {
         localAddress: '127.0.0.1'
       }
@@ -183,7 +183,7 @@ describe('ConnectionOptions coverage', () => {
     await once(server, 'listening');
     servers.push(server);
 
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       connect: {
         rejectUnauthorized: false,
         key,
@@ -199,7 +199,7 @@ describe('ConnectionOptions coverage', () => {
   });
 
   test('should support keepAliveInitialDelay', async () => {
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       connect: {
         keepAliveInitialDelay: 10000
       }

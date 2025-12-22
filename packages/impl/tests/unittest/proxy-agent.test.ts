@@ -5,8 +5,8 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from 'node:net';
 import { errors } from 'undici';
 import { afterEach, describe, expect, test } from 'vitest';
-import type { AgentOptions } from '../../export/index.ts';
-import { Agent as MockAgent } from './agent-mock.ts';
+import type { ProxyAgentOptions } from '../../export/index.ts';
+import { makeProxyAgent } from './agent-mock.ts';
 
 describe('ProxyAgent (Mock Implementation)', () => {
   let servers: Server[] = [];
@@ -33,10 +33,8 @@ describe('ProxyAgent (Mock Implementation)', () => {
   });
 
   test('should throw error when no uri is provided', () => {
-    expect(() => new MockAgent({ proxy: {} } as unknown as AgentOptions)).toThrow(
-      errors.InvalidArgumentError
-    );
-    expect(() => new MockAgent({ proxy: { uri: '' } } as unknown as AgentOptions)).toThrow(
+    expect(() => makeProxyAgent({} as ProxyAgentOptions)).toThrow(errors.InvalidArgumentError);
+    expect(() => makeProxyAgent({ uri: '' } as ProxyAgentOptions)).toThrow(
       errors.InvalidArgumentError
     );
   });
@@ -45,45 +43,41 @@ describe('ProxyAgent (Mock Implementation)', () => {
     const proxy = await buildServer();
     const proxyUrl = `http://localhost:${(proxy.address() as AddressInfo).port}`;
 
-    expect(() => new MockAgent({ proxy: proxyUrl })).not.toThrow();
+    expect(() => makeProxyAgent({ uri: proxyUrl })).not.toThrow();
   });
 
   test('should accept ProxyOptions object', async () => {
     const proxy = await buildServer();
     const proxyUrl = `http://localhost:${(proxy.address() as AddressInfo).port}`;
 
-    expect(() => new MockAgent({ proxy: { uri: proxyUrl } })).not.toThrow();
+    expect(() => makeProxyAgent({ uri: proxyUrl })).not.toThrow();
   });
 
   test('should handle proxy headers and token', async () => {
     const proxy = await buildServer();
     const proxyUrl = `http://localhost:${(proxy.address() as AddressInfo).port}`;
 
-    const dispatcher = new MockAgent({
-      proxy: {
-        uri: proxyUrl,
-        headers: { 'X-Proxy-Header': 'foo' },
-        token: 'Bearer proxy-token'
-      }
+    const dispatcher = makeProxyAgent({
+      uri: proxyUrl,
+      headers: { 'X-Proxy-Header': 'foo' },
+      token: 'Bearer proxy-token'
     });
 
     expect(dispatcher).toBeDefined();
     await dispatcher.close();
   });
 
-  test('should accept proxyTls and requestTls', async () => {
+  test('should accept proxy and request', async () => {
     const proxy = await buildServer();
     const proxyUrl = `http://localhost:${(proxy.address() as AddressInfo).port}`;
 
-    const dispatcher = new MockAgent({
+    const dispatcher = makeProxyAgent({
+      uri: proxyUrl,
       proxy: {
-        uri: proxyUrl,
-        proxyTls: {
-          rejectUnauthorized: false
-        },
-        requestTls: {
-          servername: 'target.local'
-        }
+        rejectUnauthorized: false
+      },
+      request: {
+        rejectUnauthorized: false
       }
     });
 
@@ -104,8 +98,28 @@ describe('ProxyAgent (Mock Implementation)', () => {
     const proxyUrl = `http://localhost:${(proxy.address() as AddressInfo).port}`;
 
     // In our mock, UndiciProxyAgent will be returned.
-    const dispatcher = new MockAgent({
-      proxy: proxyUrl
+    const dispatcher = makeProxyAgent({
+      uri: proxyUrl
+    });
+
+    expect(dispatcher).toBeDefined();
+    await dispatcher.close();
+  });
+
+  test('should support granular allowH2 for proxy and request', async () => {
+    const proxy = await buildServer();
+    const proxyUrl = `http://localhost:${(proxy.address() as AddressInfo).port}`;
+
+    const dispatcher = makeProxyAgent({
+      uri: proxyUrl,
+      proxy: {
+        allowH2: true,
+        rejectUnauthorized: false
+      },
+      request: {
+        allowH2: false,
+        rejectUnauthorized: false
+      }
     });
 
     expect(dispatcher).toBeDefined();

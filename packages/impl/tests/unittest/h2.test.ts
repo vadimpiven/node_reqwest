@@ -5,7 +5,7 @@ import { createSecureServer, type Http2SecureServer } from 'node:http2';
 import type { AddressInfo } from 'node:net';
 import { request } from 'undici';
 import { afterEach, describe, expect, test } from 'vitest';
-import { Agent as MockAgent } from './agent-mock.ts';
+import { makeAgent } from './agent-mock.ts';
 
 const key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAyq0DWK7wQ3TQVTR4FwEaUtWY0SBXsmRu6Str6TBLyP9TbLnR
@@ -91,9 +91,9 @@ describe('Agent HTTP/2', () => {
 
   test('should support H2 instantiation and basic check', async () => {
     const server = await buildServer();
-    const dispatcher = new MockAgent({
-      allowH2: true,
+    const dispatcher = makeAgent({
       connect: {
+        allowH2: true,
         rejectUnauthorized: false,
         servername: 'localhost'
       }

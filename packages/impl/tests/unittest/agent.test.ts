@@ -5,7 +5,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from 'node:net';
 import { errors, request } from 'undici';
 import { afterEach, describe, expect, test } from 'vitest';
-import { Agent as MockAgent } from './agent-mock.ts';
+import { makeAgent } from './agent-mock.ts';
 
 describe('Agent (Mock Implementation)', () => {
   let servers: Server[] = [];
@@ -32,7 +32,7 @@ describe('Agent (Mock Implementation)', () => {
   });
 
   test('Agent instantiation', () => {
-    expect(() => new MockAgent()).not.toThrow();
+    expect(() => makeAgent()).not.toThrow();
   });
 
   test('agent should connect and receive data', async () => {
@@ -41,7 +41,7 @@ describe('Agent (Mock Implementation)', () => {
       res.end('hello world');
     });
 
-    const dispatcher = new MockAgent();
+    const dispatcher = makeAgent();
     const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
 
     const { statusCode, headers, body } = await request(origin, { dispatcher });
@@ -56,7 +56,7 @@ describe('Agent (Mock Implementation)', () => {
 
   test('Agent handles connect options (servername)', async () => {
     const server = await buildServer();
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       connect: {
         servername: 'custom-server'
       }
@@ -74,7 +74,7 @@ describe('Agent (Mock Implementation)', () => {
       setTimeout(() => res.end('ok'), 2000); // Wait long enough
     });
 
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       headersTimeout: 100 // Test headers timeout to be faster
     });
     const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
@@ -86,7 +86,7 @@ describe('Agent (Mock Implementation)', () => {
 
   test('Agent handles close and destroy', async () => {
     const server = await buildServer();
-    const dispatcher = new MockAgent();
+    const dispatcher = makeAgent();
     const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
 
     await request(origin, { dispatcher });

@@ -5,7 +5,7 @@ import type { ConnectionOptions as TlsConnectionOptions } from 'node:tls';
 import type * as undici from 'undici-types';
 
 /**
- * Low-level network connection options (TLS, TCP, Unix sockets).
+ * Network connection and TLS settings.
  */
 export interface ConnectionOptions
   extends Pick<
@@ -13,6 +13,7 @@ export interface ConnectionOptions
     | 'allowH2'
     | 'ca'
     | 'cert'
+    | 'keepAlive'
     | 'keepAliveInitialDelay'
     | 'key'
     | 'localAddress'
@@ -24,38 +25,74 @@ export interface ConnectionOptions
   > {}
 
 /**
- * Upstream proxy configuration.
+ * Configuration for automatic retries.
  */
-export interface ProxyOptions extends Pick<undici.ProxyAgent.Options, 'headers' | 'token' | 'uri'> {
+export interface RetryOptions
+  extends Pick<
+    undici.RetryHandler.RetryOptions,
+    | 'maxRetries'
+    | 'maxTimeout'
+    | 'methods'
+    | 'minTimeout'
+    | 'retryAfter'
+    | 'statusCodes'
+    | 'timeoutFactor'
+  > {}
+
+/**
+ * Common configuration options for both simple and proxy agents.
+ */
+export interface BaseAgentOptions
+  extends Pick<undici.Agent.Options, 'bodyTimeout' | 'headersTimeout' | 'keepAliveTimeout'> {
   /**
-   * TLS options for the proxy connection itself.
+   * Configuration for automatic retries.
    */
-  proxyTls?: ConnectionOptions | null;
-  /**
-   * TLS options for the tunneled target request.
-   */
-  requestTls?: ConnectionOptions | null;
+  retry?: RetryOptions | number | null;
 }
 
 /**
- * Configuration options for the Agent, narrowed to features supported by the reqwest.
+ * Configuration for an agent without a proxy.
  */
-export interface AgentOptions
-  extends Pick<
-    undici.Agent.Options,
-    'allowH2' | 'bodyTimeout' | 'headersTimeout' | 'interceptors' | 'keepAliveTimeout'
-  > {
+export interface AgentOptions extends BaseAgentOptions {
   /**
    * Network connection and TLS settings.
    */
   connect?: ConnectionOptions | null;
-  /**
-   * Upstream proxy configuration.
-   */
-  proxy?: ProxyOptions | string | null;
 }
 
 /**
- * Constructor for an Agent fully compatible with the Node.js global fetch dispatcher.
+ * TLS options for the tunneled target request.
  */
-export type AgentConstructor = new (options?: AgentOptions) => undici.Dispatcher;
+export interface TunnelOptions
+  extends Omit<ConnectionOptions, 'localAddress' | 'lookup' | 'servername' | 'socketPath'> {}
+
+/**
+ * Configuration for an agent that uses an upstream proxy.
+ */
+export interface ProxyAgentOptions
+  extends BaseAgentOptions,
+    Pick<undici.ProxyAgent.Options, 'headers' | 'proxyTunnel' | 'token' | 'uri'> {
+  /**
+   * TLS options for the proxy connection itself.
+   */
+  proxy?: ConnectionOptions | null;
+  /**
+   * TLS options for the tunneled target request.
+   */
+  request?: TunnelOptions | null;
+}
+
+/**
+ * Factory for creating agents with specific configurations.
+ */
+export interface AgentFactory {
+  /**
+   * Creates an Agent fully compatible with the Node.js global fetch dispatcher.
+   */
+  makeAgent(options?: AgentOptions): undici.Dispatcher;
+
+  /**
+   * Creates a ProxyAgent fully compatible with the Node.js global fetch dispatcher.
+   */
+  makeProxyAgent(options: ProxyAgentOptions): undici.Dispatcher;
+}

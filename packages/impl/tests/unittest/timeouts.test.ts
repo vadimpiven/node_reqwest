@@ -5,7 +5,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from 'node:net';
 import { errors, request } from 'undici';
 import { afterEach, describe, expect, test } from 'vitest';
-import { Agent as MockAgent } from './agent-mock.ts';
+import { makeAgent } from './agent-mock.ts';
 
 describe('Agent Timeouts', () => {
   let servers: Server[] = [];
@@ -37,7 +37,7 @@ describe('Agent Timeouts', () => {
       // Do nothing, just hang
     });
 
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       headersTimeout: 100
     });
     const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
@@ -54,7 +54,7 @@ describe('Agent Timeouts', () => {
       // Never end
     });
 
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       bodyTimeout: 100
     });
     const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
@@ -66,7 +66,7 @@ describe('Agent Timeouts', () => {
 
   test('should support keepAliveTimeout', async () => {
     const server = await buildServer();
-    const dispatcher = new MockAgent({
+    const dispatcher = makeAgent({
       keepAliveTimeout: 100
     });
     const origin = `http://localhost:${(server.address() as AddressInfo).port}`;
