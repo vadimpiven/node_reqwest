@@ -6,16 +6,34 @@ import type * as undici from 'undici-types';
  */
 export interface ConnectionOptions
   extends Pick<
-    undici.buildConnector.BuildOptions & TlsConnectionOptions,
+    undici.buildConnector.BuildOptions & undici.Client.Options & TlsConnectionOptions,
     | 'allowH2'
+    | 'bodyTimeout'
     | 'ca'
     | 'cert'
+    | 'headersTimeout'
     | 'keepAlive'
     | 'keepAliveInitialDelay'
+    | 'keepAliveTimeout'
     | 'key'
+    | 'localAddress'
+    | 'maxCachedSessions'
     | 'rejectUnauthorized'
+    | 'servername'
     | 'timeout'
-  > {}
+  > {
+  /**
+   * Whether to verify that the server's certificate identity matches the requested hostname.
+   * This is a specialized check that can be disabled independently of CA chain verification.
+   * @default true
+   */
+  rejectInvalidHostnames?: boolean;
+  /**
+   * Controls the use of certificates installed to the system store during certificate validation.
+   * @default true
+   */
+  useSystemTlsRootCerts?: boolean;
+}
 
 /**
  * Configuration for an upstream proxy.
@@ -41,13 +59,12 @@ export interface RetryOptions
 /**
  * Configuration options for the Agent.
  */
-export interface AgentOptions
-  extends Pick<undici.Agent.Options, 'bodyTimeout' | 'headersTimeout' | 'keepAliveTimeout'> {
+export interface AgentOptions {
   /**
    * Network connection and TLS settings for direct or proxy tunnel connections.
    * @default null
    */
-  connect?: ConnectionOptions | null;
+  connection?: ConnectionOptions | null;
   /**
    * Proxy configuration.
    * @default 'system'
