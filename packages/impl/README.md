@@ -18,11 +18,9 @@ import { setGlobalDispatcher } from 'undici';
 // Create an agent with system proxy enabled (default)
 const agent = new Agent({
   connect: {
-    allowH2: true,
-    useSystemTlsRootCerts: true
+    allowH2: true
   },
-  proxy: 'system',
-  retries: 3
+  proxy: 'system'
 });
 
 setGlobalDispatcher(agent);
