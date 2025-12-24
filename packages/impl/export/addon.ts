@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import gyp from '@mapbox/node-pre-gyp';
-import type { AddonSymbol } from './addon-def.ts';
+import type { Addon } from './addon-def.ts';
 
 const nodeFileUrl = import.meta.url;
 const nodeDirname = dirname(fileURLToPath(nodeFileUrl));
@@ -20,6 +20,6 @@ const { find: findAddon } = gyp;
 // https://github.com/search?q=repo%3Anodejs%2Fnode%20NAPI_MODULE_INITIALIZER&type=code
 // And neon exports napi_register_module_v1 from #[neon::main]
 // https://github.com/neon-bindings/neon/blob/b1728fa21e968ccde9611ac9955cf6d638be16e6/crates/neon/src/context/internal.rs#L76
-const AddonSymbol = nodeRequire(findAddon(resolve(nodeDirname, '../package.json'))) as AddonSymbol;
+const Addon: Addon = nodeRequire(findAddon(resolve(nodeDirname, '../package.json')));
 
-export { AddonSymbol };
+export { Addon };
