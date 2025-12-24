@@ -18,11 +18,11 @@ import { setGlobalDispatcher } from 'undici';
 // Create an agent with system proxy enabled (default)
 const agent = new Agent({
   connect: {
-    timeout: 5000,
-    rejectUnauthorized: true
+    allowH2: true,
+    useSystemTlsRootCerts: true
   },
-  proxy: 'system' // can also be null for direct
-  // or { uri: '...' } for specific proxy
+  proxy: 'system',
+  retries: 3
 });
 
 setGlobalDispatcher(agent);
