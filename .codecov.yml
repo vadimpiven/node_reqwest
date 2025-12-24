@@ -1,0 +1,14 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+    patch:
+      default:
+        target: auto
+        threshold: 5%
+
+ignore:
+  - "**/scripts/**/*"
+  - "**/tests/**/*"
