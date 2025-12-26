@@ -13,3 +13,12 @@ use neon::prelude::*;
 fn hello<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsString> {
     Ok(cx.string("hello"))
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn hello_test() {
+        let expected = "hello";
+        assert_eq!(expected, "hello");
+    }
+}

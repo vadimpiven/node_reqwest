@@ -28,7 +28,7 @@ export type ConnectionOptions = Pick<
 /**
  * Configuration for an upstream proxy.
  */
-type ProxyOptions =
+export type ProxyOptions =
   | {
       type: 'system';
     }
@@ -39,7 +39,7 @@ type ProxyOptions =
 /**
  * Configuration options for the Agent.
  */
-type AgentOptions = {
+export type AgentOptions = {
   /**
    * Network connection and TLS settings for direct or proxy tunnel connections.
    */
