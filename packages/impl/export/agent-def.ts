@@ -1,5 +1,5 @@
 import type { ConnectionOptions as TlsConnectionOptions } from 'node:tls';
-import type * as undici from 'undici-types';
+import type * as undici from 'undici';
 
 /**
  * Network connection and TLS settings.
