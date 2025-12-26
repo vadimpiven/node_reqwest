@@ -60,7 +60,7 @@
   },
   "dependencies": {
     "@mapbox/node-pre-gyp": "catalog:",
-    "undici-types": "catalog:"
+    "undici": "catalog:"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
@@ -73,7 +73,6 @@
     "monocart-reporter": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "typescript": "catalog:",
-    "undici": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"

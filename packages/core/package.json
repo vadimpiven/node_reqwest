@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "meta",
+  "name": "core",
   "scripts": {
     "test:nextest": "node ../../scripts/test-rust.ts",
     "test:doctest": "cargo test --doc",

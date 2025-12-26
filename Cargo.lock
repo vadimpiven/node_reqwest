@@ -141,6 +141,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75984efb6ed102a0d42db99afb6c1948f0380d1d91808d5529916e6c08b49d8d"
 
 [[package]]
+name = "core"
+version = "0.0.0"
+dependencies = [
+ "pretty_assertions",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -968,13 +980,10 @@ name = "node_reqwest"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "core",
  "meta",
  "mimalloc",
  "neon",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
 ]
 
 [[package]]

@@ -23,9 +23,6 @@
     "rules": {
       "correctness": {
         "useImportExtensions": "error"
-      },
-      "suspicious": {
-        "noRedeclare": "off"
       }
     }
   },
