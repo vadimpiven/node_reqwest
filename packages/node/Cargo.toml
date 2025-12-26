@@ -9,12 +9,9 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+core = { workspace = true }
 mimalloc = { workspace = true }
 neon = { workspace = true }
-reqwest = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-tokio = { workspace = true }
 
 [build-dependencies]
 anyhow.workspace = true

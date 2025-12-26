@@ -91,6 +91,8 @@ importers:
         specifier: 'catalog:'
         version: 0.20.0
 
+  packages/core: {}
+
   packages/meta: {}
 
   packages/node:
