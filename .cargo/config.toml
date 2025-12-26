@@ -15,4 +15,4 @@ llvm-cov = ["bin", "cargo-llvm-cov"]
 nextest = ["bin", "cargo-nextest"]
 
 [env]
-MACOSX_DEPLOYMENT_TARGET = { value = "13.0" }
+MACOSX_DEPLOYMENT_TARGET = { value = "11.0" }
