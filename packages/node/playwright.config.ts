@@ -14,10 +14,10 @@ export default defineConfig({
           outputDir: './coverage-electron',
           reports: ['lcovonly', 'text'],
           entryFilter: (entry: { url: string }) => {
-            return entry.url.includes('packages/impl/export');
+            return entry.url.includes('packages/node/export');
           },
           sourceFilter: (sourcePath: string) => {
-            return sourcePath.includes('packages/impl/export');
+            return sourcePath.includes('packages/node/export');
           }
         }
       }

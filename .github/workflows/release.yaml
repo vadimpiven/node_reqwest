@@ -61,28 +61,28 @@ jobs:
         uses: ./.github/actions/platform-shell
         with:
           run: |
-            pnpm -F "{packages/impl}" run bump-version
-            pnpm -F "{packages/impl}" run ci-build
+            pnpm -F "{packages/node}" run bump-version
+            pnpm -F "{packages/node}" run ci-build
       
       - name: Sign and notarize
         uses: ./.github/actions/sign-notarize
         with:
-          binary-path: ${{ github.workspace }}/packages/impl/dist/napi-v8/node_reqwest.node
+          binary-path: ${{ github.workspace }}/packages/node/dist/napi-v8/node_reqwest.node
       
       - name: Pack node addon
         uses: ./.github/actions/platform-shell
         with:
-          run: pnpm -F "{packages/impl}" run pack-addon
+          run: pnpm -F "{packages/node}" run pack-addon
       
       - name: Attest build provenance
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
         with:
-          subject-path: packages/impl/build/stage/**/*.tar.gz
+          subject-path: packages/node/build/stage/**/*.tar.gz
       
       - name: Upload node addon
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
-          files: packages/impl/build/stage/**/*.tar.gz
+          files: packages/node/build/stage/**/*.tar.gz
           draft: true
   
   build-package:
@@ -117,18 +117,18 @@ jobs:
         uses: ./.github/actions/platform-shell
         with:
           run: |
-            pnpm -F "{packages/impl}" run bump-version
-            pnpm -F "{packages/impl}" run build:ts
+            pnpm -F "{packages/node}" run bump-version
+            pnpm -F "{packages/node}" run build:ts
       
       - name: Attest build provenance
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
         with:
-          subject-path: packages/impl/package.tar.gz
+          subject-path: packages/node/package.tar.gz
       
       - name: Finalize release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
-          files: packages/impl/package.tar.gz
+          files: packages/node/package.tar.gz
           draft: false
   
   npm-publish:
