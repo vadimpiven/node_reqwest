@@ -13,3 +13,6 @@ cache = ["bin", "cargo-cache"]
 deny = ["bin", "cargo-deny"]
 llvm-cov = ["bin", "cargo-llvm-cov"]
 nextest = ["bin", "cargo-nextest"]
+
+[env]
+MACOSX_DEPLOYMENT_TARGET = { value = "13.0" }
