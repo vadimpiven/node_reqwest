@@ -8,10 +8,8 @@ export type ConnectionOptions = Pick<
   undici.buildConnector.BuildOptions & undici.Client.Options & TlsConnectionOptions,
   | 'allowH2'
   | 'ca'
-  | 'cert'
   | 'keepAliveInitialDelay'
   | 'keepAliveTimeout'
-  | 'key'
   | 'localAddress'
   | 'maxCachedSessions'
   | 'rejectUnauthorized'
@@ -28,13 +26,7 @@ export type ConnectionOptions = Pick<
 /**
  * Configuration for an upstream proxy.
  */
-export type ProxyOptions =
-  | {
-      type: 'system';
-    }
-  | ({
-      type: 'custom';
-    } & Pick<undici.ProxyAgent.Options, 'headers' | 'token' | 'uri'>);
+export type ProxyOptions = Pick<undici.ProxyAgent.Options, 'headers' | 'token' | 'uri'>;
 
 /**
  * Configuration options for the Agent.
@@ -46,8 +38,9 @@ export type AgentOptions = {
   connection?: ConnectionOptions | null;
   /**
    * Proxy configuration.
+   * @default 'system'
    */
-  proxy?: ProxyOptions | null;
+  proxy?: 'no-proxy' | 'system' | ProxyOptions | null;
 };
 
 /**

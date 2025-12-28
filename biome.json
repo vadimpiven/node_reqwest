@@ -23,6 +23,9 @@
     "rules": {
       "correctness": {
         "useImportExtensions": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "error"
       }
     }
   },
