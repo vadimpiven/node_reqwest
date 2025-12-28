@@ -2,7 +2,7 @@
 rustflags = ["-C", "force-frame-pointers=yes"]
 rustdocflags = ["-D", "warnings"]
 
-[target.x86_64-pc-windows-msvc]
+[target.'cfg(target_env = "msvc")']
 rustflags = ["-C", "target-feature=+crt-static"]
 
 [target.'cfg(target_arch = "x86_64")']
@@ -15,4 +15,4 @@ llvm-cov = ["bin", "cargo-llvm-cov"]
 nextest = ["bin", "cargo-nextest"]
 
 [env]
-MACOSX_DEPLOYMENT_TARGET = { value = "11.0" }
+MACOSX_DEPLOYMENT_TARGET = { value = "13.0" }
