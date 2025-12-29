@@ -2,6 +2,8 @@
 
 //! Node.js bindings for reqwest - Rust HTTP client library
 
+mod agent;
+
 use mimalloc::MiMalloc;
 
 #[global_allocator]

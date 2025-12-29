@@ -11,11 +11,11 @@ dist/
 node_modules/
 target/
 
-# packages/impl
-packages/impl/report-electron.junit.xml
-packages/impl/report-unittest.junit.xml
-packages/impl/build/
-packages/impl/coverage-electron/
-packages/impl/coverage-unittest/
-packages/impl/export_dist/
-packages/impl/test-results/
+# packages/node
+packages/node/report-electron.junit.xml
+packages/node/report-unittest.junit.xml
+packages/node/build/
+packages/node/coverage-electron/
+packages/node/coverage-unittest/
+packages/node/export_dist/
+packages/node/test-results/

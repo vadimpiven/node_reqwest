@@ -1,5 +1,5 @@
 import type { ConnectionOptions as TlsConnectionOptions } from 'node:tls';
-import type * as undici from 'undici-types';
+import type * as undici from 'undici';
 
 /**
  * Network connection and TLS settings.
@@ -8,10 +8,8 @@ export type ConnectionOptions = Pick<
   undici.buildConnector.BuildOptions & undici.Client.Options & TlsConnectionOptions,
   | 'allowH2'
   | 'ca'
-  | 'cert'
   | 'keepAliveInitialDelay'
   | 'keepAliveTimeout'
-  | 'key'
   | 'localAddress'
   | 'maxCachedSessions'
   | 'rejectUnauthorized'
@@ -28,26 +26,21 @@ export type ConnectionOptions = Pick<
 /**
  * Configuration for an upstream proxy.
  */
-type ProxyOptions =
-  | {
-      type: 'system';
-    }
-  | ({
-      type: 'custom';
-    } & Pick<undici.ProxyAgent.Options, 'headers' | 'token' | 'uri'>);
+export type ProxyOptions = Pick<undici.ProxyAgent.Options, 'headers' | 'token' | 'uri'>;
 
 /**
  * Configuration options for the Agent.
  */
-type AgentOptions = {
+export type AgentOptions = {
   /**
    * Network connection and TLS settings for direct or proxy tunnel connections.
    */
   connection?: ConnectionOptions | null;
   /**
    * Proxy configuration.
+   * @default 'system'
    */
-  proxy?: ProxyOptions | null;
+  proxy?: 'no-proxy' | 'system' | ProxyOptions | null;
 };
 
 /**

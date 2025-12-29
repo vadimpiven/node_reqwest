@@ -5,8 +5,8 @@
       "name": "Debug Unittest (TypeScript)",
       "type": "node",
       "request": "launch",
-      "cwd": "${workspaceRoot}/packages/impl",
-      "runtimeExecutable": "${workspaceRoot}/packages/impl/node_modules/.bin/vitest",
+      "cwd": "${workspaceRoot}/packages/node",
+      "runtimeExecutable": "${workspaceRoot}/packages/node/node_modules/.bin/vitest",
       "args": ["--test-timeout=0"],
       "outputCapture": "std",
       "env": {
@@ -17,13 +17,13 @@
       "name": "Debug Unittest (Rust, MacOS)",
       "type": "lldb",
       "request": "launch",
-      "cwd": "${workspaceRoot}/packages/impl",
+      "cwd": "${workspaceRoot}/packages/node",
       "program": "${workspaceFolder}/.path/node",
       "args": [
         "--inspect",
         "--trace-warnings",
         "--enable-source-maps",
-        "${workspaceRoot}/packages/impl/node_modules/vitest/dist/cli.js",
+        "${workspaceRoot}/packages/node/node_modules/vitest/dist/cli.js",
         "--test-timeout=0"
       ],
       "env": {
@@ -34,13 +34,13 @@
       "name": "Debug Unittest (Rust, Windows)",
       "type": "cppvsdbg",
       "request": "launch",
-      "cwd": "${workspaceRoot}/packages/impl",
+      "cwd": "${workspaceRoot}/packages/node",
       "program": "${workspaceFolder}/.path/node.exe",
       "args": [
         "--inspect",
         "--trace-warnings",
         "--enable-source-maps",
-        "${workspaceRoot}/packages/impl/node_modules/vitest/dist/cli.js",
+        "${workspaceRoot}/packages/node/node_modules/vitest/dist/cli.js",
         "--test-timeout=0"
       ],
       "environment": [{ "name": "RUST_BACKTRACE", "value": "1" }],
@@ -53,13 +53,13 @@
       "name": "Debug Unittest (Rust, Linux)",
       "type": "cppdbg",
       "request": "launch",
-      "cwd": "${workspaceRoot}/packages/impl",
+      "cwd": "${workspaceRoot}/packages/node",
       "program": "${workspaceFolder}/.path/node",
       "args": [
         "--inspect",
         "--trace-warnings",
         "--enable-source-maps",
-        "${workspaceRoot}/packages/impl/node_modules/vitest/dist/cli.js",
+        "${workspaceRoot}/packages/node/node_modules/vitest/dist/cli.js",
         "--test-timeout=0"
       ],
       "environment": [{ "name": "RUST_BACKTRACE", "value": "1" }]
@@ -68,11 +68,11 @@
       "name": "Debug Electron (TypeScript)",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "${workspaceRoot}/packages/impl/node_modules/.bin/electron",
+      "runtimeExecutable": "${workspaceRoot}/packages/node/node_modules/.bin/electron",
       "windows": {
-        "runtimeExecutable": "${workspaceRoot}/packages/impl/node_modules/.bin/electron.cmd"
+        "runtimeExecutable": "${workspaceRoot}/packages/node/node_modules/.bin/electron.cmd"
       },
-      "args": ["--enable-logging", "${workspaceRoot}/packages/impl/tests/electron/main.ts"],
+      "args": ["--enable-logging", "${workspaceRoot}/packages/node/tests/electron/main.ts"],
       "runtimeArgs": ["--trace-warnings", "--enable-source-maps"],
       "outputCapture": "std",
       "env": {
@@ -84,12 +84,12 @@
       "type": "lldb",
       "request": "launch",
       "cwd": "${workspaceRoot}",
-      "program": "${workspaceRoot}/packages/impl/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+      "program": "${workspaceRoot}/packages/node/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
       "args": [
         "--inspect",
         "--trace-warnings",
         "--enable-source-maps",
-        "${workspaceRoot}/packages/impl/tests/electron/main.ts"
+        "${workspaceRoot}/packages/node/tests/electron/main.ts"
       ],
       "env": {
         "RUST_BACKTRACE": "1",
@@ -104,12 +104,12 @@
       "type": "cppvsdbg",
       "request": "launch",
       "cwd": "${workspaceRoot}",
-      "program": "${workspaceRoot}/packages/impl/node_modules/electron/dist/electron.exe",
+      "program": "${workspaceRoot}/packages/node/node_modules/electron/dist/electron.exe",
       "args": [
         "--inspect",
         "--trace-warnings",
         "--enable-source-maps",
-        "${workspaceRoot}/packages/impl/tests/electron/main.ts"
+        "${workspaceRoot}/packages/node/tests/electron/main.ts"
       ],
       "environment": [
         { "name": "RUST_BACKTRACE", "value": "1" },
@@ -128,12 +128,12 @@
       "type": "cppdbg",
       "request": "launch",
       "cwd": "${workspaceRoot}",
-      "program": "${workspaceRoot}/packages/impl/node_modules/electron/dist/electron",
+      "program": "${workspaceRoot}/packages/node/node_modules/electron/dist/electron",
       "args": [
         "--inspect",
         "--trace-warnings",
         "--enable-source-maps",
-        "${workspaceRoot}/packages/impl/tests/electron/main.ts"
+        "${workspaceRoot}/packages/node/tests/electron/main.ts"
       ],
       "environment": [
         { "name": "RUST_BACKTRACE", "value": "1" },

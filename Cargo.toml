@@ -58,6 +58,7 @@ unnecessary_wraps = "allow"
 # Always update nightly version in `rust-toolchain` file when updating dependencies
 anyhow = { version = "1.0.100" }
 chrono = { version = "0.4.42", features = ["serde"] }
+core = { path = "packages/core" }
 indoc = { version = "2.0.7" }
 meta = { path = "packages/meta" }
 mimalloc = { version = "0.1.48", features = ["v3"] }

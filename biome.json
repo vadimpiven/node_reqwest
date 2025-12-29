@@ -25,7 +25,7 @@
         "useImportExtensions": "error"
       },
       "suspicious": {
-        "noRedeclare": "off"
+        "noExplicitAny": "error"
       }
     }
   },
