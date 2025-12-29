@@ -28,10 +28,14 @@ test.beforeEach(async () => {
 
 // biome-ignore lint: Playwright requires object destructuring
 test.afterEach(async ({}, testInfo) => {
-  const coverageData = await window.coverage.stopJSCoverage();
-  await addCoverageReport(coverageData, testInfo);
+  if (window) {
+    const coverageData = await window.coverage.stopJSCoverage();
+    await addCoverageReport(coverageData, testInfo);
+  }
 
-  await app.close();
+  if (app) {
+    await app.close();
+  }
 });
 
 test('should display hello', async () => {
