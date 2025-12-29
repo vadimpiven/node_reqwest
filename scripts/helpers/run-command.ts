@@ -10,7 +10,10 @@ export async function runCommand(command: string, args: string[]): Promise<void>
   console.log('> %s %s', command, args.join(' '));
 
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio: 'inherit' });
+    const child = spawn(command, args, {
+      stdio: 'inherit',
+      shell: process.platform === 'win32'
+    });
 
     child.on('error', (err: unknown) => {
       const error = ensureError(err);

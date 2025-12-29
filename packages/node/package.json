@@ -84,7 +84,7 @@
     "build:ts": "vite build && pnpm pack --out package.tar.gz",
     "build": "pnpm run build:cargo && pnpm run build:ts",
     "test:unittest": "pnpm exec vitest run --coverage",
-    "test:electron": "pnpm exec playwright test --config playwright.config.ts --pass-with-no-tests",
+    "test:electron": "node ../../scripts/test-electron.ts --config playwright.config.ts",
     "test:ts": "pnpm run type-check && pnpm run test:unittest && pnpm run test:electron",
     "test:nextest": "node ../../scripts/test-rust.ts",
     "test:rustdoc": "cargo doc --no-deps --document-private-items",
