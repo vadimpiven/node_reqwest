@@ -12,5 +12,12 @@ runScript('Electron tests', async () => {
   // and fails to provide Electron-specific APIs like 'app' and 'BrowserWindow'.
   delete process.env.ELECTRON_RUN_AS_NODE;
 
-  await runCommand('pnpm', ['exec', 'playwright', 'test', '--pass-with-no-tests', ...args]);
+  const isLinux = process.platform === 'linux';
+  const noDisplay = isLinux && !process.env.DISPLAY;
+
+  const command = noDisplay ? 'xvfb-run' : 'pnpm';
+  const baseArgs = ['exec', 'playwright', 'test', '--pass-with-no-tests', ...args];
+  const finalArgs = noDisplay ? ['--auto-servernum', '--', 'pnpm', ...baseArgs] : baseArgs;
+
+  await runCommand(command, finalArgs);
 });

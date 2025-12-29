@@ -76,7 +76,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     cd /tmp && uv sync --no-install-workspace
 
 # Playwright browser dependencies (system packages including xvfb)
-# Note: Browsers are installed at runtime. Tests must use xvfb-run wrapper.
+# Note: Browsers are installed at runtime. Our test runner script handles xvfb-run automatically.
 RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
     npx playwright@${PLAYWRIGHT_VERSION} install-deps
 
@@ -304,10 +304,8 @@ jobs:
       - uses: mozilla-actions/sccache-action@v0.0.9
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
       
-      # Tests require xvfb-run for Playwright (virtual display)
-      - run: xvfb-run --auto-servernum -- pnpm test
+      - run: pnpm test
 
   build-native:
     needs: [init]  # Runs in parallel with setup-docker
