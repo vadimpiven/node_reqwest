@@ -1,12 +1,16 @@
 # syntax=docker/dockerfile:1.4
 ARG TARGETARCH
-FROM quay.io/pypa/manylinux_2_28_x86_64 AS base-amd64
-FROM quay.io/pypa/manylinux_2_28_aarch64 AS base-arm64
+# <https://quay.io/repository/pypa/manylinux_2_28_x86_64?tab=tags>
+FROM quay.io/pypa/manylinux_2_28_x86_64@sha256:f324fa59bb7a33b4c421fdeaa3d66e9c941cd66b736124c59366062e237f8a5f AS base-amd64
+# <https://quay.io/repository/pypa/manylinux_2_28_aarch64?tab=tags>
+FROM quay.io/pypa/manylinux_2_28_aarch64@sha256:eed90f5453063780db25d09786d4f23556120f8a96e21146ed0cf0f11f3cbee4 AS base-arm64
 FROM base-${TARGETARCH}
 
 LABEL org.opencontainers.image.source="https://github.com/vadimpiven/node_reqwest"
 LABEL org.opencontainers.image.description="Dev Container for node_reqwest"
 LABEL org.opencontainers.image.licenses="Apache-2.0 OR MIT"
+
+HEALTHCHECK NONE
 
 ARG TARGETARCH
 ARG USERNAME=vscode
@@ -27,7 +31,9 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # 1. System Setup (root)
 RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
     # Dependency Installation
-    yum install -y sudo git curl xz jq \
+    rm -f /usr/local/bin/git-lfs && \
+    yum update -y && \
+    yum install -y sudo git git-lfs curl xz jq \
     xorg-x11-server-Xvfb alsa-lib atk at-spi2-atk cairo cups-libs dbus-libs \
     gdk-pixbuf2 gtk3 libX11 libXcomposite libXcursor libXdamage libXext libXfixes libXi \
     libXrandr libXrender libXtst mesa-libgbm libicu libxkbcommon nss pango && \
@@ -49,26 +55,28 @@ RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
 
 # Switch to non-root user
 USER ${USERNAME}
-COPY --chown=${USERNAME}:${USERNAME} package.json pnpm-workspace.yaml rust-toolchain.toml .python-version pyproject.toml /tmp/config/
+WORKDIR /tmp/config
+COPY --chown=${USERNAME}:${USERNAME} package.json pnpm-workspace.yaml rust-toolchain.toml .python-version pyproject.toml ./
 
 # 2. UV + Python runtime
 RUN --mount=type=cache,target=/home/${USERNAME}/.cache/uv,uid=${USER_UID},gid=${USER_GID},sharing=locked \
-    UV_VERSION=$(yq -p toml -oy '.tool.uv."required-version"' /tmp/config/pyproject.toml | sed 's/[^0-9.]*//g') && \
+    UV_VERSION=$(yq -p toml -oy '.tool.uv."required-version"' pyproject.toml | sed 's/[^0-9.]*//g') && \
     curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh && \
-    cd /tmp/config && uv python install --default
+    uv python install --default
 
 # 3. pnpm + Node.js
 RUN --mount=type=cache,target=/home/${USERNAME}/.pnpm-store,uid=${USER_UID},gid=${USER_GID},sharing=locked \
-    PNPM_VERSION=$(jq -r '.engines.pnpm | ltrimstr("^")' /tmp/config/package.json) && \
+    PNPM_VERSION=$(jq -r '.engines.pnpm | ltrimstr("^")' package.json) && \
     curl -fsSL "https://get.pnpm.io/install.sh" | ENV="$HOME/.bashrc" SHELL="$(which bash)" PNPM_VERSION="$PNPM_VERSION" bash - && \
     pnpm config set store-dir /home/${USERNAME}/.pnpm-store && \
-    NODE_VERSION=$(jq -r '.engines.node | ltrimstr("^")' /tmp/config/package.json) && \
-    pnpm env use --global "$NODE_VERSION"
+    NODE_VERSION=$(jq -r '.engines.node | ltrimstr("^")' package.json) && \
+    pnpm env use --global "$NODE_VERSION" && \
+    npm install -g npm@latest
 
 # 4. Rust toolchain
 RUN --mount=type=cache,target=/home/${USERNAME}/.cargo/registry,uid=${USER_UID},gid=${USER_GID},sharing=locked \
     --mount=type=cache,target=/home/${USERNAME}/.cargo/git,uid=${USER_UID},gid=${USER_GID},sharing=locked \
-    cd /tmp/config && rustup show && \
+    rustup show && \
     rustup default "$(rustup show active-toolchain | cut -d' ' -f1)"
 
 RUN rm -rf /tmp/config

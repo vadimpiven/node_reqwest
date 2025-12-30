@@ -1,0 +1,3 @@
+# Avoid uncontrolled behavior when the image is updated. 
+# Internal stage references base-amd64 and base-arm64 are already pinned with digests.
+AVD-DS-0001

@@ -4,12 +4,14 @@ lcov.info
 package.tar.gz
 profile.json.gz
 report-rust.junit.xml
+trivy-results.sarif
 .bin/
 .path/
 .venv/
 dist/
 node_modules/
 target/
+.trivycache/
 
 # packages/node
 packages/node/report-electron.junit.xml

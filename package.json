@@ -5,10 +5,10 @@
   "packageManager": "pnpm@10.26.1",
   "engines": {
     "pnpm": "^10.26.1",
-    "node": "^22.19.0",
+    "node": "^22.21.1",
     "runtime": {
       "name": "node",
-      "version": "^22.19.0",
+      "version": "^22.21.1",
       "onFail": "download"
     }
   },
