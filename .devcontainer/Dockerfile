@@ -27,9 +27,10 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # 1. System Setup (root)
 RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
     # Dependency Installation
+    printf '[trivy]\nname=Trivy repository\nbaseurl=https://aquasecurity.github.io/trivy-repo/rpm/releases/$basearch/\ngpgcheck=1\nenabled=1\ngpgkey=https://aquasecurity.github.io/trivy-repo/rpm/public.key\n' > /etc/yum.repos.d/trivy.repo && \
     rm -f /usr/local/bin/git-lfs && \
     yum update -y && \
-    yum install -y sudo git git-lfs curl xz jq \
+    yum install -y sudo git git-lfs curl xz jq trivy \
     xorg-x11-server-Xvfb alsa-lib atk at-spi2-atk cairo cups-libs dbus-libs \
     gdk-pixbuf2 gtk3 libX11 libXcomposite libXcursor libXdamage libXext libXfixes libXi \
     libXrandr libXrender libXtst mesa-libgbm libicu libxkbcommon nss pango && \

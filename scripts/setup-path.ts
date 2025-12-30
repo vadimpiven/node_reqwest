@@ -54,7 +54,12 @@ async function setupBiomeSymlink(): Promise<void> {
     packageName = `@biomejs/cli-darwin-${arch}`;
   }
 
-  const biomeBinPath = path.join(projectRoot, 'node_modules', packageName, 'biome');
+  const biomeBinPath = path.join(
+    projectRoot,
+    'node_modules',
+    packageName,
+    isWindows ? 'biome.exe' : 'biome'
+  );
   const biomeInPath = path.join(pathDir, isWindows ? 'biome.exe' : 'biome');
   await makeSymlink(biomeBinPath, biomeInPath);
 }

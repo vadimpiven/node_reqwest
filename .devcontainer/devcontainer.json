@@ -5,7 +5,7 @@
     "context": "..",
     "cacheFrom": "ghcr.io/vadimpiven/node_reqwest:buildcache"
   },
-  "postCreateCommand": "pnpm install --frozen-lockfile --prefer-offline",
+  "postCreateCommand": "CI=true HUSKY=1 pnpm install --frozen-lockfile --prefer-offline",
   "waitFor": "postCreateCommand",
   "containerUser": "vscode",
   "remoteUser": "vscode",
