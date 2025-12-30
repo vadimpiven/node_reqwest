@@ -16,8 +16,21 @@ const isWindows = process.platform === 'win32';
 const isLinux = process.platform === 'linux';
 
 async function setupCargoBin(): Promise<void> {
-  await fs.rm(binDir, { recursive: true, force: true });
+  const markerFile = `.${process.platform}-${os.arch()}`;
+  const markerPath = path.join(binDir, markerFile);
+
+  const markerExists = await fs
+    .access(markerPath)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!markerExists) {
+    await fs.rm(binDir, { recursive: true, force: true });
+  }
+
   await runCommand('cargo', ['bin', '--install']);
+  await fs.mkdir(binDir, { recursive: true });
+  await fs.writeFile(markerPath, '');
 }
 
 async function setupNodeSymlink(): Promise<void> {
