@@ -1,0 +1,10 @@
+{
+  "name": "node_reqwest",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "cacheFrom": "ghcr.io/vadimpiven/node_reqwest:buildcache-${localEnv:TARGETARCH:amd64}"
+  },
+  "postCreateCommand": "pnpm install --frozen-lockfile --prefer-offline",
+  "remoteUser": "root"
+}

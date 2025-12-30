@@ -21,8 +21,9 @@
     "markdownlint-cli2": "catalog:"
   },
   "scripts": {
-    "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y && cargo bin --install",
-    "postinstall": "node scripts/setup-path.ts && pnpm exec playwright install-deps",
+    "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y --locked && cargo bin --install",
+    "postinstall": "node scripts/setup-path.ts",
+    "playwright": "pnpm exec playwright install-deps",
     "rustup": "rustup update && rustup toolchain install",
     "check:biome": "pnpm exec biome check . --log-level warn",
     "check:taplo": "pnpm exec taplo check",

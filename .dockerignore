@@ -1,0 +1,16 @@
+# Ignore everything by default
+**
+
+# Allow only the files needed for the Dockerfile
+!package.json
+!pnpm-workspace.yaml
+!rust-toolchain.toml
+!.python-version
+!pyproject.toml
+
+# Ignore common large directories
+node_modules
+target
+.venv
+.bin
+.path

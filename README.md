@@ -11,8 +11,8 @@ The build is made in a fashion that allows usage by Electron-based applications.
 
 ## Build requirements
 
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) for Python integration
 - [pnpm](https://pnpm.io/installation) for workspace management
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) for python integration
 - C++ development toolchain (required by Rust)
   - Windows: [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)
   - macOS: `xcode-select --install`
@@ -25,6 +25,7 @@ The build is made in a fashion that allows usage by Electron-based applications.
 
 ```bash
 pnpm install
+pnpm run playwright
 pnpm run rustup
 pnpm test
 ```
@@ -32,3 +33,16 @@ pnpm test
 VSCode [recommended extensions](.vscode/extensions.json) make development experience
 better. Check VSCode [debug configurations](.vscode/launch.json) for debugging and
 [tasks](.vscode/tasks.json) for performance analysis.
+
+## Docker build and test
+
+To verify glibc compatibility or test in a clean environment:
+
+```bash
+# Build and run tests in one command (specify TARGETARCH: amd64 or arm64)
+docker build --build-arg TARGETARCH=amd64 -f .devcontainer/Dockerfile -t node_reqwest-dev .
+docker run --rm -v ${PWD}:/workspace node_reqwest-dev /bin/bash -c "pnpm install && cargo test"
+```
+
+The same can be achieved with VSCode [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
+extension.
