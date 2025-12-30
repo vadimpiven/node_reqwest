@@ -39,10 +39,12 @@ better. Check VSCode [debug configurations](.vscode/launch.json) for debugging a
 To verify glibc compatibility or test in a clean environment:
 
 ```bash
-# Build and run tests in one command (specify TARGETARCH: amd64 or arm64)
-docker build --build-arg TARGETARCH=amd64 -f .devcontainer/Dockerfile -t node_reqwest-dev .
+# Build the development container
+docker build -f .devcontainer/Dockerfile -t node_reqwest-dev .
+
+# Run tests in the container
 docker run --rm -v ${PWD}:/workspace node_reqwest-dev /bin/bash -c "pnpm install && cargo test"
 ```
 
-The same can be achieved with VSCode [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
-extension.
+Alternatively, use VS Code [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
+extension to open the project directly in the container.

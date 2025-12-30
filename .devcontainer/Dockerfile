@@ -1,10 +1,6 @@
 # syntax=docker/dockerfile:1.4
-ARG TARGETARCH
-# <https://quay.io/repository/pypa/manylinux_2_28_x86_64?tab=tags>
-FROM quay.io/pypa/manylinux_2_28_x86_64@sha256:f324fa59bb7a33b4c421fdeaa3d66e9c941cd66b736124c59366062e237f8a5f AS base-amd64
-# <https://quay.io/repository/pypa/manylinux_2_28_aarch64?tab=tags>
-FROM quay.io/pypa/manylinux_2_28_aarch64@sha256:eed90f5453063780db25d09786d4f23556120f8a96e21146ed0cf0f11f3cbee4 AS base-arm64
-FROM base-${TARGETARCH}
+# <https://quay.io/repository/pypa/manylinux_2_28?tab=tags>
+FROM quay.io/pypa/manylinux_2_28@sha256:e930a1ce2b1b1b75e367cb7bdc9733276d92ce0c6bb6aee97dbd67e78722cbf5
 
 LABEL org.opencontainers.image.source="https://github.com/vadimpiven/node_reqwest"
 LABEL org.opencontainers.image.description="Dev Container for node_reqwest"
