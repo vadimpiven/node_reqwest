@@ -9,6 +9,7 @@ const isWindows = process.platform === 'win32';
 
 /**
  * Creates a symlink from target to link path, ensuring parent directories exist.
+ * The symlink target is stored as a relative path to ensure portability.
  */
 export async function makeSymlink(target: string, link: string): Promise<void> {
   const linkDir = path.dirname(link);
@@ -29,16 +30,22 @@ export async function makeSymlink(target: string, link: string): Promise<void> {
     throw new Error(`Failed to remove existing file ${link}: ${error.message}`);
   }
 
+  // Calculate relative path for better portability (e.g. devcontainers)
+  // If target is already relative, we assume it's relative to CWD and we might need to adjust it,
+  // but usually we pass absolute paths to this helper.
+  const absoluteTarget = path.resolve(process.cwd(), target);
+  const relativeTarget = path.relative(linkDir, absoluteTarget);
+
   // Create the symlink
   try {
     // On Windows, 'file' argument is required for file symlinks
-    await fs.symlink(target, link, isWindows ? 'file' : undefined);
-    console.log('Symlinked: %s -> %s', target, link);
+    await fs.symlink(relativeTarget, link, isWindows ? 'file' : undefined);
+    console.log('Symlinked: %s -> %s (rel: %s)', absoluteTarget, link, relativeTarget);
   } catch (err: unknown) {
     const error = ensureError(err);
     const message = isWindows
-      ? `Failed to symlink from ${target} to ${link}. Enable Developer Mode to create symlinks: ${error.message}`
-      : `Failed to symlink from ${target} to ${link}: ${error.message}`;
+      ? `Failed to symlink from ${absoluteTarget} to ${link}. Enable Developer Mode to create symlinks: ${error.message}`
+      : `Failed to symlink from ${absoluteTarget} to ${link}: ${error.message}`;
     throw new Error(message);
   }
 }

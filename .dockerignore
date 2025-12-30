@@ -14,3 +14,6 @@ target
 .venv
 .bin
 .path
+
+# Ignore .env file
+.env
