@@ -1,6 +1,35 @@
-- Follow all coding and contribution standards defined in `CONTRIBUTING.md`.
+# MUST FOLLOW Rules for AI Assistants
+
+## General Rules
+
+- Follow all coding and contribution standards defined in [CONTRIBUTING.md](CONTRIBUTING.md).
 - Always use `pnpm` for any command execution or package management tasks.
 - When creating new files, ensure the appropriate SPDX license header is included.
 - Prioritize workspace-level dependency management as outlined in the root configs.
 - Maintain concise, friendly, and professional attitude when assisting with development tasks.
 - **CRITICAL**: AI agents MUST execute `pnpm -w fix` after EVERY modification of code or documentation, and before signaling completion, to ensure strict adherence to project standards (linting, formatting, license headers).
+
+## Implementation Plans ([plans](plans) directory)
+
+Plans must be concise technical documents. Structure:
+
+1. **Problem/Purpose** — One-liner or brief description
+2. **Solution** — Technical approach (1-2 sentences max)
+3. **Architecture** — ASCII diagram if helpful
+4. **Implementation** — Code blocks with minimal inline comments
+5. **Tables** — For version sources, cache locations, build times, etc.
+6. **File Structure** — Tree showing files created/modified
+
+Avoid:
+- Explanatory prose ("Key insight:", "Why X?", "Note that...")
+- Redundant descriptions the code already conveys
+- Bullet points explaining what code does
+- Verbose justifications
+
+Keep:
+- Technical decisions and rationale (brief)
+- Complete, copy-paste-ready code examples
+- Reference tables
+- Security considerations (as bullet points)
+
+**After implementation**: Delete the plan file. Plans are temporary; implemented code is the source of truth.
