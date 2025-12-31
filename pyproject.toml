@@ -1,5 +1,5 @@
 [tool.uv]
-required-version = ">=0.9.18"
+required-version = ">=0.9.21"
 exclude-newer = "7 days"
 
 [tool.uv.workspace]
@@ -7,5 +7,5 @@ members = []
 
 [dependency-groups]
 dev = [
-    "semgrep==1.145.2",
+    "semgrep==1.146.0",
 ]
