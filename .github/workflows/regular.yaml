@@ -13,6 +13,11 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   init:
     name: Init
@@ -40,8 +45,8 @@ jobs:
     name: Build and test
     timeout-minutes: 45
     permissions:
-      contents: read
-      id-token: write
+      contents: read # to fetch code
+      id-token: write # for OIDC authentication
     needs:
       - init
     strategy:
@@ -79,7 +84,7 @@ jobs:
     name: Check CI scripts
     timeout-minutes: 15
     permissions:
-      security-events: write
+      security-events: write # to upload sarif results
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -91,6 +96,8 @@ jobs:
       
       - name: Run zizmor
         uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4 # v0.3.0
+        with:
+          persona: auditor
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -98,8 +105,8 @@ jobs:
     name: Security scan
     timeout-minutes: 15
     permissions:
-      contents: read
-      security-events: write
+      contents: read # to fetch code
+      security-events: write # to upload sarif results
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

@@ -7,6 +7,11 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   init:
     name: Init
@@ -32,9 +37,9 @@ jobs:
     name: Build addon
     timeout-minutes: 45
     permissions:
-      contents: write
-      id-token: write
-      attestations: write
+      contents: write # for release creation
+      id-token: write # for OIDC authentication
+      attestations: write # for build provenance
     needs:
       - init
     strategy:
@@ -89,9 +94,9 @@ jobs:
     name: Build package
     timeout-minutes: 30
     permissions:
-      contents: write
-      id-token: write
-      attestations: write
+      contents: write # for release creation
+      id-token: write # for OIDC authentication
+      attestations: write # for build provenance
     needs:
       - init
       - build-addon
@@ -135,8 +140,8 @@ jobs:
     name: Publish package
     timeout-minutes: 15
     permissions:
-      contents: read
-      id-token: write
+      contents: read # to fetch code
+      id-token: write # for OIDC authentication
     needs:
       - build-package
     if: needs.build-package.result == 'success'
