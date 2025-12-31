@@ -37,6 +37,18 @@ outputs:
   test-reports:
     description: 'Globs for test reports'
     value: 'packages/**/report-*.junit.xml'
+  docker-image:
+    description: 'Docker image tag for Linux builds'
+    value: devcontainer:local
+  docker-cache:
+    description: 'Docker cache registry reference'
+    value: ${{ steps.parse.outputs.docker-cache }}
+  docker-user:
+    description: 'Docker container user'
+    value: ${{ steps.parse.outputs.docker-user }}
+  docker-workspace:
+    description: 'Docker container workspace folder'
+    value: ${{ steps.parse.outputs.docker-workspace }}
 
 runs:
   using: 'composite'
@@ -47,6 +59,12 @@ runs:
       run: |
         PNPM_VERSION=$(jq -r '.engines.pnpm | ltrimstr("^")' package.json)
         NODE_VERSION=$(jq -r '.engines.node | ltrimstr("^")' package.json)
+        DOCKER_CACHE=$(jq -r '.build.cacheFrom' .devcontainer/devcontainer.json)
+        DOCKER_USER=$(jq -r '.containerUser' .devcontainer/devcontainer.json)
+        DOCKER_WORKSPACE=$(jq -r '.workspaceFolder' .devcontainer/devcontainer.json)
         
         echo "pnpm-version=$PNPM_VERSION" >> "$GITHUB_OUTPUT"
         echo "node-version=$NODE_VERSION" >> "$GITHUB_OUTPUT"
+        echo "docker-cache=$DOCKER_CACHE" >> "$GITHUB_OUTPUT"
+        echo "docker-user=$DOCKER_USER" >> "$GITHUB_OUTPUT"
+        echo "docker-workspace=$DOCKER_WORKSPACE" >> "$GITHUB_OUTPUT"

@@ -56,7 +56,7 @@ runs:
         cache-directories: .bin
     
     - name: Install Cargo binstall
-      uses: cargo-bins/cargo-binstall@8110b3aa84cb581a90696bc57469b0656f972494 # v1.16.3
+      uses: cargo-bins/cargo-binstall@80aaafe04903087c333980fa2686259ddd34b2d9 # v1.16.6
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
     

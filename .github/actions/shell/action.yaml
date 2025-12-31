@@ -1,0 +1,38 @@
+name: 'Shell'
+description: 'Platform-aware shell - uses Docker on Linux, native on others'
+
+inputs:
+  env:
+    description: 'Environment variables in JSON format'
+    required: true
+  docker-image:
+    description: 'Docker image to run'
+    required: true
+  run:
+    description: 'Commands to run'
+    required: true
+  docker-user:
+    description: 'Docker container user'
+    required: true
+  docker-workspace:
+    description: 'Docker container workspace'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run (Docker)
+      if: runner.os == 'Linux'
+      uses: ./.github/actions/docker-shell
+      with:
+        env: ${{ inputs.env }}
+        docker-image: ${{ inputs.docker-image }}
+        docker-user: ${{ inputs.docker-user }}
+        docker-workspace: ${{ inputs.docker-workspace }}
+        run: ${{ inputs.run }}
+
+    - name: Run (Native)
+      if: runner.os != 'Linux'
+      uses: ./.github/actions/platform-shell
+      with:
+        run: ${{ inputs.run }}

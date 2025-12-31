@@ -1,0 +1,51 @@
+name: 'Setup Environment'
+description: 'Platform-aware setup - uses Docker on Linux, native on others'
+
+inputs:
+  env:
+    description: 'Environment variables in JSON format'
+    required: true
+  pnpm-version:
+    description: 'Version of pnpm to install'
+    required: true
+  node-version:
+    description: 'Version of Node.js to install'
+    required: true
+  docker-image:
+    description: 'Docker image tag to use'
+    required: true
+  docker-cache:
+    description: 'Docker cache registry reference'
+    required: true
+  github-token:
+    description: 'GitHub token for authenticated API requests'
+    required: true
+  docker-user:
+    description: 'Docker container user'
+    required: true
+  docker-workspace:
+    description: 'Docker container workspace folder'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup (Docker)
+      if: runner.os == 'Linux'
+      uses: ./.github/actions/setup-docker
+      with:
+        env: ${{ inputs.env }}
+        docker-image: ${{ inputs.docker-image }}
+        docker-cache: ${{ inputs.docker-cache }}
+        github-token: ${{ inputs.github-token }}
+        docker-user: ${{ inputs.docker-user }}
+        docker-workspace: ${{ inputs.docker-workspace }}
+
+    - name: Setup (Native)
+      if: runner.os != 'Linux'
+      uses: ./.github/actions/setup-agent
+      with:
+        env: ${{ inputs.env }}
+        pnpm-version: ${{ inputs.pnpm-version }}
+        node-version: ${{ inputs.node-version }}
+        github-token: ${{ inputs.github-token }}

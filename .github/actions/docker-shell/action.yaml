@@ -1,0 +1,41 @@
+name: 'Docker Shell'
+description: 'Run commands inside the devcontainer'
+
+inputs:
+  env:
+    description: 'Environment variables in JSON format'
+    required: true
+  docker-image:
+    description: 'Docker image to run'
+    required: true
+  run:
+    description: 'Commands to run'
+    required: true
+  docker-user:
+    description: 'Docker container user'
+    required: true
+  docker-workspace:
+    description: 'Docker container workspace'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run in container
+      shell: bash
+      env:
+        INPUT_ENV: ${{ inputs.env }}
+        INPUT_DOCKER_IMAGE: ${{ inputs.docker-image }}
+        INPUT_DOCKER_USER: ${{ inputs.docker-user }}
+        INPUT_DOCKER_WORKSPACE: ${{ inputs.docker-workspace }}
+        INPUT_RUN: ${{ inputs.run }}
+      run: |
+        echo "$INPUT_ENV" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env.docker
+        trap 'rm -f .env.docker' EXIT
+        docker run --rm --env-file .env.docker \
+          -v "$HOME/.cache/uv:/home/$INPUT_DOCKER_USER/.cache/uv" \
+          -v "$HOME/.pnpm-store:/home/$INPUT_DOCKER_USER/.pnpm-store" \
+          -v "$PWD:$INPUT_DOCKER_WORKSPACE" \
+          -w "$INPUT_DOCKER_WORKSPACE" \
+          "$INPUT_DOCKER_IMAGE" \
+          bash -c "$INPUT_RUN"

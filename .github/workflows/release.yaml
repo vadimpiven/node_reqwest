@@ -21,6 +21,10 @@ jobs:
       env: ${{ steps.init-workflow.outputs.env }}
       pnpm-version: ${{ steps.init-workflow.outputs.pnpm-version }}
       node-version: ${{ steps.init-workflow.outputs.node-version }}
+      docker-image: ${{ steps.init-workflow.outputs.docker-image }}
+      docker-cache: ${{ steps.init-workflow.outputs.docker-cache }}
+      docker-user: ${{ steps.init-workflow.outputs.docker-user }}
+      docker-workspace: ${{ steps.init-workflow.outputs.docker-workspace }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -38,6 +42,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: write # for release creation
+      packages: write # to push Docker images
       id-token: write # for OIDC authentication
       attestations: write # for build provenance
     needs:
@@ -55,16 +60,24 @@ jobs:
           persist-credentials: false
       
       - name: Setup development environment
-        uses: ./.github/actions/setup-agent
+        uses: ./.github/actions/setup
         with:
           env: ${{ needs.init.outputs.env }}
           pnpm-version: ${{ needs.init.outputs.pnpm-version }}
           node-version: ${{ needs.init.outputs.node-version }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-cache: ${{ needs.init.outputs.docker-cache }}
+          docker-user: ${{ needs.init.outputs.docker-user }}
+          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build node addon
-        uses: ./.github/actions/platform-shell
+        uses: ./.github/actions/shell
         with:
+          env: ${{ needs.init.outputs.env }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-user: ${{ needs.init.outputs.docker-user }}
+          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run ci-build
@@ -75,8 +88,12 @@ jobs:
           binary-path: ${{ github.workspace }}/packages/node/dist/napi-v8/node_reqwest.node
       
       - name: Pack node addon
-        uses: ./.github/actions/platform-shell
+        uses: ./.github/actions/shell
         with:
+          env: ${{ needs.init.outputs.env }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-user: ${{ needs.init.outputs.docker-user }}
+          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
           run: pnpm -F "{packages/node}" run pack-addon
       
       - name: Attest build provenance
@@ -95,6 +112,7 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write # for release creation
+      packages: write # to push Docker images (if Linux runner)
       id-token: write # for OIDC authentication
       attestations: write # for build provenance
     needs:
@@ -111,16 +129,24 @@ jobs:
           persist-credentials: false
       
       - name: Setup development environment
-        uses: ./.github/actions/setup-agent
+        uses: ./.github/actions/setup
         with:
           env: ${{ needs.init.outputs.env }}
           pnpm-version: ${{ needs.init.outputs.pnpm-version }}
           node-version: ${{ needs.init.outputs.node-version }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-cache: ${{ needs.init.outputs.docker-cache }}
+          docker-user: ${{ needs.init.outputs.docker-user }}
+          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build export wrapper
-        uses: ./.github/actions/platform-shell
+        uses: ./.github/actions/shell
         with:
+          env: ${{ needs.init.outputs.env }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-user: ${{ needs.init.outputs.docker-user }}
+          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run build:ts

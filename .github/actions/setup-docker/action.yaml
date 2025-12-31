@@ -1,0 +1,91 @@
+name: 'Setup Docker Environment'
+description: 'Build container image locally, warm registry cache'
+
+inputs:
+  env:
+    description: 'Environment variables in JSON format'
+    required: true
+  docker-image:
+    description: 'Docker image tag to use'
+    required: true
+  docker-cache:
+    description: 'Docker cache registry reference'
+    required: true
+  github-token:
+    description: 'GitHub token for registry authentication'
+    required: true
+  docker-user:
+    description: 'Docker container user'
+    required: true
+  docker-workspace:
+    description: 'Docker container workspace'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.github-token }}
+
+    - name: Setup Buildx
+      uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+    - name: Build Docker image
+      uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+      with:
+        context: .
+        file: .devcontainer/Dockerfile
+        platforms: ${{ runner.arch == 'ARM64' && 'linux/arm64' || 'linux/amd64' }}
+        load: true
+        tags: ${{ inputs.docker-image }}
+        cache-from: type=registry,ref=${{ inputs.docker-cache }}
+        cache-to: type=registry,ref=${{ inputs.docker-cache }},mode=max,image-manifest=true
+
+    - name: Create host cache directories
+      shell: bash
+      run: mkdir -p "$HOME/.cache/uv" "$HOME/.pnpm-store" target
+
+    - name: Restore uv cache
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+      with:
+        path: ~/.cache/uv
+        key: uv-linux-${{ runner.arch }}-${{ hashFiles('pyproject.toml') }}
+        restore-keys: |
+          uv-linux-${{ runner.arch }}-
+
+    - name: Restore pnpm cache
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+      with:
+        path: ~/.pnpm-store
+        key: pnpm-store-linux-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          pnpm-store-linux-${{ runner.arch }}-
+
+    - name: Restore cargo binaries
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+      with:
+        path: .bin
+        key: cargo-bin-linux-${{ runner.arch }}-${{ hashFiles('Cargo.toml') }}
+        restore-keys: |
+          cargo-bin-linux-${{ runner.arch }}-
+
+    - name: Restore cargo target
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+      with:
+        path: target
+        key: cargo-target-linux-${{ runner.arch }}-${{ hashFiles('Cargo.lock') }}
+        restore-keys: |
+          cargo-target-linux-${{ runner.arch }}-
+
+    - name: Run pnpm install script
+      uses: ./.github/actions/docker-shell
+      with:
+        env: ${{ inputs.env }}
+        docker-image: ${{ inputs.docker-image }}
+        docker-user: ${{ inputs.docker-user }}
+        docker-workspace: ${{ inputs.docker-workspace }}
+        run: pnpm install --frozen-lockfile --prefer-offline

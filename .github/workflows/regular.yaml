@@ -29,6 +29,10 @@ jobs:
       node-version: ${{ steps.init-workflow.outputs.node-version }}
       test-coverage: ${{ steps.init-workflow.outputs.test-coverage }}
       test-reports: ${{ steps.init-workflow.outputs.test-reports }}
+      docker-image: ${{ steps.init-workflow.outputs.docker-image }}
+      docker-cache: ${{ steps.init-workflow.outputs.docker-cache }}
+      docker-user: ${{ steps.init-workflow.outputs.docker-user }}
+      docker-workspace: ${{ steps.init-workflow.outputs.docker-workspace }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -46,6 +50,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read # to fetch code
+      packages: write # to push Docker images
       id-token: write # for OIDC authentication
     needs:
       - init
@@ -62,16 +67,24 @@ jobs:
           persist-credentials: false
       
       - name: Setup development environment
-        uses: ./.github/actions/setup-agent
+        uses: ./.github/actions/setup
         with:
           env: ${{ needs.init.outputs.env }}
           pnpm-version: ${{ needs.init.outputs.pnpm-version }}
           node-version: ${{ needs.init.outputs.node-version }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-cache: ${{ needs.init.outputs.docker-cache }}
+          docker-user: ${{ needs.init.outputs.docker-user }}
+          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build and test
-        uses: ./.github/actions/platform-shell
+        uses: ./.github/actions/shell
         with:
+          env: ${{ needs.init.outputs.env }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-user: ${{ needs.init.outputs.docker-user }}
+          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
           run: pnpm run ci-test
       
       - name: Upload reports
