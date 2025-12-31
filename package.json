@@ -2,9 +2,9 @@
   "private": true,
   "name": "workspace",
   "type": "module",
-  "packageManager": "pnpm@10.26.1",
+  "packageManager": "pnpm@10.27.0",
   "engines": {
-    "pnpm": "^10.26.1",
+    "pnpm": "^10.27.0",
     "node": "^22.21.1",
     "runtime": {
       "name": "node",
@@ -47,6 +47,7 @@
     "fix:semgrep": "pnpm run check:semgrep --autofix",
     "fix": "pnpm run fix:biome && pnpm run fix:taplo && pnpm run fix:markdownlint && pnpm run fix:clippy && pnpm run fix:rustfmt && pnpm run fix:zizmor",
     "prepare": "husky",
+    "clean": "pnpm store prune && cargo bin cargo-cache --autoclean && cargo clean",
     "check-updates:pnpm": "(pnpm outdated --recursive --sort-by name || exit 0)",
     "check-updates:cargo": "cargo update --breaking -Z unstable-options --dry-run",
     "check-updates:uv": "uv lock --upgrade --dry-run",
