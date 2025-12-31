@@ -48,6 +48,7 @@ RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
     mkdir -p ${PNPM_HOME} ${RUSTUP_HOME} ${CARGO_HOME}/bin /home/${USERNAME}/.cache && \
     curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none && \
     curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash && \
+    cargo-binstall sccache -y --locked && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
 
 # Switch to non-root user

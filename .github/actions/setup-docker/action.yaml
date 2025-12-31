@@ -47,7 +47,7 @@ runs:
     
     - name: Create host cache directories
       shell: bash
-      run: mkdir -p "$HOME/.cache/uv" "$HOME/.pnpm-store"
+      run: mkdir -p "$HOME/.cache/uv" "$HOME/.pnpm-store" "$HOME/.cache/sccache"
 
     - name: Run pnpm install script
       uses: ./.github/actions/shell-docker

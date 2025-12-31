@@ -57,7 +57,7 @@ runs:
     - name: Restore sccache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
-        path: ${{ fromJSON(inputs.env).SCCACHE_DIR }}
+        path: ~/.cache/sccache
         key: sccache-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
         restore-keys: |
           sccache-${{ runner.os }}-${{ runner.arch }}-

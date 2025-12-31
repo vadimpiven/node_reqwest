@@ -86,5 +86,4 @@ cargo-llvm-cov = { version = "0.6.22", locked = true }
 cargo-deny = { version = "0.18.9" }
 cargo-cache = { version = "0.8.3" }
 samply = { version = "0.13.1" }
-sccache = { version = "0.12.0", locked = true }
 zizmor = { version = "1.19.0", locked = true }

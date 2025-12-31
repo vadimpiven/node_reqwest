@@ -33,8 +33,10 @@ runs:
         printf "%s" "$INPUT_ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"' > .env.docker
         trap 'rm -f .env.docker' EXIT
         docker run --rm --env-file .env.docker \
+          -e "SCCACHE_DIR=/home/$INPUT_DOCKER_USER/.cache/sccache" \
           -v "$HOME/.cache/uv:/home/$INPUT_DOCKER_USER/.cache/uv" \
           -v "$HOME/.pnpm-store:/home/$INPUT_DOCKER_USER/.pnpm-store" \
+          -v "$HOME/.cache/sccache:/home/$INPUT_DOCKER_USER/.cache/sccache" \
           -v "$PWD:$INPUT_DOCKER_WORKSPACE" \
           -w "$INPUT_DOCKER_WORKSPACE" \
           "$INPUT_DOCKER_IMAGE" \

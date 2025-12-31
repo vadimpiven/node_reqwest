@@ -24,8 +24,7 @@ outputs:
         "CARGO_INCREMENTAL": "0",
         "CARGO_NET_GIT_FETCH_WITH_CLI": "true",
         "RUST_BACKTRACE": "1",
-        "RUSTC_WRAPPER": "sccache",
-        "SCCACHE_DIR": ".sccache"
+        "RUSTC_WRAPPER": "sccache"
       }
   pnpm-version:
     description: 'pnpm version'
