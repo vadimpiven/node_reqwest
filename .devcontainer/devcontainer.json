@@ -3,9 +3,12 @@
   "build": {
     "dockerfile": "Dockerfile",
     "context": "..",
-    "cacheFrom": "ghcr.io/vadimpiven/node_reqwest:buildcache-${localEnv:TARGETARCH:amd64}"
+    "cacheFrom": "ghcr.io/vadimpiven/node_reqwest:buildcache"
   },
-  "postCreateCommand": "pnpm install --frozen-lockfile --prefer-offline",
+  "postCreateCommand": "CI=true HUSKY=1 pnpm install --frozen-lockfile --prefer-offline",
+  "waitFor": "postCreateCommand",
   "containerUser": "vscode",
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace"
 }
