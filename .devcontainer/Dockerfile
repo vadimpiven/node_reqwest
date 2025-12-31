@@ -9,8 +9,8 @@ LABEL org.opencontainers.image.licenses="Apache-2.0 OR MIT"
 HEALTHCHECK NONE
 
 ARG TARGETARCH
-ARG USERNAME=vscode
-ARG USER_UID=1000
+ARG USERNAME=runner
+ARG USER_UID=1001
 ARG USER_GID=$USER_UID
 
 # Consolidated Environment Setup

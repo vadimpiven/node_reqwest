@@ -7,8 +7,9 @@
   },
   "postCreateCommand": "CI=true HUSKY=1 pnpm install --frozen-lockfile --prefer-offline",
   "waitFor": "postCreateCommand",
-  "containerUser": "vscode",
-  "remoteUser": "vscode",
+  "containerUser": "runner",
+  "remoteUser": "runner",
+  "updateRemoteUserUID": true,
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace"
 }
