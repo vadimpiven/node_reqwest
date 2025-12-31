@@ -15,6 +15,9 @@ outputs:
           "windows-11-arm"
         ]
       }
+  cache-key:
+    description: 'Cache key prefix for manual invalidation'
+    value: 'v0'
   env:
     description: 'Environment variables'
     value: |

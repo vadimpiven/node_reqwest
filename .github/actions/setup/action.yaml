@@ -5,6 +5,9 @@ inputs:
   env:
     description: 'Environment variables in JSON format'
     required: true
+  cache-key:
+    description: 'Cache key prefix'
+    required: true
   pnpm-version:
     description: 'Version of pnpm to install'
     required: true
@@ -37,41 +40,43 @@ runs:
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
         path: ~/.cache/uv
-        key: uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pyproject.toml') }}
+        key: ${{ inputs.cache-key }}-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pyproject.toml') }}
         restore-keys: |
-          uv-${{ runner.os }}-${{ runner.arch }}-
+          ${{ inputs.cache-key }}-uv-${{ runner.os }}-${{ runner.arch }}-
 
     - name: Restore pnpm cache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
         path: ~/.pnpm-store
-        key: pnpm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+        key: ${{ inputs.cache-key }}-pnpm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
-          pnpm-${{ runner.os }}-${{ runner.arch }}-
+          ${{ inputs.cache-key }}-pnpm-${{ runner.os }}-${{ runner.arch }}-
 
     - name: Restore cargo binaries
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
-        path: .bin
-        key: cargo-bin-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.toml') }}
+        path: |
+          .bin
+          ~/.cargo/bin
+        key: ${{ inputs.cache-key }}-cargo-bin-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.toml') }}
         restore-keys: |
-          cargo-bin-${{ runner.os }}-${{ runner.arch }}-
+          ${{ inputs.cache-key }}-cargo-bin-${{ runner.os }}-${{ runner.arch }}-
     
     - name: Restore sccache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
         path: ~/.cache/sccache
-        key: sccache-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
+        key: ${{ inputs.cache-key }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
         restore-keys: |
-          sccache-${{ runner.os }}-${{ runner.arch }}-
+          ${{ inputs.cache-key }}-sccache-${{ runner.os }}-${{ runner.arch }}-
 
     - name: Restore cargo target
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
         path: target
-        key: cargo-target-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.lock') }}
+        key: ${{ inputs.cache-key }}-cargo-target-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.lock') }}
         restore-keys: |
-          cargo-target-${{ runner.os }}-${{ runner.arch }}-
+          ${{ inputs.cache-key }}-cargo-target-${{ runner.os }}-${{ runner.arch }}-
 
     - name: Setup (Docker)
       if: runner.os == 'Linux'

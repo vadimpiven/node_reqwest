@@ -37,6 +37,8 @@ async function main(): Promise<void> {
     '-v',
     `${home}/.cache/sccache:/home/${user}/.cache/sccache`,
     '-v',
+    `${home}/.cargo/bin:/home/${user}/.cargo/bin`,
+    '-v',
     `${ghaWorkspace}:${workspace}`,
     '-w',
     workspace,

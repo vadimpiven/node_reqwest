@@ -60,7 +60,7 @@ runs:
     
     - name: Create host cache directories
       shell: bash
-      run: mkdir -p "$HOME/.cache/uv" "$HOME/.pnpm-store" "$HOME/.cache/sccache"
+      run: mkdir -p "$HOME/.cache/uv" "$HOME/.pnpm-store" "$HOME/.cache/sccache" "$HOME/.cargo/bin"
 
     - name: Start persistent container
       uses: ./.github/actions/docker-lifecycle

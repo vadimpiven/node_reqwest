@@ -25,6 +25,7 @@ jobs:
     outputs:
       matrix: ${{ steps.init-workflow.outputs.matrix }}
       env: ${{ steps.init-workflow.outputs.env }}
+      cache-key: ${{ steps.init-workflow.outputs.cache-key }}
       pnpm-version: ${{ steps.init-workflow.outputs.pnpm-version }}
       node-version: ${{ steps.init-workflow.outputs.node-version }}
       test-coverage: ${{ steps.init-workflow.outputs.test-coverage }}
@@ -78,6 +79,7 @@ jobs:
           docker-user: ${{ needs.init.outputs.docker-user }}
           docker-workspace: ${{ needs.init.outputs.docker-workspace }}
           docker-container: ${{ needs.init.outputs.docker-container }}
+          cache-key: ${{ needs.init.outputs.cache-key }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build and test
