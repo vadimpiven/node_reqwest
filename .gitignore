@@ -1,4 +1,5 @@
 # common
+.env
 .DS_Store
 lcov.info
 package.tar.gz

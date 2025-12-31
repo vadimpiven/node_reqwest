@@ -13,7 +13,12 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "catalog:",
+    "@biomejs/cli-darwin-arm64": "catalog:",
+    "@biomejs/cli-darwin-x64": "catalog:",
+    "@biomejs/cli-linux-arm64-musl": "catalog:",
+    "@biomejs/cli-linux-x64-musl": "catalog:",
+    "@biomejs/cli-win32-arm64": "catalog:",
+    "@biomejs/cli-win32-x64": "catalog:",
     "@playwright/test": "catalog:",
     "@taplo/cli": "catalog:",
     "@types/node": "catalog:",
@@ -21,11 +26,11 @@
     "markdownlint-cli2": "catalog:"
   },
   "scripts": {
-    "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y --locked && cargo bin --install",
+    "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y --locked",
     "postinstall": "node scripts/setup-path.ts",
     "playwright": "pnpm exec playwright install-deps",
     "rustup": "rustup update && rustup toolchain install",
-    "check:biome": "pnpm exec biome check . --log-level warn",
+    "check:biome": "node scripts/biome.ts check . --log-level warn",
     "check:taplo": "pnpm exec taplo check",
     "check:markdownlint": "pnpm exec markdownlint-cli2",
     "check:clippy": "cargo clippy -r --locked -- -D warnings",
