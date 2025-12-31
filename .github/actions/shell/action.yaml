@@ -23,7 +23,7 @@ runs:
   steps:
     - name: Run (Docker)
       if: runner.os == 'Linux'
-      uses: ./.github/actions/docker-shell
+      uses: ./.github/actions/shell-docker
       with:
         env: ${{ inputs.env }}
         docker-image: ${{ inputs.docker-image }}
@@ -33,6 +33,6 @@ runs:
 
     - name: Run (Native)
       if: runner.os != 'Linux'
-      uses: ./.github/actions/platform-shell
+      uses: ./.github/actions/shell-native
       with:
         run: ${{ inputs.run }}

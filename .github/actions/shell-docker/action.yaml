@@ -1,4 +1,4 @@
-name: 'Docker Shell'
+name: 'Shell (Docker)'
 description: 'Run commands inside the devcontainer'
 
 inputs:
@@ -30,7 +30,7 @@ runs:
         INPUT_DOCKER_WORKSPACE: ${{ inputs.docker-workspace }}
         INPUT_RUN: ${{ inputs.run }}
       run: |
-        echo "$INPUT_ENV" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env.docker
+        printf "%s" "$INPUT_ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"' > .env.docker
         trap 'rm -f .env.docker' EXIT
         docker run --rm --env-file .env.docker \
           -v "$HOME/.cache/uv:/home/$INPUT_DOCKER_USER/.cache/uv" \

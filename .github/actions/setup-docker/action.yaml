@@ -1,4 +1,4 @@
-name: 'Setup Docker Environment'
+name: 'Setup (Docker)'
 description: 'Build container image locally, warm registry cache'
 
 inputs:
@@ -44,45 +44,13 @@ runs:
         tags: ${{ inputs.docker-image }}
         cache-from: type=registry,ref=${{ inputs.docker-cache }}
         cache-to: type=registry,ref=${{ inputs.docker-cache }},mode=max,image-manifest=true
-
+    
     - name: Create host cache directories
       shell: bash
-      run: mkdir -p "$HOME/.cache/uv" "$HOME/.pnpm-store" target
-
-    - name: Restore uv cache
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: ~/.cache/uv
-        key: uv-linux-${{ runner.arch }}-${{ hashFiles('pyproject.toml') }}
-        restore-keys: |
-          uv-linux-${{ runner.arch }}-
-
-    - name: Restore pnpm cache
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: ~/.pnpm-store
-        key: pnpm-store-linux-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: |
-          pnpm-store-linux-${{ runner.arch }}-
-
-    - name: Restore cargo binaries
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: .bin
-        key: cargo-bin-linux-${{ runner.arch }}-${{ hashFiles('Cargo.toml') }}
-        restore-keys: |
-          cargo-bin-linux-${{ runner.arch }}-
-
-    - name: Restore cargo target
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: target
-        key: cargo-target-linux-${{ runner.arch }}-${{ hashFiles('Cargo.lock') }}
-        restore-keys: |
-          cargo-target-linux-${{ runner.arch }}-
+      run: mkdir -p "$HOME/.cache/uv" "$HOME/.pnpm-store"
 
     - name: Run pnpm install script
-      uses: ./.github/actions/docker-shell
+      uses: ./.github/actions/shell-docker
       with:
         env: ${{ inputs.env }}
         docker-image: ${{ inputs.docker-image }}

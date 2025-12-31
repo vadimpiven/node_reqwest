@@ -1,4 +1,4 @@
-name: 'Setup Agent Environment'
+name: 'Setup (Native)'
 description: 'Sets up the development environment with Node.js and Rust'
 
 inputs:
@@ -22,7 +22,7 @@ runs:
       shell: bash
       env:
         ENV: ${{ inputs.env }}
-      run: echo "$ENV" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
+      run: printf "%s" "$ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
     
     - name: Update apt index
       if: runner.os == 'Linux'
@@ -32,7 +32,7 @@ runs:
     - name: Install UV
       uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
       with:
-        enable-cache: true
+        enable-cache: false
     
     - name: Install pnpm
       uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
@@ -43,7 +43,7 @@ runs:
       uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'pnpm'
+        cache: ''
     
     - name: Setup MSVC developer command prompt
       if: runner.os == 'Windows'
@@ -52,8 +52,7 @@ runs:
     - name: Install Rust
       uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
       with:
-        cache-all-crates: true
-        cache-directories: .bin
+        cache: false
     
     - name: Install Cargo binstall
       uses: cargo-bins/cargo-binstall@80aaafe04903087c333980fa2686259ddd34b2d9 # v1.16.6
@@ -61,10 +60,11 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
     
     - name: Run pnpm install script
-      uses: ./.github/actions/platform-shell
+      uses: ./.github/actions/shell-native
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       with:
+        env: ${{ inputs.env }}
         run: |
           pnpm install --frozen-lockfile --prefer-offline
           pnpm run playwright

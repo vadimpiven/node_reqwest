@@ -78,8 +78,8 @@ runs:
           --key "${API_KEY_FILE}" \
           --wait ${BINARY_PATH}.zip 2>&1 | tee /tmp/notarization_info.json
 
-        status=$(jq -r .status </tmp/notarization_info.json)
-        id=$(jq -r .id </tmp/notarization_info.json)
+        status=$(jq -er .status </tmp/notarization_info.json)
+        id=$(jq -er .id </tmp/notarization_info.json)
         echo "Notarization status=${status} id=${id}"
 
         # Check logic
@@ -88,7 +88,7 @@ runs:
               --key-id "${API_KEY_ID}" \
               --issuer "${API_KEY_ISSUER_ID}" \
               --key "${API_KEY_FILE}" >/tmp/notarization_log.json
-            issues=$(jq -r .issues </tmp/notarization_log.json)
+            issues=$(jq -er .issues </tmp/notarization_log.json)
             printf "There are issues with the notarization (${issues})\n"
             printf "=== Log output === \n$(cat /tmp/notarization_log.json)\n"
             exit 1
