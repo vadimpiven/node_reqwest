@@ -1,0 +1,23 @@
+name: 'Docker Lifecycle'
+description: 'Manages the lifespan of a detached Docker container with guaranteed cleanup'
+inputs:
+  image:
+    description: 'Docker image to run'
+    required: true
+  user:
+    description: 'Docker container user'
+    required: true
+  workspace:
+    description: 'Docker container workspace'
+    required: true
+  name:
+    description: 'Docker container name'
+    required: true
+  env:
+    description: 'Environment variables in JSON format'
+    required: true
+
+runs:
+  using: 'node24'
+  main: 'startup.ts'
+  post: 'cleanup.ts'

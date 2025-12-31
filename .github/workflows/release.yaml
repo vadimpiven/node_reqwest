@@ -25,6 +25,7 @@ jobs:
       docker-cache: ${{ steps.init-workflow.outputs.docker-cache }}
       docker-user: ${{ steps.init-workflow.outputs.docker-user }}
       docker-workspace: ${{ steps.init-workflow.outputs.docker-workspace }}
+      docker-container: ${{ steps.init-workflow.outputs.docker-container }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -69,15 +70,13 @@ jobs:
           docker-cache: ${{ needs.init.outputs.docker-cache }}
           docker-user: ${{ needs.init.outputs.docker-user }}
           docker-workspace: ${{ needs.init.outputs.docker-workspace }}
+          docker-container: ${{ needs.init.outputs.docker-container }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build node addon
         uses: ./.github/actions/shell
         with:
-          env: ${{ needs.init.outputs.env }}
-          docker-image: ${{ needs.init.outputs.docker-image }}
-          docker-user: ${{ needs.init.outputs.docker-user }}
-          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
+          docker-container: ${{ needs.init.outputs.docker-container }}
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run ci-build
@@ -90,10 +89,7 @@ jobs:
       - name: Pack node addon
         uses: ./.github/actions/shell
         with:
-          env: ${{ needs.init.outputs.env }}
-          docker-image: ${{ needs.init.outputs.docker-image }}
-          docker-user: ${{ needs.init.outputs.docker-user }}
-          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
+          docker-container: ${{ needs.init.outputs.docker-container }}
           run: pnpm -F "{packages/node}" run pack-addon
       
       - name: Attest build provenance
@@ -138,15 +134,13 @@ jobs:
           docker-cache: ${{ needs.init.outputs.docker-cache }}
           docker-user: ${{ needs.init.outputs.docker-user }}
           docker-workspace: ${{ needs.init.outputs.docker-workspace }}
+          docker-container: ${{ needs.init.outputs.docker-container }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build export wrapper
         uses: ./.github/actions/shell
         with:
-          env: ${{ needs.init.outputs.env }}
-          docker-image: ${{ needs.init.outputs.docker-image }}
-          docker-user: ${{ needs.init.outputs.docker-user }}
-          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
+          docker-container: ${{ needs.init.outputs.docker-container }}
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run build:ts

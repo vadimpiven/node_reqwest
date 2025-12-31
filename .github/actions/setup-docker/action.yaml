@@ -20,6 +20,9 @@ inputs:
   docker-workspace:
     description: 'Docker container workspace'
     required: true
+  docker-container:
+    description: 'Docker container name'
+    default: 'devcontainer'
 
 runs:
   using: 'composite'
@@ -59,11 +62,17 @@ runs:
       shell: bash
       run: mkdir -p "$HOME/.cache/uv" "$HOME/.pnpm-store" "$HOME/.cache/sccache"
 
+    - name: Start persistent container
+      uses: ./.github/actions/docker-lifecycle
+      with:
+        env: ${{ inputs.env }}
+        name: ${{ inputs.docker-container }}
+        image: ${{ inputs.docker-image }}
+        user: ${{ inputs.docker-user }}
+        workspace: ${{ inputs.docker-workspace }}
+
     - name: Run pnpm install script
       uses: ./.github/actions/shell-docker
       with:
-        env: ${{ inputs.env }}
-        docker-image: ${{ inputs.docker-image }}
-        docker-user: ${{ inputs.docker-user }}
-        docker-workspace: ${{ inputs.docker-workspace }}
+        docker-container: ${{ inputs.docker-container }}
         run: pnpm install --frozen-lockfile --prefer-offline

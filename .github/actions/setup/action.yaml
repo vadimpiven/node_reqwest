@@ -26,6 +26,9 @@ inputs:
   docker-workspace:
     description: 'Docker container workspace folder'
     required: true
+  docker-container:
+    description: 'Docker container name'
+    required: true
 
 runs:
   using: 'composite'
@@ -80,6 +83,7 @@ runs:
         github-token: ${{ inputs.github-token }}
         docker-user: ${{ inputs.docker-user }}
         docker-workspace: ${{ inputs.docker-workspace }}
+        docker-container: ${{ inputs.docker-container }}
 
     - name: Setup (Native)
       if: runner.os != 'Linux'

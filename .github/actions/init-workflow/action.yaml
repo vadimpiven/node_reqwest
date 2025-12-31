@@ -39,8 +39,11 @@ outputs:
     description: 'Globs for test reports'
     value: 'packages/**/report-*.junit.xml'
   docker-image:
-    description: 'Docker image tag for Linux builds'
+    description: 'Docker image tag'
     value: devcontainer:local
+  docker-container:
+    description: 'Docker container name'
+    value: devcontainer
   docker-cache:
     description: 'Docker cache registry reference'
     value: ${{ steps.parse.outputs.docker-cache }}
