@@ -1,11 +1,9 @@
-name: 'Platform shell'
+name: 'Shell (Native)'
 description: 'Run shell commands in Bash or MSVC powershell'
-
 inputs:
   run:
     description: 'The command to run'
     required: true
-
 runs:
   using: 'composite'
   steps:
@@ -15,7 +13,6 @@ runs:
       env:
         INPUT_SCRIPT: ${{ inputs.run }}
       run: eval "$INPUT_SCRIPT"
-    
     - name: Run command (Windows)
       if: runner.os == 'Windows'
       shell: pwsh

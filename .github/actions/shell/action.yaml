@@ -1,0 +1,25 @@
+name: 'Shell'
+description: 'Platform-aware shell - uses Docker on Linux, native on others'
+inputs:
+  run:
+    description: 'Commands to run'
+    required: true
+  docker-service:
+    description: 'Docker service name'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Run (Docker)
+      if: runner.os == 'Linux'
+      uses: ./.github/actions/shell-docker
+      with:
+        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
+        run: ${{ inputs.run }}
+        docker-service: ${{ inputs.docker-service }}
+    - name: Run (Native)
+      if: runner.os != 'Linux'
+      uses: ./.github/actions/shell-native
+      with:
+        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
+        run: ${{ inputs.run }}

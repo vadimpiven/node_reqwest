@@ -10,7 +10,6 @@ coverage:
         target: auto
         threshold: 5%
         informational: true
-
 ignore:
   - "**/scripts/**/*"
   - "**/tests/**/*"

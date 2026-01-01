@@ -1,7 +1,7 @@
 name: Build and test
 on:
   pull_request:
-    types: [ opened, reopened, synchronize ]
+    types: [opened, reopened, synchronize]
     branches:
       - 'main'
   push:
@@ -9,26 +9,27 @@ on:
       - 'main'
   schedule:
     - cron: '32 4 * * *'
-  workflow_dispatch: { }
-
+  workflow_dispatch: {}
 permissions: {}
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-
 jobs:
   init:
     name: Init
     runs-on: ubuntu-latest
+    permissions: {} # No permissions needed
     outputs:
       matrix: ${{ steps.init-workflow.outputs.matrix }}
       env: ${{ steps.init-workflow.outputs.env }}
+      cache-key: ${{ steps.init-workflow.outputs.cache-key }}
       pnpm-version: ${{ steps.init-workflow.outputs.pnpm-version }}
       node-version: ${{ steps.init-workflow.outputs.node-version }}
       test-coverage: ${{ steps.init-workflow.outputs.test-coverage }}
       test-reports: ${{ steps.init-workflow.outputs.test-reports }}
+      docker-image: ${{ steps.init-workflow.outputs.docker-image }}
+      docker-service: ${{ steps.init-workflow.outputs.docker-service }}
+      docker-cache: ${{ steps.init-workflow.outputs.docker-cache }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -36,16 +37,15 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Init workflow constants
         id: init-workflow
         uses: ./.github/actions/init-workflow
-  
   build-and-test:
     name: Build and test
     timeout-minutes: 45
     permissions:
       contents: read # to fetch code
+      packages: write # to push Docker images
       id-token: write # for OIDC authentication
     needs:
       - init
@@ -60,26 +60,27 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Setup development environment
-        uses: ./.github/actions/setup-agent
+        uses: ./.github/actions/setup
         with:
           env: ${{ needs.init.outputs.env }}
           pnpm-version: ${{ needs.init.outputs.pnpm-version }}
           node-version: ${{ needs.init.outputs.node-version }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-cache: ${{ needs.init.outputs.docker-cache }}
+          docker-service: ${{ needs.init.outputs.docker-service }}
+          cache-key: ${{ needs.init.outputs.cache-key }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Build and test
-        uses: ./.github/actions/platform-shell
+        uses: ./.github/actions/shell
         with:
+          docker-service: ${{ needs.init.outputs.docker-service }}
           run: pnpm run ci-test
-      
       - name: Upload reports
         uses: ./.github/actions/upload-reports
         with:
           test-coverage: ${{ needs.init.outputs.test-coverage }}
           test-reports: ${{ needs.init.outputs.test-reports }}
-
   zizmor:
     name: Check CI scripts
     timeout-minutes: 15
@@ -93,14 +94,12 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Run zizmor
         uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4 # v0.3.0
         with:
           persona: auditor
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   trivy:
     name: Security scan
     timeout-minutes: 15
@@ -115,14 +114,12 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
         with:
           trivy-config: trivy.yaml
           scan-type: 'fs'
           scan-ref: '.'
-      
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
         with:

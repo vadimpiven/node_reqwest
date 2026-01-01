@@ -1,12 +1,9 @@
 packages:
   - packages/*
-
 allowBuilds:
   electron: true
   esbuild: true
-
 blockExoticSubdeps: true
-
 catalog:
   '@biomejs/cli-darwin-arm64': ^2.3.10
   '@biomejs/cli-darwin-x64': ^2.3.10
@@ -32,9 +29,6 @@ catalog:
   vite: ^7.3.0
   vite-plugin-dts: ^4.5.4
   vitest: ^4.0.16
-
 minimumReleaseAge: 10080
-
 minimumReleaseAgeExclude: null
-
 strictDepBuilds: true

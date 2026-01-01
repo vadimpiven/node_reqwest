@@ -1,15 +1,15 @@
 # Trivy configuration file for consistent local and CI scans
 # Documentation: https://aquasecurity.github.io/trivy/latest/docs/configuration/config-file/
-
 # Scan options
 scan:
   type: fs
+  skip-files:
+    - ".cache/**"
 
 scanners:
   - vuln
-  - config
+  - misconfig
   - secret
-
 # Report options
 format: sarif
 output: trivy-results.sarif
@@ -20,7 +20,6 @@ severity:
   - HIGH
   - CRITICAL
 ignore-unfixed: true
-exit-code: 0
-
+exit-code: 1
 # Cache options
 cache-dir: .trivycache

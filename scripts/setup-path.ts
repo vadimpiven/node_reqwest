@@ -28,6 +28,13 @@ async function setupCargoBin(): Promise<void> {
     await fs.rm(binDir, { recursive: true, force: true });
   }
 
+  // Install cargo-run-bin only if not already available (e.g., restored from cache)
+  try {
+    await runCommand('cargo', ['bin', '--version']);
+  } catch {
+    await runCommand('cargo', ['binstall', 'cargo-run-bin', '-y', '--locked']);
+  }
+
   await runCommand('cargo', ['bin', '--install']);
   await fs.mkdir(binDir, { recursive: true });
   await fs.writeFile(markerPath, '');

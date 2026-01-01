@@ -24,6 +24,9 @@
       "correctness": {
         "useImportExtensions": "error"
       },
+      "style": {
+        "noNonNullAssertion": "off"
+      },
       "suspicious": {
         "noExplicitAny": "error"
       }

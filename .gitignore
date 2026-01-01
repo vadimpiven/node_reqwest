@@ -1,5 +1,7 @@
 # common
 .env
+.env.*
+!.env.example
 .DS_Store
 lcov.info
 package.tar.gz
@@ -9,6 +11,7 @@ trivy-results.sarif
 .bin/
 .path/
 .venv/
+.cache/
 dist/
 node_modules/
 target/

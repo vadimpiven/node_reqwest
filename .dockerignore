@@ -2,18 +2,20 @@
 **
 
 # Allow only the files needed for the Dockerfile
-!package.json
-!pnpm-workspace.yaml
-!rust-toolchain.toml
-!.python-version
 !pyproject.toml
+!.python-version
+!package.json
+!rust-toolchain.toml
 
 # Ignore common large directories
 node_modules
 target
 .venv
+.cache
 .bin
 .path
 
 # Ignore .env file
 .env
+.env.*
+!.env.example

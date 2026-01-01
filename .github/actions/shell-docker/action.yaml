@@ -1,0 +1,19 @@
+name: 'Shell (Docker)'
+description: 'Run commands inside the devcontainer'
+inputs:
+  run:
+    description: 'Commands to run'
+    required: true
+  docker-service:
+    description: 'Docker service name'
+    default: 'dev'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run in container
+      shell: bash
+      env:
+        INPUT_RUN: ${{ inputs.run }}
+        DOCKER_SERVICE: ${{ inputs.docker-service }}
+      run: |
+        docker compose exec -T "$DOCKER_SERVICE" bash -c "$INPUT_RUN"

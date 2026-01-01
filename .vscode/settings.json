@@ -1,14 +1,5 @@
 {
-  "biome.lsp.bin": {
-    "linux-arm64": "./.path/biome",
-    "linux-x64": "./.path/biome",
-    "linux-arm64-musl": "./.path/biome",
-    "linux-x64-musl": "./.path/biome",
-    "darwin-arm64": "./.path/biome",
-    "darwin-x64": "./.path/biome",
-    "win32-arm64": "./.path/biome.exe",
-    "win32-x64": "./.path/biome.exe"
-  },
+  "biome.lsp.bin": "./.path/biome",
   "biome.lspBin": "./.path/biome",
   "biome.lsp.trace.server": "verbose",
   "editor.formatOnSave": true,
@@ -23,6 +14,13 @@
     "**/.cargo/git/checkouts/**/*.rs": true,
     "**/lib/rustlib/src/rust/library/**/*.rs": true
   },
+  "files.exclude": {
+    "**/.cache": true
+  },
+  "search.exclude": {
+    "**/.cache": true
+  },
   "rust-analyzer.cargo.targetDir": true,
-  "rust-analyzer.runnables.extraTestBinaryArgs": ["--nocapture"]
+  "rust-analyzer.runnables.extraTestBinaryArgs": ["--nocapture"],
+  "trivy.configPath": "trivy.yaml"
 }

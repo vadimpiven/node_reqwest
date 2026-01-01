@@ -3,24 +3,25 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch: { }
-
+  workflow_dispatch: {}
 permissions: {}
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-
 jobs:
   init:
     name: Init
     runs-on: ubuntu-latest
+    permissions: {} # No permissions needed
     outputs:
       matrix: ${{ steps.init-workflow.outputs.matrix }}
       env: ${{ steps.init-workflow.outputs.env }}
+      cache-key: ${{ steps.init-workflow.outputs.cache-key }}
       pnpm-version: ${{ steps.init-workflow.outputs.pnpm-version }}
       node-version: ${{ steps.init-workflow.outputs.node-version }}
+      docker-image: ${{ steps.init-workflow.outputs.docker-image }}
+      docker-cache: ${{ steps.init-workflow.outputs.docker-cache }}
+      docker-service: ${{ steps.init-workflow.outputs.docker-service }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -28,16 +29,15 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Init workflow constants
         id: init-workflow
         uses: ./.github/actions/init-workflow
-  
   build-addon:
     name: Build addon
     timeout-minutes: 45
     permissions:
       contents: write # for release creation
+      packages: write # to push Docker images
       id-token: write # for OIDC authentication
       attestations: write # for build provenance
     needs:
@@ -53,48 +53,48 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Setup development environment
-        uses: ./.github/actions/setup-agent
+        uses: ./.github/actions/setup
         with:
           env: ${{ needs.init.outputs.env }}
           pnpm-version: ${{ needs.init.outputs.pnpm-version }}
           node-version: ${{ needs.init.outputs.node-version }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-cache: ${{ needs.init.outputs.docker-cache }}
+          docker-service: ${{ needs.init.outputs.docker-service }}
+          cache-key: ${{ needs.init.outputs.cache-key }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Build node addon
-        uses: ./.github/actions/platform-shell
+        uses: ./.github/actions/shell
         with:
+          docker-service: ${{ needs.init.outputs.docker-service }}
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run ci-build
-      
       - name: Sign and notarize
         uses: ./.github/actions/sign-notarize
         with:
           binary-path: ${{ github.workspace }}/packages/node/dist/napi-v8/node_reqwest.node
-      
       - name: Pack node addon
-        uses: ./.github/actions/platform-shell
+        uses: ./.github/actions/shell
         with:
+          docker-service: ${{ needs.init.outputs.docker-service }}
           run: pnpm -F "{packages/node}" run pack-addon
-      
       - name: Attest build provenance
         uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
         with:
           subject-path: packages/node/build/stage/**/*.tar.gz
-      
       - name: Upload node addon
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           files: packages/node/build/stage/**/*.tar.gz
           draft: true
-  
   build-package:
     name: Build package
     timeout-minutes: 30
     permissions:
       contents: write # for release creation
+      packages: write # to push Docker images (if Linux runner)
       id-token: write # for OIDC authentication
       attestations: write # for build provenance
     needs:
@@ -109,33 +109,33 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Setup development environment
-        uses: ./.github/actions/setup-agent
+        uses: ./.github/actions/setup
         with:
           env: ${{ needs.init.outputs.env }}
           pnpm-version: ${{ needs.init.outputs.pnpm-version }}
           node-version: ${{ needs.init.outputs.node-version }}
+          docker-image: ${{ needs.init.outputs.docker-image }}
+          docker-cache: ${{ needs.init.outputs.docker-cache }}
+          docker-service: ${{ needs.init.outputs.docker-service }}
+          cache-key: ${{ needs.init.outputs.cache-key }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Build export wrapper
-        uses: ./.github/actions/platform-shell
+        uses: ./.github/actions/shell
         with:
+          docker-service: ${{ needs.init.outputs.docker-service }}
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run build:ts
-      
       - name: Attest build provenance
         uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
         with:
           subject-path: packages/node/package.tar.gz
-      
       - name: Finalize release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           files: packages/node/package.tar.gz
           draft: false
-  
   npm-publish:
     name: Publish package
     timeout-minutes: 15
@@ -153,7 +153,6 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Install latest Node.js with correct .npmrc
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
@@ -161,21 +160,17 @@ jobs:
           check-latest: true
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
-      
       - name: Update npm CLI
         shell: bash
         run: npm install -g npm@latest
-      
       - name: Download package artifact
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release download $GITHUB_REF_NAME --pattern package.tar.gz
-      
       - name: Publish to npmjs.org
         shell: bash
         run: npm publish package.tar.gz --access public --provenance
-  
   verify-installation:
     name: Verify release installation
     timeout-minutes: 5
@@ -193,7 +188,6 @@ jobs:
         with:
           node-version: ${{ needs.init.outputs.node-version }}
           package-manager-cache: false
-      
       - name: Verify release installation
         shell: bash
         run: |
