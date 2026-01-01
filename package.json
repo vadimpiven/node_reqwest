@@ -26,7 +26,7 @@
     "markdownlint-cli2": "catalog:"
   },
   "scripts": {
-    "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y --locked",
+    "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y --locked --force",
     "postinstall": "node scripts/setup-path.ts",
     "playwright": "pnpm exec playwright install-deps",
     "rustup": "rustup update && rustup toolchain install",
