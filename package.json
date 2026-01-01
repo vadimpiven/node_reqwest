@@ -36,7 +36,7 @@
     "check:clippy": "cargo clippy -r --locked -- -D warnings",
     "check:rustfmt": "cargo fmt --check",
     "check:zizmor": "uv run --no-sync zizmor -q .github",
-    "check:semgrep": "uv run --no-sync --env-file .python.env semgrep scan -q --error --strict",
+    "check:semgrep": "uv run --no-sync --env-file .python.env semgrep scan --error --strict",
     "check": "pnpm run check:biome && pnpm run check:taplo && pnpm run check:markdownlint && pnpm run check:clippy && pnpm run check:rustfmt && pnpm run check:zizmor && pnpm run check:semgrep",
     "fix:biome": "pnpm run check:biome --fix",
     "fix:taplo": "pnpm exec taplo format",
