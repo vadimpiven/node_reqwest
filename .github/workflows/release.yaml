@@ -3,15 +3,11 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch: { }
-
+  workflow_dispatch: {}
 permissions: {}
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-
 jobs:
   init:
     name: Init
@@ -32,11 +28,9 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Init workflow constants
         id: init-workflow
         uses: ./.github/actions/init-workflow
-  
   build-addon:
     name: Build addon
     timeout-minutes: 45
@@ -58,7 +52,6 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Setup development environment
         uses: ./.github/actions/setup
         with:
@@ -70,7 +63,6 @@ jobs:
           docker-service: ${{ needs.init.outputs.docker-service }}
           cache-key: ${{ needs.init.outputs.cache-key }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Build node addon
         uses: ./.github/actions/shell
         with:
@@ -78,29 +70,24 @@ jobs:
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run ci-build
-      
       - name: Sign and notarize
         uses: ./.github/actions/sign-notarize
         with:
           binary-path: ${{ github.workspace }}/packages/node/dist/napi-v8/node_reqwest.node
-      
       - name: Pack node addon
         uses: ./.github/actions/shell
         with:
           docker-service: ${{ needs.init.outputs.docker-service }}
           run: pnpm -F "{packages/node}" run pack-addon
-      
       - name: Attest build provenance
         uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
         with:
           subject-path: packages/node/build/stage/**/*.tar.gz
-      
       - name: Upload node addon
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           files: packages/node/build/stage/**/*.tar.gz
           draft: true
-  
   build-package:
     name: Build package
     timeout-minutes: 30
@@ -121,7 +108,6 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Setup development environment
         uses: ./.github/actions/setup
         with:
@@ -133,7 +119,6 @@ jobs:
           docker-service: ${{ needs.init.outputs.docker-service }}
           cache-key: ${{ needs.init.outputs.cache-key }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Build export wrapper
         uses: ./.github/actions/shell
         with:
@@ -141,18 +126,15 @@ jobs:
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run build:ts
-      
       - name: Attest build provenance
         uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
         with:
           subject-path: packages/node/package.tar.gz
-      
       - name: Finalize release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           files: packages/node/package.tar.gz
           draft: false
-  
   npm-publish:
     name: Publish package
     timeout-minutes: 15
@@ -170,7 +152,6 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 1
           persist-credentials: false
-      
       - name: Install latest Node.js with correct .npmrc
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
@@ -178,21 +159,17 @@ jobs:
           check-latest: true
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
-      
       - name: Update npm CLI
         shell: bash
         run: npm install -g npm@latest
-      
       - name: Download package artifact
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release download $GITHUB_REF_NAME --pattern package.tar.gz
-      
       - name: Publish to npmjs.org
         shell: bash
         run: npm publish package.tar.gz --access public --provenance
-  
   verify-installation:
     name: Verify release installation
     timeout-minutes: 5
@@ -210,7 +187,6 @@ jobs:
         with:
           node-version: ${{ needs.init.outputs.node-version }}
           package-manager-cache: false
-      
       - name: Verify release installation
         shell: bash
         run: |

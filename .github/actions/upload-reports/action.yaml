@@ -1,6 +1,5 @@
 name: 'Upload Reports'
 description: 'Expands globs and uploads coverage and test reports to Codecov'
-
 inputs:
   test-coverage:
     description: 'Globs for coverage reports'
@@ -8,7 +7,6 @@ inputs:
   test-reports:
     description: 'Globs for test reports'
     required: true
-
 runs:
   using: 'composite'
   steps:
@@ -18,7 +16,6 @@ runs:
         node-version: 'latest'
         check-latest: true
         package-manager-cache: false
-
     - name: Expand globs
       id: expand
       shell: bash
@@ -28,7 +25,7 @@ runs:
       run: |
         node << 'EOF' >> "$GITHUB_OUTPUT"
         const fs = require('node:fs');
-        
+
         const expand = (input) => {
           return input.split(',')
             .map(p => p.trim())
@@ -37,11 +34,10 @@ runs:
             .filter(f => fs.statSync(f).isFile())
             .join(',');
         };
-        
+
         console.log('coverage=%s', expand(process.env.COVERAGE_PATTERN));
         console.log('reports=%s', expand(process.env.REPORTS_PATTERN));
         EOF
-
     - name: Upload coverage reports to Codecov
       if: steps.expand.outputs.coverage != ''
       uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
@@ -49,7 +45,6 @@ runs:
         use_oidc: true
         report_type: coverage
         files: ${{ steps.expand.outputs.coverage }}
-    
     - name: Upload test results to Codecov
       if: steps.expand.outputs.reports != ''
       uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2

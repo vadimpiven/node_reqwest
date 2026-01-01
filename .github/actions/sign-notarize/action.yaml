@@ -28,7 +28,6 @@ inputs:
   windows-pfx-password:
     description: 'Password for the Windows PFX certificate'
     required: false
-
 runs:
   using: 'composite'
   steps:
@@ -38,7 +37,6 @@ runs:
       with:
         p12-file-base64: ${{ inputs.mac-cert-base64 }}
         p12-password: ${{ inputs.mac-cert-passwd }}
-    
     - name: Sign Binary (macOS)
       if: runner.os == 'macOS' && inputs.mac-cert-base64 != ''
       shell: bash
@@ -50,7 +48,6 @@ runs:
         codesign --remove-signature ${BINARY_PATH} || true
         codesign -s "${CERT_ID}" --timestamp --options runtime -v "${BINARY_PATH}"
         echo "Signed ${BINARY_PATH} with ${CERT_ID}"
-    
     - name: Notarize Binary (macOS)
       if: runner.os == 'macOS' && inputs.mac-api-key-base64 != ''
       shell: bash
@@ -96,7 +93,6 @@ runs:
 
         # Staple
         xcrun stapler staple "$BINARY_PATH"
-
     - name: Sign (Windows)
       if: runner.os == 'Windows' && inputs.windows-pfx-base64 != ''
       shell: pwsh
@@ -110,7 +106,7 @@ runs:
           New-Item -ItemType directory -Path certificate
           Set-Content -Path certificate\certificate.txt -Value $env:WINDOWS_PFX_BASE64
           certutil -decode certificate\certificate.txt certificate\certificate.pfx
-          
+
           # Sign
           signtool sign `
             /f certificate\certificate.pfx `

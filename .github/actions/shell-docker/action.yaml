@@ -1,6 +1,5 @@
 name: 'Shell (Docker)'
 description: 'Run commands inside the devcontainer'
-
 inputs:
   run:
     description: 'Commands to run'
@@ -8,7 +7,6 @@ inputs:
   docker-service:
     description: 'Docker service name'
     default: 'dev'
-
 runs:
   using: 'composite'
   steps:

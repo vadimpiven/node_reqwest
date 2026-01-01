@@ -1,6 +1,5 @@
 name: 'Init Workflow'
 description: 'Defines central configurations and constants for workflows'
-
 outputs:
   matrix:
     description: 'Matrix for regular runs'
@@ -51,7 +50,6 @@ outputs:
   docker-cache:
     description: 'Docker cache registry reference'
     value: ${{ steps.parse.outputs.docker-cache }}
-
 runs:
   using: 'composite'
   steps:
@@ -63,12 +61,12 @@ runs:
       run: |
         PNPM_VERSION=$(jq -er '.engines.pnpm | ltrimstr("^")' package.json)
         NODE_VERSION=$(jq -er '.engines.node | ltrimstr("^")' package.json)
-        
+
         REPO_NAME=$(basename "$GITHUB_REPOSITORY")
         DOCKER_SERVICE=$(yq -er '.services | keys | .[0]' docker-compose.yml)
         DOCKER_IMAGE="${REPO_NAME}-${DOCKER_SERVICE}"
         DOCKER_CACHE=$(yq -er ".services[\"$DOCKER_SERVICE\"].build.cache_from[0]" docker-compose.yml)
-        
+
         echo "pnpm-version=$PNPM_VERSION" >> "$GITHUB_OUTPUT"
         echo "node-version=$NODE_VERSION" >> "$GITHUB_OUTPUT"
         echo "docker-image=$DOCKER_IMAGE" >> "$GITHUB_OUTPUT"

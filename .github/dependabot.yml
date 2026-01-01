@@ -6,7 +6,6 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
-  
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -16,14 +15,12 @@ updates:
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
-  
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "weekly"
     cooldown:
       default-days: 7
-
   - package-ecosystem: "docker"
     directory: "/.devcontainer"
     schedule:

@@ -1,6 +1,5 @@
 name: 'Setup Environment'
 description: 'Platform-aware setup - uses Docker on Linux, native on others'
-
 inputs:
   env:
     description: 'Environment variables in JSON format'
@@ -26,7 +25,6 @@ inputs:
   docker-service:
     description: 'Docker service name'
     required: true
-
 runs:
   using: 'composite'
   steps:
@@ -41,7 +39,6 @@ runs:
           .cache/cargo/git \
           .cache/sccache \
           .trivycache
-    
     - name: Extend environment with cache paths
       id: native-env
       shell: bash
@@ -57,7 +54,6 @@ runs:
           }
         ')
         echo "env=$RESULT" >> "$GITHUB_OUTPUT"
-
     - name: Restore uv cache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
@@ -65,7 +61,6 @@ runs:
         key: ${{ inputs.cache-key }}-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pyproject.toml') }}
         restore-keys: |
           ${{ inputs.cache-key }}-uv-${{ runner.os }}-${{ runner.arch }}-
-
     - name: Restore pnpm cache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
@@ -73,7 +68,6 @@ runs:
         key: ${{ inputs.cache-key }}-pnpm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ inputs.cache-key }}-pnpm-${{ runner.os }}-${{ runner.arch }}-
-
     - name: Restore cargo cache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
@@ -85,7 +79,6 @@ runs:
         key: ${{ inputs.cache-key }}-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.toml', 'Cargo.lock') }}
         restore-keys: |
           ${{ inputs.cache-key }}-cargo-${{ runner.os }}-${{ runner.arch }}-
-
     - name: Restore sccache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
@@ -93,7 +86,6 @@ runs:
         key: ${{ inputs.cache-key }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
         restore-keys: |
           ${{ inputs.cache-key }}-sccache-${{ runner.os }}-${{ runner.arch }}-
-
     - name: Restore Trivy cache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
@@ -101,7 +93,6 @@ runs:
         key: ${{ inputs.cache-key }}-trivy-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
         restore-keys: |
           ${{ inputs.cache-key }}-trivy-${{ runner.os }}-${{ runner.arch }}-
-
     - name: Setup (Docker)
       if: runner.os == 'Linux'
       uses: ./.github/actions/setup-docker
@@ -111,7 +102,6 @@ runs:
         docker-cache: ${{ inputs.docker-cache }}
         github-token: ${{ inputs.github-token }}
         docker-service: ${{ inputs.docker-service }}
-
     - name: Setup (Native)
       if: runner.os != 'Linux'
       uses: ./.github/actions/setup-native
