@@ -15,10 +15,18 @@ runScript('Vitest', async () => {
   const { vitestConfig } = await resolveConfig({ root: packageDir });
   const coverageDir = vitestConfig.coverage.reportsDirectory ?? 'coverage';
 
-  // Ensure coverage directory and its .tmp subdirectory exist to prevent ENOENT race condition
+  // Clean and recreate coverage directory to prevent ENOENT race condition
   const coveragePath = join(packageDir, coverageDir);
+  await fs.rm(coveragePath, { recursive: true, force: true });
   await fs.mkdir(join(coveragePath, '.tmp'), { recursive: true });
-  console.log('> Ensured coverage directory exists: %s', coverageDir);
+  console.log('> Recreated coverage directory: %s', coverageDir);
 
-  await runCommand('pnpm', ['exec', 'vitest', 'run', '--coverage', ...args]);
+  await runCommand('pnpm', [
+    'exec',
+    'vitest',
+    'run',
+    '--coverage',
+    '--coverage.clean=false',
+    ...args
+  ]);
 });
