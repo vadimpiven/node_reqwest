@@ -6,7 +6,9 @@ services:
         USER_UID: ${USER_UID:-1001}
         USER_GID: ${USER_GID:-1001}
       cache_from:
-        - ghcr.io/vadimpiven/node_reqwest:buildcache
+        - type=registry,ref=ghcr.io/vadimpiven/node_reqwest:buildcache
+      cache_to:
+        - type=registry,ref=ghcr.io/vadimpiven/node_reqwest:buildcache,mode=max
     image: ${COMPOSE_IMAGE:-node_reqwest-dev}
     user: runner
     working_dir: /workspace

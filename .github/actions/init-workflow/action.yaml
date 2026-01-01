@@ -65,7 +65,7 @@ runs:
         REPO_NAME=$(basename "$GITHUB_REPOSITORY")
         DOCKER_SERVICE=$(yq -er '.services | keys | .[0]' docker-compose.yml)
         DOCKER_IMAGE="${REPO_NAME}-${DOCKER_SERVICE}"
-        DOCKER_CACHE=$(yq -er ".services[\"$DOCKER_SERVICE\"].build.cache_from[0]" docker-compose.yml)
+        DOCKER_CACHE=$(yq -er ".services[\"$DOCKER_SERVICE\"].build.cache_from[0]" docker-compose.yml | sed 's/.*ref=\([^,]*\).*/\1/')
 
         echo "pnpm-version=$PNPM_VERSION" >> "$GITHUB_OUTPUT"
         echo "node-version=$NODE_VERSION" >> "$GITHUB_OUTPUT"
