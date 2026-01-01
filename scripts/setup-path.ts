@@ -15,6 +15,11 @@ const binDir = path.join(projectRoot, '.bin');
 const isWindows = process.platform === 'win32';
 const isLinux = process.platform === 'linux';
 
+/**
+ * Ensures the cargo "bin" toolchain is available and prepares the repository .bin directory for the current platform and architecture.
+ *
+ * If the platform/arch marker is missing, the existing .bin directory is removed. The function verifies whether `cargo bin` is available and installs `cargo-run-bin` if it is not, runs the cargo bin installer, creates the `.bin` directory, and writes an empty marker file named `.<platform>-<arch>` inside it.
+ */
 async function setupCargoBin(): Promise<void> {
   const markerFile = `.${process.platform}-${os.arch()}`;
   const markerPath = path.join(binDir, markerFile);

@@ -4,7 +4,11 @@ import { spawn } from 'node:child_process';
 import { ensureError } from './run-script.ts';
 
 /**
- * Executes a command asynchronously, logs it, and handles errors/exit status.
+ * Run an external command with the given arguments and log its invocation.
+ *
+ * @param command - The executable name or path to run
+ * @param args - Arguments to pass to the command
+ * @returns Resolves when the process exits with code 0; rejects with an `Error` if the process fails to start or exits with a non-zero exit code
  */
 export async function runCommand(command: string, args: string[]): Promise<void> {
   console.log('> %s %s', command, args.join(' '));
