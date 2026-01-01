@@ -18,6 +18,7 @@ jobs:
   init:
     name: Init
     runs-on: ubuntu-latest
+    permissions: {} # No permissions needed
     outputs:
       matrix: ${{ steps.init-workflow.outputs.matrix }}
       env: ${{ steps.init-workflow.outputs.env }}

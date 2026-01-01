@@ -22,7 +22,7 @@ updates:
     cooldown:
       default-days: 7
   - package-ecosystem: "docker"
-    directory: "/.devcontainer"
+    directory: "/"
     schedule:
       interval: "weekly"
     cooldown:
