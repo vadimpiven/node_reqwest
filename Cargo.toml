@@ -81,51 +81,8 @@ with_dir = { version = "0.1.4" }
 
 [workspace.metadata.bin]
 # Check for updates manually, dependabot ignores this section
-cargo-nextest = { version = "0.9.116", locked = true, targets = [
-    "x86_64-unknown-linux-musl",
-    "aarch64-unknown-linux-musl",
-    "aarch64-apple-darwin",
-    "x86_64-apple-darwin",
-    "x86_64-pc-windows-msvc",
-    "aarch64-pc-windows-msvc",
-] }
-cargo-llvm-cov = { version = "0.6.22", locked = true, targets = [
-    "x86_64-unknown-linux-musl",
-    "aarch64-unknown-linux-musl",
-    "aarch64-apple-darwin",
-    "x86_64-apple-darwin",
-    "x86_64-pc-windows-msvc",
-    "aarch64-pc-windows-msvc",
-] }
-cargo-deny = { version = "0.18.9", targets = [
-    "x86_64-unknown-linux-musl",
-    "aarch64-unknown-linux-musl",
-    "aarch64-apple-darwin",
-    "x86_64-apple-darwin",
-    "x86_64-pc-windows-msvc",
-    "aarch64-pc-windows-msvc",
-] }
-cargo-cache = { version = "0.8.3", targets = [
-    "x86_64-unknown-linux-musl",
-    "aarch64-unknown-linux-musl",
-    "aarch64-apple-darwin",
-    "x86_64-apple-darwin",
-    "x86_64-pc-windows-msvc",
-    "aarch64-pc-windows-msvc",
-] }
-samply = { version = "0.13.1", targets = [
-    "x86_64-unknown-linux-musl",
-    "aarch64-unknown-linux-musl",
-    "aarch64-apple-darwin",
-    "x86_64-apple-darwin",
-    "x86_64-pc-windows-msvc",
-    "aarch64-pc-windows-msvc",
-] }
-zizmor = { version = "1.19.0", locked = true, targets = [
-    "x86_64-unknown-linux-musl",
-    "aarch64-unknown-linux-musl",
-    "aarch64-apple-darwin",
-    "x86_64-apple-darwin",
-    "x86_64-pc-windows-msvc",
-    "aarch64-pc-windows-msvc",
-] }
+cargo-nextest = { version = "0.9.116", locked = true }
+cargo-llvm-cov = { version = "0.6.22", locked = true }
+cargo-deny = { version = "0.18.9" }
+cargo-cache = { version = "0.8.3" }
+samply = { version = "0.13.1" }

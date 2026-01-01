@@ -1,15 +1,10 @@
 {
-  "name": "node_reqwest",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": "..",
-    "cacheFrom": "ghcr.io/vadimpiven/node_reqwest:buildcache"
-  },
-  "postCreateCommand": "CI=true HUSKY=1 pnpm install --frozen-lockfile --prefer-offline",
-  "waitFor": "postCreateCommand",
+  "name": "Default",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
   "containerUser": "runner",
   "remoteUser": "runner",
-  "updateRemoteUserUID": true,
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
-  "workspaceFolder": "/workspace"
+  "updateRemoteUserUID": true
 }

@@ -8,4 +8,5 @@ members = []
 [dependency-groups]
 dev = [
     "semgrep==1.146.0",
+    "zizmor==1.19.0",
 ]

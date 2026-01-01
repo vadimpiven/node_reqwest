@@ -17,7 +17,8 @@
 
 ## https://taplo.tamasfe.dev/configuration/file.html
 
-include = ["**/*.toml"]
+include = ["*.toml", ".cargo/*.toml", ".config/*.toml", "packages/**/*.toml"]
+exclude = ["**/node_modules"]
 
 [formatting]
 # Align consecutive entries vertically.

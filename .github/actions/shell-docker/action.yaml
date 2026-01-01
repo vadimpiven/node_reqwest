@@ -5,9 +5,9 @@ inputs:
   run:
     description: 'Commands to run'
     required: true
-  docker-container:
-    description: 'Docker container name'
-    default: 'devcontainer'
+  docker-service:
+    description: 'Docker service name'
+    default: 'dev'
 
 runs:
   using: 'composite'
@@ -16,6 +16,6 @@ runs:
       shell: bash
       env:
         INPUT_RUN: ${{ inputs.run }}
-        CONTAINER_NAME: ${{ inputs.docker-container }}
+        DOCKER_SERVICE: ${{ inputs.docker-service }}
       run: |
-        docker exec "$CONTAINER_NAME" bash -c "$INPUT_RUN"
+        docker compose exec -T "$DOCKER_SERVICE" bash -c "$INPUT_RUN"

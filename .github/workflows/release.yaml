@@ -24,9 +24,7 @@ jobs:
       node-version: ${{ steps.init-workflow.outputs.node-version }}
       docker-image: ${{ steps.init-workflow.outputs.docker-image }}
       docker-cache: ${{ steps.init-workflow.outputs.docker-cache }}
-      docker-user: ${{ steps.init-workflow.outputs.docker-user }}
-      docker-workspace: ${{ steps.init-workflow.outputs.docker-workspace }}
-      docker-container: ${{ steps.init-workflow.outputs.docker-container }}
+      docker-service: ${{ steps.init-workflow.outputs.docker-service }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -69,16 +67,14 @@ jobs:
           node-version: ${{ needs.init.outputs.node-version }}
           docker-image: ${{ needs.init.outputs.docker-image }}
           docker-cache: ${{ needs.init.outputs.docker-cache }}
-          docker-user: ${{ needs.init.outputs.docker-user }}
-          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
-          docker-container: ${{ needs.init.outputs.docker-container }}
+          docker-service: ${{ needs.init.outputs.docker-service }}
           cache-key: ${{ needs.init.outputs.cache-key }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build node addon
         uses: ./.github/actions/shell
         with:
-          docker-container: ${{ needs.init.outputs.docker-container }}
+          docker-service: ${{ needs.init.outputs.docker-service }}
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run ci-build
@@ -91,7 +87,7 @@ jobs:
       - name: Pack node addon
         uses: ./.github/actions/shell
         with:
-          docker-container: ${{ needs.init.outputs.docker-container }}
+          docker-service: ${{ needs.init.outputs.docker-service }}
           run: pnpm -F "{packages/node}" run pack-addon
       
       - name: Attest build provenance
@@ -134,16 +130,14 @@ jobs:
           node-version: ${{ needs.init.outputs.node-version }}
           docker-image: ${{ needs.init.outputs.docker-image }}
           docker-cache: ${{ needs.init.outputs.docker-cache }}
-          docker-user: ${{ needs.init.outputs.docker-user }}
-          docker-workspace: ${{ needs.init.outputs.docker-workspace }}
-          docker-container: ${{ needs.init.outputs.docker-container }}
+          docker-service: ${{ needs.init.outputs.docker-service }}
           cache-key: ${{ needs.init.outputs.cache-key }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build export wrapper
         uses: ./.github/actions/shell
         with:
-          docker-container: ${{ needs.init.outputs.docker-container }}
+          docker-service: ${{ needs.init.outputs.docker-service }}
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run build:ts

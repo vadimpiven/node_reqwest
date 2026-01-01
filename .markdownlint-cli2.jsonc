@@ -11,6 +11,6 @@
     },
     "MD041": false
   },
-  "globs": ["**/*.md"],
-  "gitignore": true
+  "globs": ["*.md", "packages/**/*.md", "plans/*.md"],
+  "gitignore": ".gitignore"
 }

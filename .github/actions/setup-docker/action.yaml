@@ -14,15 +14,9 @@ inputs:
   github-token:
     description: 'GitHub token for registry authentication'
     required: true
-  docker-user:
-    description: 'Docker container user'
+  docker-service:
+    description: 'Docker service name'
     required: true
-  docker-workspace:
-    description: 'Docker container workspace'
-    required: true
-  docker-container:
-    description: 'Docker container name'
-    default: 'devcontainer'
 
 runs:
   using: 'composite'
@@ -48,31 +42,35 @@ runs:
       uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
       with:
         context: .
-        file: .devcontainer/Dockerfile
+        file: Dockerfile
         platforms: ${{ runner.arch == 'ARM64' && 'linux/arm64' || 'linux/amd64' }}
         load: true
+        push: false
         tags: ${{ inputs.docker-image }}
         cache-from: type=registry,ref=${{ inputs.docker-cache }}
         cache-to: type=registry,ref=${{ inputs.docker-cache }},mode=max,image-manifest=true
         build-args: |
           USER_UID=${{ steps.ids.outputs.uid }}
           USER_GID=${{ steps.ids.outputs.gid }}
-    
-    - name: Create host cache directories
+
+    - name: Set environment variables
       shell: bash
-      run: mkdir -p "$HOME/.cache/uv" "$HOME/.pnpm-store" "$HOME/.cache/sccache" "$HOME/.cargo/bin"
-
+      env:
+        ENV: ${{ inputs.env }}
+      run: |
+        printf "%s" "$ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"' >> .env
+        printf "%s" "$ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
+    
     - name: Start persistent container
-      uses: ./.github/actions/docker-lifecycle
+      uses: hoverkraft-tech/compose-action@248470ecc5ed40d8ed3d4480d8260d77179ef579 # v2.4.2
+      env:
+        COMPOSE_IMAGE: ${{ inputs.docker-image }}
       with:
-        env: ${{ inputs.env }}
-        name: ${{ inputs.docker-container }}
-        image: ${{ inputs.docker-image }}
-        user: ${{ inputs.docker-user }}
-        workspace: ${{ inputs.docker-workspace }}
-
+        services: ${{ inputs.docker-service }}
+        up-flags: "--no-build"
+    
     - name: Run pnpm install script
       uses: ./.github/actions/shell-docker
       with:
-        docker-container: ${{ inputs.docker-container }}
+        docker-service: ${{ inputs.docker-service }}
         run: pnpm install --frozen-lockfile --prefer-offline

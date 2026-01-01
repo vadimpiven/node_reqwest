@@ -27,7 +27,8 @@ outputs:
         "CARGO_INCREMENTAL": "0",
         "CARGO_NET_GIT_FETCH_WITH_CLI": "true",
         "RUST_BACKTRACE": "1",
-        "RUSTC_WRAPPER": "sccache"
+        "RUSTC_WRAPPER": "sccache",
+        "SCCACHE_CACHE_SIZE": "5G"
       }
   pnpm-version:
     description: 'pnpm version'
@@ -43,19 +44,13 @@ outputs:
     value: 'packages/**/report-*.junit.xml'
   docker-image:
     description: 'Docker image tag'
-    value: devcontainer:local
-  docker-container:
-    description: 'Docker container name'
-    value: devcontainer
+    value: ${{ steps.parse.outputs.docker-image }}
+  docker-service:
+    description: 'Docker service name'
+    value: ${{ steps.parse.outputs.docker-service }}
   docker-cache:
     description: 'Docker cache registry reference'
     value: ${{ steps.parse.outputs.docker-cache }}
-  docker-user:
-    description: 'Docker container user'
-    value: ${{ steps.parse.outputs.docker-user }}
-  docker-workspace:
-    description: 'Docker container workspace folder'
-    value: ${{ steps.parse.outputs.docker-workspace }}
 
 runs:
   using: 'composite'
@@ -63,15 +58,19 @@ runs:
     - name: Parse versions from package.json
       id: parse
       shell: bash
+      env:
+        GITHUB_REPOSITORY: ${{ github.repository }}
       run: |
         PNPM_VERSION=$(jq -er '.engines.pnpm | ltrimstr("^")' package.json)
         NODE_VERSION=$(jq -er '.engines.node | ltrimstr("^")' package.json)
-        DOCKER_CACHE=$(jq -er '.build.cacheFrom' .devcontainer/devcontainer.json)
-        DOCKER_USER=$(jq -er '.containerUser' .devcontainer/devcontainer.json)
-        DOCKER_WORKSPACE=$(jq -er '.workspaceFolder' .devcontainer/devcontainer.json)
+        
+        REPO_NAME=$(basename "$GITHUB_REPOSITORY")
+        DOCKER_SERVICE=$(yq -er '.services | keys | .[0]' docker-compose.yml)
+        DOCKER_IMAGE="${REPO_NAME}-${DOCKER_SERVICE}"
+        DOCKER_CACHE=$(yq -er ".services[\"$DOCKER_SERVICE\"].build.cache_from[0]" docker-compose.yml)
         
         echo "pnpm-version=$PNPM_VERSION" >> "$GITHUB_OUTPUT"
         echo "node-version=$NODE_VERSION" >> "$GITHUB_OUTPUT"
+        echo "docker-image=$DOCKER_IMAGE" >> "$GITHUB_OUTPUT"
+        echo "docker-service=$DOCKER_SERVICE" >> "$GITHUB_OUTPUT"
         echo "docker-cache=$DOCKER_CACHE" >> "$GITHUB_OUTPUT"
-        echo "docker-user=$DOCKER_USER" >> "$GITHUB_OUTPUT"
-        echo "docker-workspace=$DOCKER_WORKSPACE" >> "$GITHUB_OUTPUT"

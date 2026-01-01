@@ -66,7 +66,6 @@ runs:
         ENV: ${{ inputs.env }}
       run: | # zizmor: ignore[github-env]
         printf "%s" "$ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
-        echo "SCCACHE_DIR=$HOME/.cache/sccache" >> "$GITHUB_ENV"
     
     - name: Run pnpm install script
       uses: ./.github/actions/shell-native
@@ -74,5 +73,6 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       with:
         run: |
+          pnpm config set store-dir "$PNPM_STORE_PATH"
           pnpm install --frozen-lockfile --prefer-offline
           pnpm run playwright

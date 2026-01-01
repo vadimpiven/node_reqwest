@@ -36,15 +36,8 @@ better. Check VSCode [debug configurations](.vscode/launch.json) for debugging a
 
 ## Docker build and test
 
-To verify glibc compatibility or test in a clean environment:
-
-```bash
-# Build the development container
-docker build -f .devcontainer/Dockerfile -t node_reqwest-dev .
-
-# Run tests in the container
-docker run --rm -v ${PWD}:/workspace node_reqwest-dev /bin/bash -c "pnpm install && cargo test"
-```
-
-Alternatively, use VS Code [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
+To verify glibc compatibility or test in a clean environment, use VS Code
+[Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
 extension to open the project directly in the container.
+
+For manual Docker usage or AI agent setups, see [AGENTS.md](AGENTS.md).

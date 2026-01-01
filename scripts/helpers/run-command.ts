@@ -10,6 +10,7 @@ export async function runCommand(command: string, args: string[]): Promise<void>
   console.log('> %s %s', command, args.join(' '));
 
   return new Promise((resolve, reject) => {
+    // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const child = spawn(command, args, {
       stdio: 'inherit',
       shell: process.platform === 'win32'

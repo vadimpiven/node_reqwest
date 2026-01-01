@@ -5,8 +5,8 @@ inputs:
   run:
     description: 'Commands to run'
     required: true
-  docker-container:
-    description: 'Docker container name'
+  docker-service:
+    description: 'Docker service name'
     required: true
 
 runs:
@@ -16,11 +16,13 @@ runs:
       if: runner.os == 'Linux'
       uses: ./.github/actions/shell-docker
       with:
+        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
         run: ${{ inputs.run }}
-        docker-container: ${{ inputs.docker-container }}
+        docker-service: ${{ inputs.docker-service }}
 
     - name: Run (Native)
       if: runner.os != 'Linux'
       uses: ./.github/actions/shell-native
       with:
+        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
         run: ${{ inputs.run }}
