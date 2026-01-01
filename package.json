@@ -23,7 +23,8 @@
     "@taplo/cli": "catalog:",
     "@types/node": "catalog:",
     "husky": "catalog:",
-    "markdownlint-cli2": "catalog:"
+    "markdownlint-cli2": "catalog:",
+    "vitest": "catalog:"
   },
   "scripts": {
     "preinstall": "cargo binstall cargo-binstall -y --locked",

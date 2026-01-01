@@ -6,7 +6,8 @@
 lcov.info
 package.tar.gz
 profile.json.gz
-report-rust.junit.xml
+report-nextest.junit.xml
+report-vitest.junit.xml
 trivy-results.sarif
 .bin/
 .path/
@@ -14,14 +15,13 @@ trivy-results.sarif
 .cache/
 dist/
 node_modules/
+coverage-vitest/
 target/
 .trivycache/
 
 # packages/node
-packages/node/report-electron.junit.xml
-packages/node/report-unittest.junit.xml
+packages/node/report-playwright.junit.xml
 packages/node/build/
-packages/node/coverage-electron/
-packages/node/coverage-unittest/
+packages/node/coverage-playwright/
 packages/node/export_dist/
 packages/node/test-results/

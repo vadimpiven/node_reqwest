@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Perf-profile Electron",
+      "label": "Perf-profile Playwright",
       "type": "shell",
       "command": "cargo",
       "osx": {
@@ -11,7 +11,7 @@
           "samply",
           "record",
           "${workspaceRoot}/packages/node/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
-          "${workspaceRoot}/packages/node/tests/electron/main.ts"
+          "${workspaceRoot}/packages/node/tests/playwright/main.ts"
         ]
       },
       "windows": {
@@ -20,7 +20,7 @@
           "samply",
           "record",
           "${workspaceRoot}/packages/node/node_modules/electron/dist/electron.exe",
-          "${workspaceRoot}/packages/node/tests/electron/main.ts"
+          "${workspaceRoot}/packages/node/tests/playwright/main.ts"
         ]
       },
       "linux": {
@@ -29,7 +29,7 @@
           "samply",
           "record",
           "${workspaceRoot}/packages/node/node_modules/electron/dist/electron",
-          "${workspaceRoot}/packages/node/tests/electron/main.ts"
+          "${workspaceRoot}/packages/node/tests/playwright/main.ts"
         ]
       },
       "problemMatcher": [],

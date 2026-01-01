@@ -1,17 +1,17 @@
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests/electron',
+  testDir: './tests/playwright',
   reporter: [
     ['line'],
-    ['junit', { outputFile: 'report-electron.junit.xml' }],
+    ['junit', { outputFile: 'report-playwright.junit.xml' }],
     [
       'monocart-reporter',
       {
-        outputFile: './test-results/electron-report.html',
+        outputFile: './test-results/report-playwright.html',
         coverage: {
           lcov: true,
-          outputDir: './coverage-electron',
+          outputDir: './coverage-playwright',
           reports: ['lcovonly', 'text'],
           entryFilter: (entry: { url: string }) => {
             return entry.url.includes('packages/node/export');
