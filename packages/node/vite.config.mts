@@ -26,7 +26,8 @@ export default defineConfig({
     coverage: {
       provider: 'istanbul',
       reporter: ['lcovonly', 'text'],
-      reportsDirectory: './coverage-vitest'
+      reportsDirectory: './coverage-vitest',
+      clean: false
     },
     reporters: ['default', ['junit', { outputFile: 'report-vitest.junit.xml' }]],
     include: ['tests/vitest/**/*.test.ts']
