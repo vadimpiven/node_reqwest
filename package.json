@@ -26,7 +26,7 @@
     "markdownlint-cli2": "catalog:"
   },
   "scripts": {
-    "preinstall": "cargo binstall cargo-binstall cargo-run-bin -y --locked --force",
+    "preinstall": "cargo binstall cargo-binstall -y --locked",
     "postinstall": "node scripts/setup-path.ts",
     "playwright": "pnpm exec playwright install-deps",
     "rustup": "rustup update && rustup toolchain install",
@@ -36,7 +36,7 @@
     "check:clippy": "cargo clippy -r --locked -- -D warnings",
     "check:rustfmt": "cargo fmt --check",
     "check:zizmor": "uv run --no-sync zizmor -q .github",
-    "check:semgrep": "uv run --no-sync python -W ignore -c \"from semgrep.console_scripts.entrypoint import main; main()\" scan -q --error --strict",
+    "check:semgrep": "uv run --no-sync --env-file .python.env semgrep scan -q --error --strict",
     "check": "pnpm run check:biome && pnpm run check:taplo && pnpm run check:markdownlint && pnpm run check:clippy && pnpm run check:rustfmt && pnpm run check:zizmor && pnpm run check:semgrep",
     "fix:biome": "pnpm run check:biome --fix",
     "fix:taplo": "pnpm exec taplo format",
