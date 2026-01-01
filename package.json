@@ -41,7 +41,7 @@
     "fix:biome": "pnpm run check:biome --fix",
     "fix:taplo": "pnpm exec taplo format",
     "fix:markdownlint": "pnpm exec markdownlint-cli2 --fix",
-    "fix:clippy": "cargo clippy -r --fix --allow-dirty",
+    "fix:clippy": "cargo clippy --fix --allow-dirty",
     "fix:rustfmt": "cargo fmt",
     "fix:zizmor": "pnpm run check:zizmor",
     "fix:semgrep": "pnpm run check:semgrep --autofix",
