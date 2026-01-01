@@ -4,8 +4,8 @@ This document specifies the lifecycle and environment management for AI coding a
 
 ## Environment Initialization
 
-Agents should ensure the following state before executing builds. This command is safe to run multiple
-times:
+Agents should ensure the following state before executing builds.
+This command is safe to run multiple times:
 
 ```bash
 # Initialize Docker environment variables if missing
@@ -27,8 +27,8 @@ docker compose up -d
 
 ### 2. Execute Commands
 
-Agents MUST use `docker compose exec dev` to execute all build and test commands. This ensures that
-the persistent environment and caches are utilized:
+Agents MUST use `docker compose exec dev` to execute all build and test commands.
+This ensures that the persistent environment and caches are utilized:
 
 ```bash
 # Standard build & test flow
@@ -61,9 +61,10 @@ docker compose exec dev bash
 
 ### Caching Paths
 
-When running in CLI or as an agent, cache directories are mounted to the repository-local `.cache`
-folder. This isolated environment prevents container binaries from mixing with your host global
-setup. Avoid deleting the `.cache` directory unless a clean-slate build is explicitly required.
+When running in CLI or as an agent, cache directories are mounted to the repository-local
+`.cache` folder.
+This isolated environment prevents container binaries from mixing with your host global setup.
+Avoid deleting the `.cache` directory unless a clean-slate build is explicitly required.
 
 The following internal paths are persistent:
 

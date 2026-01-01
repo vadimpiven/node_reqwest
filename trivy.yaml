@@ -3,9 +3,12 @@
 # Scan options
 scan:
   type: fs
+  skip-files:
+    - ".cache/**"
+
 scanners:
   - vuln
-  - config
+  - misconfig
   - secret
 # Report options
 format: sarif

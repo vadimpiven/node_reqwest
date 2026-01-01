@@ -23,6 +23,13 @@
     "**/.cargo/git/checkouts/**/*.rs": true,
     "**/lib/rustlib/src/rust/library/**/*.rs": true
   },
+  "files.exclude": {
+    "**/.cache": true
+  },
+  "search.exclude": {
+    "**/.cache": true
+  },
   "rust-analyzer.cargo.targetDir": true,
-  "rust-analyzer.runnables.extraTestBinaryArgs": ["--nocapture"]
+  "rust-analyzer.runnables.extraTestBinaryArgs": ["--nocapture"],
+  "trivy.configPath": "trivy.yaml"
 }
