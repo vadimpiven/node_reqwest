@@ -15,7 +15,7 @@ const isWindowsArm = process.platform === 'win32' && process.arch === 'arm64';
 // Skip coverage on Linux (cargo-llvm-cov requires glibc 2.29+) and Windows ARM
 const skipCoverage = isLinux || isWindowsArm;
 
-runScript('Test execution', async () => {
+runScript('Nextest execution', async () => {
   const args = process.argv.slice(2);
 
   if (skipCoverage) {
@@ -37,7 +37,7 @@ runScript('Test execution', async () => {
 
   // Copy junit report from target to package directory
   const junitSource = join(projectRoot, 'target', 'nextest', 'default', 'junit.xml');
-  const junitDest = join(packageDir, 'report-rust.junit.xml');
+  const junitDest = join(packageDir, 'report-nextest.junit.xml');
 
   try {
     await fs.copyFile(junitSource, junitDest);

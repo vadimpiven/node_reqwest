@@ -72,7 +72,7 @@
       "windows": {
         "runtimeExecutable": "${workspaceRoot}/packages/node/node_modules/.bin/electron.cmd"
       },
-      "args": ["--enable-logging", "${workspaceRoot}/packages/node/tests/electron/main.ts"],
+      "args": ["--enable-logging", "${workspaceRoot}/packages/node/tests/playwright/main.ts"],
       "runtimeArgs": ["--trace-warnings", "--enable-source-maps"],
       "outputCapture": "std",
       "env": {
@@ -89,7 +89,7 @@
         "--inspect",
         "--trace-warnings",
         "--enable-source-maps",
-        "${workspaceRoot}/packages/node/tests/electron/main.ts"
+        "${workspaceRoot}/packages/node/tests/playwright/main.ts"
       ],
       "env": {
         "RUST_BACKTRACE": "1",
@@ -109,7 +109,7 @@
         "--inspect",
         "--trace-warnings",
         "--enable-source-maps",
-        "${workspaceRoot}/packages/node/tests/electron/main.ts"
+        "${workspaceRoot}/packages/node/tests/playwright/main.ts"
       ],
       "environment": [
         { "name": "RUST_BACKTRACE", "value": "1" },
@@ -133,7 +133,7 @@
         "--inspect",
         "--trace-warnings",
         "--enable-source-maps",
-        "${workspaceRoot}/packages/node/tests/electron/main.ts"
+        "${workspaceRoot}/packages/node/tests/playwright/main.ts"
       ],
       "environment": [
         { "name": "RUST_BACKTRACE", "value": "1" },

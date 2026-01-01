@@ -2,42 +2,88 @@
 
 This document specifies the lifecycle and environment management for AI coding agents.
 
-## Quick Start
+## Sudo Requirement
+
+**Before running any commands, determine if sudo is needed.** Run this check:
 
 ```bash
-# 1. Initialize environment variables
+docker info > /dev/null 2>&1 && echo "NO_SUDO" || echo "NEEDS_SUDO"
+```
+
+- If this prints `NO_SUDO`: you do NOT need sudo. Use commands exactly as shown.
+- If this prints `NEEDS_SUDO`: you NEED sudo. Prefix ALL `docker` and `chown` commands with `sudo`.
+
+**Remember your result.** Apply it consistently to every command in this document.
+
+## Quick Start
+
+### 1. Initialize environment
+
+```bash
 [ -f .env ] || cp .env.example .env
 grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
 grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 grep -q "^CI=" .env || echo "CI=true" >> .env
+```
 
-# 2. Check if sudo is needed (if this fails, prefix all docker commands with sudo)
-docker info > /dev/null 2>&1 || DOCKER_SUDO="sudo"
+### 2. Start container (~10 minutes on first run)
 
-# 3. Start container (auto-builds on first run, ~10 minutes)
-$DOCKER_SUDO docker compose up -d
+Without sudo:
 
-# 4. Ensure cache directory permissions
-mkdir -p .cache && $DOCKER_SUDO chown -R $(id -u):$(id -g) .cache
+```bash
+docker compose up -d
+```
 
-# 5. Run tests (~10 minutes on first run due to Rust compilation)
-$DOCKER_SUDO docker compose exec dev bash -c "pnpm install && pnpm test"
+With sudo:
+
+```bash
+sudo docker compose up -d
+```
+
+### 3. Fix cache directory permissions
+
+Without sudo:
+
+```bash
+mkdir -p .cache && chown -R $(id -u):$(id -g) .cache
+```
+
+With sudo:
+
+```bash
+mkdir -p .cache && sudo chown -R $(id -u):$(id -g) .cache
+```
+
+### 4. Run tests (~10 minutes on first run)
+
+Without sudo:
+
+```bash
+docker compose exec dev bash -c "pnpm install && pnpm test"
+```
+
+With sudo:
+
+```bash
+sudo docker compose exec dev bash -c "pnpm install && pnpm test"
 ```
 
 **Important**: Ensure your execution timeout is at least **30 minutes** for initial setup.
 
 ## Command Execution
 
-All build and test commands MUST run inside the container via `docker compose exec dev`:
+All build and test commands MUST run inside the container via `docker compose exec dev`.
+
+Without sudo:
 
 ```bash
-$DOCKER_SUDO docker compose exec dev bash -c "pnpm install && pnpm test"
+docker compose exec dev bash -c "pnpm install && pnpm test"
 ```
 
-For interactive shell access:
+With sudo:
 
 ```bash
-$DOCKER_SUDO docker compose exec dev bash
+sudo docker compose exec dev bash -c "pnpm install && pnpm test"
 ```
 
 ## Rebuilding the Image
@@ -49,28 +95,16 @@ Rebuild is required when modifying:
 - Rust: `rust-toolchain.toml`
 - Infrastructure: `Dockerfile`, `docker-compose.yml`, `.env`
 
+Without sudo:
+
 ```bash
-$DOCKER_SUDO docker compose build && $DOCKER_SUDO docker compose up -d
+docker compose build && docker compose up -d
 ```
 
-## Troubleshooting
-
-### "permission denied" connecting to Docker daemon
-
-Prefix all `docker` commands with `sudo`:
+With sudo:
 
 ```bash
-sudo docker compose up -d
-sudo docker compose exec dev bash -c "pnpm install && pnpm test"
-```
-
-### "EACCES: permission denied" inside container
-
-Fix `.cache` directory ownership:
-
-```bash
-$DOCKER_SUDO chown -R $(id -u):$(id -g) .cache
-$DOCKER_SUDO docker compose restart dev
+sudo docker compose build && sudo docker compose up -d
 ```
 
 ## Container Environment Reference
