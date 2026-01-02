@@ -8,6 +8,8 @@
 - Prioritize workspace-level dependency management as outlined in the root configs.
 - Maintain concise, friendly, and professional attitude when assisting with development tasks.
 - **CRITICAL**: AI agents MUST execute `pnpm -w fix` after EVERY modification of code or documentation, and before signaling completion, to ensure strict adherence to project standards (linting, formatting, license headers).
+- Use `printf` instead of `echo` for shell commands to ensure portability and avoid issues with interpretation of escape sequences.
+- Use `jq` (for JSON) and `yq` (for YAML and TOML) instead of `grep`, `sed`, or `awk` when processing structured data.
 
 ## Implementation Plans ([plans](plans) directory)
 

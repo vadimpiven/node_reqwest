@@ -57,8 +57,6 @@ runs:
         printf "%s" "$ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
     - name: Run pnpm install script
       uses: ./.github/actions/shell-native
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
       with:
         run: |
           pnpm config set store-dir "$PNPM_STORE_PATH"

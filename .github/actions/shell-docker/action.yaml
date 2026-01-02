@@ -7,9 +7,6 @@ inputs:
   docker-service:
     description: 'Docker service name'
     required: true
-  github-token:
-    description: 'GitHub token for authenticated API requests (increases rate limits)'
-    default: ''
 runs:
   using: 'composite'
   steps:
@@ -18,7 +15,6 @@ runs:
       env:
         INPUT_RUN: ${{ inputs.run }}
         DOCKER_SERVICE: ${{ inputs.docker-service }}
-        GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
         printf "%s" "$INPUT_RUN" | \
-          docker compose exec -T -e GITHUB_TOKEN "$DOCKER_SERVICE" bash
+          docker compose exec -T "$DOCKER_SERVICE" bash
