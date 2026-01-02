@@ -41,3 +41,15 @@ To verify glibc compatibility or test in a clean environment, use VS Code
 extension to open the project directly in the container.
 
 For manual Docker usage or AI agent setups, see [AGENTS.md](AGENTS.md).
+
+## Mitmproxy Web UI
+
+The Docker environment includes [mitmproxy](https://mitmproxy.org/)
+for inspecting HTTP/HTTPS traffic from the dev container.
+To enable access, set a known password in your `.env` file:
+
+```bash
+MITMPROXY_WEB_PASSWORD=example_password
+```
+
+Then access the UI at: `http://127.0.0.1:8081/?token=example_password`
