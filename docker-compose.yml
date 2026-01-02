@@ -33,10 +33,10 @@ services:
       # Bypass proxy for local addresses
       NO_PROXY: localhost,127.0.0.1,::1
       no_proxy: localhost,127.0.0.1,::1
-      # For Python tools like semgrep (ensures they trust the system CA store)
+      # For Python tools (semgrep)
       REQUESTS_CA_BUNDLE: /etc/pki/tls/certs/ca-bundle.crt
-      # NO other TLS certificate env vars - we use system CA store only
-      # This mimics enterprise environments where proxy CA is in system store.
+      # For Node.js tools (VS Code)
+      NODE_EXTRA_CA_CERTS: /etc/pki/tls/certs/ca-bundle.crt
     cap_add:
       - SYS_PTRACE
     security_opt:
