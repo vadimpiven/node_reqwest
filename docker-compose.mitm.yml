@@ -1,54 +1,31 @@
 services:
   dev:
-    build:
-      context: .
-      args:
-        USER_UID: ${USER_UID:-1001}
-        USER_GID: ${USER_GID:-1001}
-      cache_from:
-        - type=registry,ref=ghcr.io/vadimpiven/node_reqwest:buildcache
-    image: ${COMPOSE_IMAGE:-node_reqwest-dev}
-    pull_policy: build
-    user: runner
-    working_dir: /workspace
-    volumes:
-      - .:/workspace:cached
-      - ./.cache/uv:/home/runner/.cache/uv
-      - ./.cache/pnpm-store:/home/runner/.cache/pnpm-store
-      - ./.cache/cargo/registry:/home/runner/.cargo/registry
-      - ./.cache/cargo/git:/home/runner/.cargo/git
-      - ./.cache/sccache:/home/runner/.cache/sccache
-      # Mitmproxy CA certificate volume (read-only)
-      - mitmproxy-certs:/mitmproxy-certs:ro
-    env_file:
-      - .env
+    # Proxy configuration - all traffic goes through mitmproxy
     environment:
-      # Flag for tests to detect mitmproxy environment
       MITM_PROXY: 1
-      # Proxy configuration - all traffic goes through mitmproxy
       HTTP_PROXY: http://mitmweb:8080
       HTTPS_PROXY: http://mitmweb:8080
       http_proxy: http://mitmweb:8080
       https_proxy: http://mitmweb:8080
-      # Bypass proxy for local addresses
       NO_PROXY: localhost,127.0.0.1,::1
       no_proxy: localhost,127.0.0.1,::1
+      # For @electron/get (uses global-agent internally)
+      ELECTRON_GET_USE_PROXY: 1
+      GLOBAL_AGENT_HTTP_PROXY: http://mitmweb:8080
+      GLOBAL_AGENT_HTTPS_PROXY: http://mitmweb:8080
+      GLOBAL_AGENT_NO_PROXY: localhost,127.0.0.1,::1
       # For Python tools (semgrep)
       REQUESTS_CA_BUNDLE: /etc/pki/tls/certs/ca-bundle.crt
       # For Node.js tools (VS Code)
       NODE_EXTRA_CA_CERTS: /etc/pki/tls/certs/ca-bundle.crt
-    cap_add:
-      - SYS_PTRACE
-    security_opt:
-      - seccomp:unconfined
-    # Entrypoint (Dockerfile) installs cert, then execs this command
-    command: sleep infinity
+    volumes:
+      # Mitmproxy CA certificate volume (read-only)
+      - mitmproxy-certs:/mitmproxy-certs:ro
     networks:
       - internal_net
     depends_on:
       mitmweb:
         condition: service_healthy
-
   mitmweb:
     # <https://hub.docker.com/layers/mitmproxy/mitmproxy/latest/images/>
     image: mitmproxy/mitmproxy@sha256:743b6cdc817211d64bc269f5defacca8d14e76e647fc474e5c7244dbcb645141
@@ -83,7 +60,6 @@ services:
       timeout: 5s
       start_period: 10s
       retries: 5
-
 networks:
   # No internet access - dev can ONLY reach mitmweb
   internal_net:
@@ -92,7 +68,6 @@ networks:
   # Normal network with internet access for mitmweb
   external_net:
     driver: bridge
-
 volumes:
   # Named volume to share mitmproxy CA certificates between containers
   mitmproxy-certs:

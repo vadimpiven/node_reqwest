@@ -2,32 +2,54 @@
 
 This document specifies the lifecycle and environment management for AI coding agents.
 
+**Total setup time**: ~20 minutes on first run (image build + dependency install).
+**Minimum timeout**: Set your execution timeout to **at least 30 minutes**.
+
 ## Sudo Requirement
 
-**Before running any commands, determine if sudo is needed.** Run this check:
+**Before running any commands, determine if sudo is needed.** Run this check ONCE:
 
 ```bash
 docker info > /dev/null 2>&1 && echo "NO_SUDO" || echo "NEEDS_SUDO"
 ```
 
-- If this prints `NO_SUDO`: you do NOT need sudo. Use commands exactly as shown.
-- If this prints `NEEDS_SUDO`: you NEED sudo. Prefix ALL `docker` and `chown` commands with `sudo`.
+- `NO_SUDO` → Use commands exactly as shown
+- `NEEDS_SUDO` → Prefix ALL `docker` and `chown` commands with `sudo`
 
-**Remember your result.** Apply it consistently to every command in this document.
+**Remember this result and apply it consistently.**
 
-## Quick Start
+## Quick Start (Step-by-Step)
 
-### 1. Initialize environment
+### Step 1: Initialize environment file
 
 ```bash
 [ -f .env ] || cp .env.example .env
 grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
 grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 grep -q "^CI=" .env || echo "CI=true" >> .env
-grep -q "^COMPOSE_FILE=" .env || echo "COMPOSE_FILE=docker-compose.yml" >> .env
+grep -q "^COMPOSE_FILE=" .env || echo "COMPOSE_FILE=docker-compose.base.yml" >> .env
 ```
 
-### 2. Start container (~10 minutes on first run)
+### Step 2: Fix cache directory ownership (BEFORE starting container)
+
+The `.cache/` directory structure should already exist (committed via `.gitkeep` files).
+However, if it doesn't or has wrong permissions:
+
+Without sudo:
+
+```bash
+mkdir -p .cache/uv .cache/pnpm-store .cache/cargo/registry .cache/cargo/git .cache/sccache
+chown -R $(id -u):$(id -g) .cache
+```
+
+With sudo:
+
+```bash
+mkdir -p .cache/uv .cache/pnpm-store .cache/cargo/registry .cache/cargo/git .cache/sccache
+sudo chown -R $(id -u):$(id -g) .cache
+```
+
+### Step 3: Start container (~10 minutes on first run)
 
 Without sudo:
 
@@ -41,21 +63,23 @@ With sudo:
 sudo docker compose up -d
 ```
 
-### 3. Fix cache directory permissions
+**Wait for container to be running** before proceeding. Check status:
 
 Without sudo:
 
 ```bash
-mkdir -p .cache && chown -R $(id -u):$(id -g) .cache
+docker compose ps
 ```
 
 With sudo:
 
 ```bash
-mkdir -p .cache && sudo chown -R $(id -u):$(id -g) .cache
+sudo docker compose ps
 ```
 
-### 4. Run tests (~10 minutes on first run)
+Expected output should show `dev` container with `Up` status.
+
+### Step 4: Run tests (~10 minutes on first run)
 
 Without sudo:
 
@@ -69,7 +93,66 @@ With sudo:
 sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
 ```
 
-**Important**: Ensure your execution timeout is at least **30 minutes** for initial setup.
+## Troubleshooting
+
+### Container name conflict error
+
+If you see: `Error response from daemon: Conflict. The container name is already in use`
+
+This is a Docker daemon bug. Fix it by:
+
+Without sudo:
+
+```bash
+# Show all containers (including broken/orphaned ones)
+docker ps -a
+
+# Force remove the specific container by ID (use the ID shown in the error)
+docker rm -f <container_id>
+
+# If that fails, restart Docker daemon and try again
+docker compose down --remove-orphans && docker compose up -d
+```
+
+With sudo:
+
+```bash
+sudo docker ps -a
+sudo docker rm -f <container_id>
+sudo docker compose down --remove-orphans && sudo docker compose up -d
+```
+
+### Permission denied on .cache/pnpm-store
+
+This happens when Docker creates directories as root. Fix it:
+
+Without sudo:
+
+```bash
+chown -R $(id -u):$(id -g) .cache
+docker compose exec -T dev bash -c "pnpm install && pnpm test"
+```
+
+With sudo:
+
+```bash
+sudo chown -R $(id -u):$(id -g) .cache
+sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
+```
+
+### Container not starting / stays in "Created" state
+
+Without sudo:
+
+```bash
+docker compose logs dev
+```
+
+With sudo:
+
+```bash
+sudo docker compose logs dev
+```
 
 ## Command Execution
 
@@ -94,7 +177,7 @@ Rebuild is required when modifying:
 - Python: `.python-version`, `pyproject.toml`
 - Node.js: `package.json` (`engines` or `packageManager` fields)
 - Rust: `rust-toolchain.toml`
-- Infrastructure: `Dockerfile`, `docker-compose.yml`, `docker-entrypoint.sh`, `.env`
+- Infrastructure: `Dockerfile`, `docker-compose.base.yml`, `docker-entrypoint.sh`, `.env`
 
 Without sudo:
 

@@ -1,5 +1,3 @@
-# This file is automatically merged by Docker Compose.
-
 services:
   mitmweb:
     # Expose mitmweb UI for local debugging - access at http://localhost:8081

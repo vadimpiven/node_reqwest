@@ -12,12 +12,15 @@ trivy-results.sarif
 .bin/
 .path/
 .venv/
-.cache/
 dist/
 node_modules/
 coverage-vitest/
 target/
 .trivycache/
+
+# .cache
+.cache/*
+!.cache/**/.gitkeep
 
 # packages/node
 packages/node/report-playwright.junit.xml
