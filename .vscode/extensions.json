@@ -13,6 +13,8 @@
     "vadimcn.vscode-lldb",
     "github.vscode-github-actions",
     "aquasecurityofficial.trivy-vulnerability-scanner",
-    "meta.pyrefly"
+    "meta.pyrefly",
+    "charliermarsh.ruff",
+    "ms-python.python"
   ]
 }
