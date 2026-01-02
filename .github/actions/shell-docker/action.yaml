@@ -20,4 +20,5 @@ runs:
         DOCKER_SERVICE: ${{ inputs.docker-service }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
-        docker compose exec -T -e GITHUB_TOKEN "$DOCKER_SERVICE" bash -c "$INPUT_RUN"
+        printf "%s" "$INPUT_RUN" | \
+          docker compose exec -T -e GITHUB_TOKEN "$DOCKER_SERVICE" bash
