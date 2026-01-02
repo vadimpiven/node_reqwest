@@ -11,6 +11,8 @@ The build is made in a fashion that allows usage by Electron-based applications.
 
 ## Build requirements
 
+### Required
+
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) for Python integration
 - [pnpm](https://pnpm.io/installation) for workspace management
 - C++ development toolchain (required by Rust)
@@ -20,6 +22,11 @@ The build is made in a fashion that allows usage by Electron-based applications.
 - [Rust](https://www.rust-lang.org/tools/install) development toolchain
 - [Cargo binstall](https://github.com/cargo-bins/cargo-binstall?tab=readme-ov-file#installation)
   for installing Rust binaries
+
+### Optional
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) for dev container
+  (or [OrbStack](https://orbstack.dev/download) for macOS)
 
 ## Build and test
 
