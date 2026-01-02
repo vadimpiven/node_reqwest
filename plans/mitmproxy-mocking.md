@@ -1,7 +1,6 @@
 # Mitmproxy Mocking Plan
 
 This plan describes how to implement the mock response system within the mitmproxy integration.
-It builds upon the infrastructure established in the [Mitmproxy Integration Plan](./mitmproxy-integration.md).
 
 ## Implementation Details
 

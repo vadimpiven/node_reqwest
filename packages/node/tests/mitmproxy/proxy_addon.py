@@ -1,6 +1,5 @@
 """
 Mitmproxy stub addon that proxies all traffic.
-For details on mocking, see [Mitmproxy Mocking Plan](./mitmproxy-mocking.md).
 """
 
 from mitmproxy import http, ctx

@@ -60,9 +60,6 @@ services:
       --web-port 8081
       --set web_open_browser=false
       --scripts /scripts/proxy_addon.py
-    # mitmweb UI - access at http://localhost:8081
-    ports:
-      - "8081:8081"
     volumes:
       - mitmproxy-certs:/home/mitmproxy/.mitmproxy
       - ./packages/node/tests/mitmproxy:/scripts:ro

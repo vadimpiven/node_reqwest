@@ -24,6 +24,7 @@ docker info > /dev/null 2>&1 && echo "NO_SUDO" || echo "NEEDS_SUDO"
 grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
 grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 grep -q "^CI=" .env || echo "CI=true" >> .env
+grep -q "^COMPOSE_FILE=" .env || echo "COMPOSE_FILE=docker-compose.yml" >> .env
 ```
 
 ### 2. Start container (~10 minutes on first run)
