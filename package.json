@@ -27,7 +27,6 @@
     "vitest": "catalog:"
   },
   "scripts": {
-    "preinstall": "cargo binstall cargo-binstall -y --locked",
     "postinstall": "node scripts/setup-path.ts",
     "playwright": "pnpm exec playwright install-deps",
     "rustup": "rustup update && rustup toolchain install",
