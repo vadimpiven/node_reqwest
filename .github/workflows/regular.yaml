@@ -85,6 +85,7 @@ jobs:
     name: Check CI scripts
     timeout-minutes: 15
     permissions:
+      contents: read # to fetch code
       security-events: write # to upload sarif results
     runs-on: ubuntu-latest
     steps:

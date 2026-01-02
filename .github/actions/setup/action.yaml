@@ -93,6 +93,12 @@ runs:
         key: ${{ inputs.cache-key }}-trivy-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
         restore-keys: |
           ${{ inputs.cache-key }}-trivy-${{ runner.os }}-${{ runner.arch }}-
+    - name: Write GITHUB_TOKEN to .env
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        printf "GITHUB_TOKEN=%s\n" "$GITHUB_TOKEN" >> .env
     - name: Setup (Docker)
       if: runner.os == 'Linux'
       uses: ./.github/actions/setup-docker
