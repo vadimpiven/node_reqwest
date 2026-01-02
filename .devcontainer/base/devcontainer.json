@@ -1,6 +1,6 @@
 {
-  "name": "Default",
-  "dockerComposeFile": ["../docker-compose.yml", "../docker-compose.override.yml"],
+  "name": "Base Dev",
+  "dockerComposeFile": ["../../docker-compose.base.yml"],
   "service": "dev",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",

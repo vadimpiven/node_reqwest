@@ -57,7 +57,9 @@ runs:
       env:
         COMPOSE_IMAGE: ${{ inputs.docker-image }}
       with:
-        compose-file: docker-compose.yml
+        compose-file: |
+          docker-compose.base.yml
+          docker-compose.mitm.yml
         up-flags: "--no-build"
     - name: Run pnpm install script
       uses: ./.github/actions/shell-docker
