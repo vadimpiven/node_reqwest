@@ -6,6 +6,13 @@
   "editor.defaultFormatter": "biomejs.biome",
   "[rust]": { "editor.defaultFormatter": "rust-lang.rust-analyzer" },
   "[toml]": { "editor.defaultFormatter": "tamasfe.even-better-toml" },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
   "files.associations": {
     "*.rs": "rust"
   },
@@ -22,5 +29,6 @@
   },
   "rust-analyzer.cargo.targetDir": true,
   "rust-analyzer.runnables.extraTestBinaryArgs": ["--nocapture"],
-  "trivy.configPath": "trivy.yaml"
+  "trivy.configPath": "trivy.yaml",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
 }
