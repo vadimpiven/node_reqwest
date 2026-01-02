@@ -59,13 +59,13 @@ mkdir -p .cache && sudo chown -R $(id -u):$(id -g) .cache
 Without sudo:
 
 ```bash
-docker compose exec dev bash -c "pnpm install && pnpm test"
+docker compose exec -T dev bash -c "pnpm install && pnpm test"
 ```
 
 With sudo:
 
 ```bash
-sudo docker compose exec dev bash -c "pnpm install && pnpm test"
+sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
 ```
 
 **Important**: Ensure your execution timeout is at least **30 minutes** for initial setup.
@@ -77,13 +77,13 @@ All build and test commands MUST run inside the container via `docker compose ex
 Without sudo:
 
 ```bash
-docker compose exec dev bash -c "pnpm install && pnpm test"
+docker compose exec -T dev bash -c "pnpm install && pnpm test"
 ```
 
 With sudo:
 
 ```bash
-sudo docker compose exec dev bash -c "pnpm install && pnpm test"
+sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
 ```
 
 ## Rebuilding the Image
