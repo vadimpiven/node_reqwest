@@ -18,10 +18,81 @@ services:
       - ./.cache/cargo/registry:/home/runner/.cargo/registry
       - ./.cache/cargo/git:/home/runner/.cargo/git
       - ./.cache/sccache:/home/runner/.cache/sccache
+      # Mitmproxy CA certificate volume (read-only)
+      - mitmproxy-certs:/mitmproxy-certs:ro
     env_file:
       - .env
+    environment:
+      # Flag for tests to detect mitmproxy environment
+      MITM_PROXY: 1
+      # Proxy configuration - all traffic goes through mitmproxy
+      HTTP_PROXY: http://mitmweb:8080
+      HTTPS_PROXY: http://mitmweb:8080
+      http_proxy: http://mitmweb:8080
+      https_proxy: http://mitmweb:8080
+      # Bypass proxy for local addresses
+      NO_PROXY: localhost,127.0.0.1,::1
+      no_proxy: localhost,127.0.0.1,::1
+      # For Python tools like semgrep (ensures they trust the system CA store)
+      REQUESTS_CA_BUNDLE: /etc/pki/tls/certs/ca-bundle.crt
+      # NO other TLS certificate env vars - we use system CA store only
+      # This mimics enterprise environments where proxy CA is in system store.
     cap_add:
       - SYS_PTRACE
     security_opt:
       - seccomp:unconfined
+    # Entrypoint (Dockerfile) installs cert, then execs this command
     command: sleep infinity
+    networks:
+      - internal_net
+    depends_on:
+      mitmweb:
+        condition: service_healthy
+
+  mitmweb:
+    # <https://hub.docker.com/layers/mitmproxy/mitmproxy/latest/images/>
+    image: mitmproxy/mitmproxy@sha256:743b6cdc817211d64bc269f5defacca8d14e76e647fc474e5c7244dbcb645141
+    command: >
+      mitmweb
+      --listen-host 0.0.0.0
+      --listen-port 8080
+      --web-host 0.0.0.0
+      --web-port 8081
+      --set web_open_browser=false
+      --scripts /scripts/proxy_addon.py
+    # mitmweb UI - access at http://localhost:8081
+    ports:
+      - "8081:8081"
+    volumes:
+      - mitmproxy-certs:/home/mitmproxy/.mitmproxy
+      - ./packages/node/tests/mitmproxy:/scripts:ro
+    networks:
+      - internal_net
+      - external_net
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - |
+          import socket
+          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          s.settimeout(2)
+          s.connect(('127.0.0.1', 8081))
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+
+networks:
+  # No internet access - dev can ONLY reach mitmweb
+  internal_net:
+    driver: bridge
+    internal: true
+  # Normal network with internet access for mitmweb
+  external_net:
+    driver: bridge
+
+volumes:
+  # Named volume to share mitmproxy CA certificates between containers
+  mitmproxy-certs:

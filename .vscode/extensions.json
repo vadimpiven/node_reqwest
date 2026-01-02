@@ -12,6 +12,7 @@
     "tamasfe.even-better-toml",
     "vadimcn.vscode-lldb",
     "github.vscode-github-actions",
-    "aquasecurityofficial.trivy-vulnerability-scanner"
+    "aquasecurityofficial.trivy-vulnerability-scanner",
+    "meta.pyrefly"
   ]
 }

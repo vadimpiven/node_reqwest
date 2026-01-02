@@ -6,6 +6,7 @@
 !.python-version
 !package.json
 !rust-toolchain.toml
+!docker-entrypoint.sh
 
 # Ignore common large directories
 node_modules

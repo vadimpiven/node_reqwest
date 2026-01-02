@@ -93,18 +93,18 @@ Rebuild is required when modifying:
 - Python: `.python-version`, `pyproject.toml`
 - Node.js: `package.json` (`engines` or `packageManager` fields)
 - Rust: `rust-toolchain.toml`
-- Infrastructure: `Dockerfile`, `docker-compose.yml`, `.env`
+- Infrastructure: `Dockerfile`, `docker-compose.yml`, `docker-entrypoint.sh`, `.env`
 
 Without sudo:
 
 ```bash
-docker compose build && docker compose up -d
+docker compose down && docker compose up --build -d
 ```
 
 With sudo:
 
 ```bash
-sudo docker compose build && sudo docker compose up -d
+sudo docker compose down && sudo docker compose up --build -d
 ```
 
 ## Container Environment Reference

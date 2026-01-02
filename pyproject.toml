@@ -3,10 +3,11 @@ required-version = ">=0.9.21"
 exclude-newer = "7 days"
 
 [tool.uv.workspace]
-members = []
+members = ["packages/node/tests/mitmproxy"]
 
 [dependency-groups]
 dev = [
+    "mitmproxy==12.2.1",
     "semgrep==1.146.0",
     "zizmor==1.19.0",
 ]

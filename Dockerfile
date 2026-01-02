@@ -56,6 +56,7 @@ RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
     && curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none \
     && curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash \
     && cargo-binstall sccache -y --locked \
+    && mkdir -p /mitmproxy-certs \
     && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
 
 # Rust caching activation
@@ -69,6 +70,7 @@ COPY --chown=${USERNAME}:${USERNAME} \
     .python-version \
     package.json \
     rust-toolchain.toml \
+    docker-entrypoint.sh \
     ./
 
 # 2. UV + Python runtime
@@ -92,8 +94,13 @@ RUN --mount=type=cache,target=${CARGO_REGISTRY},uid=${USER_UID},gid=${USER_GID},
     rustup show \
     && rustup default "$(rustup show active-toolchain | cut -d' ' -f1)"
 
-RUN rm -rf /tmp/config
+# Install entrypoint and cleanup
+RUN chmod +x docker-entrypoint.sh \
+    && mv docker-entrypoint.sh /home/runner/.local/bin/entrypoint \
+    && rm -rf /tmp/config
 WORKDIR /workspace
+
+ENTRYPOINT ["/home/runner/.local/bin/entrypoint"]
 
 VOLUME ["${UV_CACHE_DIR}"]
 VOLUME ["${PNPM_STORE_PATH}"]
