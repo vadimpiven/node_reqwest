@@ -41,6 +41,22 @@ test.afterEach(async ({}, testInfo) => {
 test('should display hello', async () => {
   const output = window.locator('#output');
 
-  await expect(output).not.toHaveText('Checking...');
+  await expect(output).not.toHaveText('Waiting...');
   await expect(output).toHaveText('hello');
+});
+
+test('should fail with standard undici agent', async () => {
+  test.skip(!process.env.MITM_PROXY, 'Not inside the container');
+
+  const output = window.locator('#undici_agent');
+
+  await expect(output).not.toHaveText('Waiting...');
+  await expect(output).toHaveText('false');
+});
+
+test('should succeed with node_reqwest agent', async () => {
+  const output = window.locator('#reqwest_agent');
+
+  await expect(output).not.toHaveText('Waiting...');
+  await expect(output).toHaveText('true');
 });

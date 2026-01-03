@@ -40,6 +40,9 @@ services:
       --set block_global=false
       --set web_password=${MITMPROXY_WEB_PASSWORD:-}
       --scripts /scripts/proxy_addon.py
+    # Expose mitmweb UI for local debugging - access at http://localhost:8081
+    ports:
+      - "8081:8081"
     volumes:
       - mitmproxy-certs:/home/mitmproxy/.mitmproxy
       - ./packages/node/tests/mitmproxy:/scripts:ro

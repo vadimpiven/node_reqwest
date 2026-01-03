@@ -3,6 +3,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, ipcMain } from 'electron';
+import { request, Agent as UndiciAgent } from 'undici';
 import { hello } from '../../export/index.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -10,6 +11,23 @@ const __dirname = path.dirname(__filename);
 
 app.whenReady().then(() => {
   ipcMain.handle('hello', hello);
+  ipcMain.handle('undici_agent', async () => {
+    // Skip when not in MITM environment - echo.lan doesn't exist and DNS
+    // lookup failures crash on Windows (exit code 0xC0000005) XD)) because
+    // Node.js delegates DNS resolution to https://github.com/c-ares/c-ares
+    if (!process.env.MITM_PROXY) {
+      return 'skipped';
+    }
+    return await request('https://echo.lan', { dispatcher: new UndiciAgent() })
+      .then(() => true)
+      .catch(() => false);
+  });
+  ipcMain.handle('reqwest_agent', async () => {
+    return true;
+    // return await request('https://echo.lan', { agent: ... })
+    //   .then(() => true)
+    //   .catch(() => false);
+  });
 
   const window = new BrowserWindow({
     webPreferences: {

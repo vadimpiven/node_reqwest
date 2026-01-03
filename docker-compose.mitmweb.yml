@@ -1,5 +1,0 @@
-services:
-  mitmweb:
-    # Expose mitmweb UI for local debugging - access at http://localhost:8081
-    ports:
-      - "8081:8081"

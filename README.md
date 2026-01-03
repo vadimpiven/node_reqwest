@@ -30,10 +30,19 @@ The build is made in a fashion that allows usage by Electron-based applications.
 
 ## Build and test
 
+For native build run:
+
 ```bash
-pnpm install
-pnpm run playwright
+# Synchronize Rust toolchain
 pnpm run rustup
+
+# Install pnpm and uv dependencies
+pnpm install
+
+# Install playwright dependencies
+pnpm run playwright
+
+# Run tests
 pnpm test
 ```
 
@@ -47,16 +56,77 @@ To verify glibc compatibility or test in a clean environment, use VS Code
 [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
 extension to open the project directly in the container.
 
-For manual Docker usage or AI agent setups, see [AGENTS.md](AGENTS.md).
+For manual Docker usage run:
+
+```bash
+# Setup .env file (better to do that manually, but here is some automation)
+[ -f .env ] || cp .env.example .env
+grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
+grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
+
+# Build and run the container
+docker compose up --build -d
+
+# Enter the container shell
+docker compose exec dev bash
+
+# Prepare the environment
+pnpm install
+
+# Run the tests
+pnpm test
+
+# Exit the container
+exit
+
+# Stop the container
+docker compose down --remove-orphans
+```
+
+For simplicity you can use docker script:
+
+```bash
+# Build and attach to the container
+pnpm docker
+
+# Run the commands inside the container
+pnpm test
+
+# Exit and stop the container
+exit
+```
 
 ## Mitmproxy Web UI
 
 The Docker environment includes [mitmproxy](https://mitmproxy.org/)
 for inspecting HTTP/HTTPS traffic from the dev container.
-To enable access, set a known password in your `.env` file:
+The `docker-compose.override.yml` is automatically merged by Docker Compose,
+enabling mitmproxy by default. To access the web UI:
 
 ```bash
+# Set a known password
 MITMPROXY_WEB_PASSWORD=example_password
+
+# Add it to .env file
+echo "MITMPROXY_WEB_PASSWORD=${MITMPROXY_WEB_PASSWORD}" >> .env
+
+# Rebuild the container
+docker compose up --build -d
+
+# Access the UI at: `http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}`
+open http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}
 ```
 
-Then access the UI at: `http://127.0.0.1:8081/?token=example_password`
+To run without mitmproxy:
+
+```bash
+docker compose up -f docker-compose.yml --build -d
+```
+
+## Troubleshooting
+
+Use the clean script to reset the environment (and free up disk space):
+
+```bash
+pnpm run clean
+```

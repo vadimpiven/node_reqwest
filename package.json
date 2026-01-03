@@ -69,7 +69,9 @@
     "ci-test": "pnpm run --recursive ci-test",
     "build": "pnpm run --recursive build",
     "pretest": "pnpm run fix",
-    "test": "pnpm run --recursive test"
+    "test": "pnpm run --recursive test",
+    "docker": "docker compose up --build -d && docker compose exec dev bash",
+    "postdocker": "docker compose down --remove-orphans"
   },
   "dependencies": {}
 }
