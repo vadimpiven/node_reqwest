@@ -3,7 +3,16 @@
 This document specifies the lifecycle and environment management for AI coding agents.
 
 **Total setup time**: ~20 minutes on first run (image build + dependency install).
-**Minimum timeout**: Set your execution timeout to **at least 30 minutes**.
+
+## Timeout Guidance for Agents
+
+**CRITICAL**: Set your session/execution timeout to **at least 30 minutes**.
+
+- **Step 3 (Container Build)**: Can take **10-15 minutes**.
+    Use `WaitMsBeforeAsync: 600000` (10 min) or monitor status.
+- **Step 4 (Install & Test)**: Can take **10-15 minutes**.
+    Use `WaitMsBeforeAsync: 600000` (10 min) or monitor status.
+- **DO NOT** use default 1-3 minute timeouts for these commands; they will stall or fail.
 
 ## Sudo Requirement
 
@@ -51,16 +60,18 @@ sudo chown -R $(id -u):$(id -g) .cache
 
 ### Step 3: Start container (~10 minutes on first run)
 
+**CAUTION**: This step involves building the image. Set a high timeout (10+ min).
+
 Without sudo:
 
 ```bash
-docker compose up -d
+docker compose up --build -d
 ```
 
 With sudo:
 
 ```bash
-sudo docker compose up -d
+sudo docker compose up --build -d
 ```
 
 **Note:** Some agent tool wrappers may report "failed with unknown error"
@@ -85,6 +96,8 @@ Expected output should show `dev` container with `Up` status.
 
 ### Step 4: Run tests (~10 minutes on first run)
 
+**CAUTION**: This step installs dependencies and runs all tests. Set a high timeout (10+ min).
+
 Without sudo:
 
 ```bash
@@ -97,26 +110,14 @@ With sudo:
 sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
 ```
 
-**Note:** During `pnpm install`, you will see 404 errors from `node-pre-gyp` like:
+**Note on expected output:**
 
-```text
-node-pre-gyp WARN Tried to download(...): HTTP 404 Not Found
-```
-
-This is expected. Version `0.0.0` has no pre-built binaries published,
-so `node-pre-gyp` fails to download them. The install script handles this gracefully
-by falling back to `install:skip`, which allows development to proceed
-by building from source during tests.
-
-**Note:** During `pnpm fix` or `pnpm check`, you will see a `pyrefly` warning:
-
-```text
-WARN /workspace/pyproject.toml: Invalid search-path: `/workspace/.venv/Lib/site-packages` does not exist
-```
-
-This is expected on Unix/Linux systems because `pyproject.toml` contains search paths
-for both Linux and Windows to ensure cross-platform compatibility. You can safely
-ignore this warning as long as there are no actual import errors.
+- **404 Errors**: During `pnpm install`, 404s for `node-pre-gyp` (version `0.0.0`)
+    are **expected** and handled by the fallback source build.
+- **Pyrefly Warning**: A warning about missing `.venv/Lib/site-packages`
+    is **expected** on Linux (it's the Windows path). It can be ignored.
+- **Vitest Flake**: Rarely, `pnpm test` might fail with `ENOENT`
+    on a coverage `.json` file. A simple retry of the tests should resolve this.
 
 ## Troubleshooting
 

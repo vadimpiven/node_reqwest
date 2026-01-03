@@ -19,6 +19,8 @@ runScript('Vitest', async () => {
   const coveragePath = join(packageDir, coverageDir);
   await fs.rm(coveragePath, { recursive: true, force: true });
   await fs.mkdir(join(coveragePath, '.tmp'), { recursive: true });
+  // Small delay to ensure filesystem is synced (helps with Docker sync flakes)
+  await new Promise((resolve) => setTimeout(resolve, 100));
   console.log('> Recreated coverage directory: %s', coverageDir);
 
   await runCommand('pnpm', [
