@@ -6,15 +6,14 @@
   "editor.defaultFormatter": "biomejs.biome",
   "[rust]": { "editor.defaultFormatter": "rust-lang.rust-analyzer" },
   "[toml]": { "editor.defaultFormatter": "tamasfe.even-better-toml" },
+  "[yaml]": { "editor.defaultFormatter": "redhat.vscode-yaml" },
+  "[shellscript]": { "editor.defaultFormatter": "timonwong.shellcheck" },
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.codeActionsOnSave": {
       "source.fixAll.ruff": "explicit",
       "source.organizeImports.ruff": "explicit"
     }
-  },
-  "files.associations": {
-    "*.rs": "rust"
   },
   "files.readonlyInclude": {
     "**/.cargo/registry/src/**/*.rs": true,
@@ -38,6 +37,7 @@
   "rust-analyzer.imports.preferPrelude": true,
   "rust-analyzer.imports.prefix": "plain",
   "trivy.configPath": "trivy.yaml",
+  "trivy.ignoreFilesInGitIgnore": true,
   "python.defaultInterpreterPath": "${workspaceFolder}/.path/python",
   "python.autoComplete.extraPaths": [
     "${workspaceFolder}/.venv/lib/python3.14/site-packages",

@@ -57,6 +57,8 @@ unnecessary_wraps = "allow"
 [workspace.dependencies]
 # Always update nightly version in `rust-toolchain` file when updating dependencies
 anyhow = { version = "1.0.100" }
+async-trait = { version = "0.1.89" }
+bytes = { version = "1.10.1" }
 chrono = { version = "0.4.42", features = ["serde"] }
 core = { path = "packages/core" }
 futures = { version = "0.3.31" }
@@ -67,18 +69,28 @@ mimalloc = { version = "0.1.48", features = ["v3"] }
 neon = { version = "1.1.1", features = ["napi-8", "serde", "tokio"] }
 pretty_assertions = { version = "1.4.1", features = ["unstable"] }
 reqwest = { version = "0.13.1", features = [
-    "socks",
-    "hickory-dns",
-    "query",
-    "json",
+    "brotli",
+    "cookies",
+    "deflate",
     "gzip",
+    "hickory-dns",
+    "json",
+    "multipart",
+    "query",
+    "socks",
+    "stream",
     "zstd",
 ] }
+reqwest-websocket = { version = "0.5.1", features = ["json"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.148" }
 tauri-winres = { version = "0.3.5" }
 tempfile = { version = "3.24.0" }
-tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
+tokio = { version = "1.49.0", features = ["rt-multi-thread", "sync", "time"] }
+tokio-stream = { version = "0.1.17" }
+tokio-test = { version = "0.4.4" }
+tokio-util = { version = "0.7.17", features = ["join-map"] }
+wiremock = { version = "0.6.4" }
 with_dir = { version = "0.1.4" }
 
 [workspace.metadata.bin]
