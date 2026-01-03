@@ -37,4 +37,7 @@ minimumReleaseAge: 10080
 
 minimumReleaseAgeExclude: null
 
+patchedDependencies:
+  vitest@4.0.16: patches/vitest@4.0.16.patch
+
 strictDepBuilds: true

@@ -1,0 +1,25 @@
+diff --git a/dist/chunks/coverage.BuJUwVtg.js b/dist/chunks/coverage.BuJUwVtg.js
+index 167d451cb4ae9b1dd27d65554d3ef21a580a16ae..7e05ac0d82dcc5cca061ac28d32bb6c9f3720674 100644
+--- a/dist/chunks/coverage.BuJUwVtg.js
++++ b/dist/chunks/coverage.BuJUwVtg.js
+@@ -2959,7 +2959,11 @@ Update your dependencies and make sure the versions match.`));
+ 			force: true,
+ 			maxRetries: 10
+ 		});
++                const dirExistedBefore = existsSync(this.coverageFilesDirectory);
++                console.log(`[vitest:coverage] clean() mkdir: path=${this.coverageFilesDirectory}, existedBefore=${dirExistedBefore}`);
+ 		await promises.mkdir(this.coverageFilesDirectory, { recursive: true });
++                const dirExistsAfter = existsSync(this.coverageFilesDirectory);
++                console.log(`[vitest:coverage] clean() mkdir complete: existsAfter=${dirExistsAfter}`);
+ 		this.coverageFiles = /* @__PURE__ */ new Map();
+ 		this.pendingPromises = [];
+ 	}
+@@ -2975,6 +2979,8 @@ Update your dependencies and make sure the versions match.`));
+ 		entry[environment] ??= {};
+ 		// If there's a result from previous run, overwrite it
+ 		entry[environment][testFilenames] = filename;
++                const dirExists = existsSync(this.coverageFilesDirectory);
++                console.log(`[vitest:coverage] onAfterSuiteRun() writeFile: path=${filename}, dirExists=${dirExists}`);
+ 		const promise = promises.writeFile(filename, JSON.stringify(coverage), "utf-8");
+ 		this.pendingPromises.push(promise);
+ 	}
