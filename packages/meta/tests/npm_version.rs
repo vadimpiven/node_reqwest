@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Tests for npm_version binary.
+//! Tests for `npm_version` binary.
 
-use std::{
-    fs::{File, read_to_string},
-    io::Write,
-    process::Command,
-};
+use std::fs::{File, read_to_string};
+use std::io::Write;
+use std::process::Command;
 
 use anyhow::{Context, Result};
 use indoc::{formatdoc, indoc};

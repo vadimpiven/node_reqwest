@@ -2,11 +2,9 @@
 
 //! Module with build instructions to extract version tag or commit hash from git.
 
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::{env, fs};
 
 use anyhow::{Context, Result};
 

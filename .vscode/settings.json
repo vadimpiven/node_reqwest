@@ -6,15 +6,14 @@
   "editor.defaultFormatter": "biomejs.biome",
   "[rust]": { "editor.defaultFormatter": "rust-lang.rust-analyzer" },
   "[toml]": { "editor.defaultFormatter": "tamasfe.even-better-toml" },
+  "[yaml]": { "editor.defaultFormatter": "redhat.vscode-yaml" },
+  "[shellscript]": { "editor.defaultFormatter": "timonwong.shellcheck" },
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.codeActionsOnSave": {
       "source.fixAll.ruff": "explicit",
       "source.organizeImports.ruff": "explicit"
     }
-  },
-  "files.associations": {
-    "*.rs": "rust"
   },
   "files.readonlyInclude": {
     "**/.cargo/registry/src/**/*.rs": true,
@@ -29,7 +28,16 @@
   },
   "rust-analyzer.cargo.targetDir": true,
   "rust-analyzer.runnables.extraTestBinaryArgs": ["--nocapture"],
+  "rust-analyzer.assist.emitMustUse": true,
+  "rust-analyzer.assist.preferSelf": true,
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.check.extraArgs": ["--fix", "--allow-dirty"],
+  "rust-analyzer.diagnostics.styleLints.enable": true,
+  "rust-analyzer.imports.granularity.group": "module",
+  "rust-analyzer.imports.preferPrelude": true,
+  "rust-analyzer.imports.prefix": "plain",
   "trivy.configPath": "trivy.yaml",
+  "trivy.ignoreFilesInGitIgnore": true,
   "python.defaultInterpreterPath": "${workspaceFolder}/.path/python",
   "python.autoComplete.extraPaths": [
     "${workspaceFolder}/.venv/lib/python3.14/site-packages",
