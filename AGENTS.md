@@ -116,8 +116,6 @@ sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
     are **expected** and handled by the fallback source build.
 - **Pyrefly Warning**: A warning about missing `.venv/Lib/site-packages`
     is **expected** on Linux (it's the Windows path). It can be ignored.
-- **Vitest Flake**: Rarely, `pnpm test` might fail with `ENOENT`
-    on a coverage `.json` file. A simple retry of the tests should resolve this.
 
 ## Troubleshooting
 
