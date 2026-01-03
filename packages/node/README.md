@@ -5,6 +5,23 @@ HTTP client library. This library provides support for system proxy and
 trusted system CA certificates without additional configuration.
 The build is made in a fashion that allows usage by Electron-based applications.
 
+## Why you want to use this library?
+
+1. DNS resolution using recursive DNS resolver
+  <https://github.com/hickory-dns/hickory-dns> instead of
+  non-recursive <https://github.com/c-ares/c-ares> used by Node.js
+  (and Undici) which crashes Electron on Windows if you try
+  to resolve nonexistent domain `fetch('http://example.lan')`
+2. System CA certificates are used by default without additional
+  libraries like <https://www.npmjs.com/package/win-ca> and
+  <https://www.npmjs.com/package/mac-ca>
+3. System proxy is used by default, while it is not obtainable with
+  Node.js and in Electron you have to use very complex interface
+  <https://www.electronjs.org/docs/latest/api/session#sesresolveproxyurl>
+4. Socks proxy is supported out of the box
+5. HTTP/2 performance and support is much better than in Node.js
+6. Rustls <https://github.com/rustls/rustls> is used for TLS
+
 ## Usage
 
 This library provides an `Agent` that is fully compatible with the
@@ -17,9 +34,7 @@ import { setGlobalDispatcher } from 'undici';
 
 // Create an agent with system proxy enabled (default)
 const agent = new Agent({
-  connect: {
-    allowH2: true
-  },
+  allowH2: true,
   proxy: 'system'
 });
 
