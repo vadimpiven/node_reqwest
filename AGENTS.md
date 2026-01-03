@@ -137,7 +137,7 @@ docker ps -a
 docker rm -f <container_id>
 
 # If that fails, restart Docker daemon and try again
-docker compose down --remove-orphans && docker compose up -d
+docker compose down --remove-orphans && docker compose up --build -d
 ```
 
 With sudo:
@@ -145,7 +145,7 @@ With sudo:
 ```bash
 sudo docker ps -a
 sudo docker rm -f <container_id>
-sudo docker compose down --remove-orphans && sudo docker compose up -d
+sudo docker compose down --remove-orphans && sudo docker compose up --build -d
 ```
 
 ### Permission denied on .cache/pnpm-store
