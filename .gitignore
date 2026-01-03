@@ -17,6 +17,8 @@ node_modules/
 coverage-vitest/
 target/
 .trivycache/
+.ruff_cache/
+__pycache__/
 
 # .cache
 .cache/*

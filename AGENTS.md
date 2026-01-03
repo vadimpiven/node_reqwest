@@ -63,6 +63,10 @@ With sudo:
 sudo docker compose up -d
 ```
 
+**Note:** Some agent tool wrappers may report "failed with unknown error"
+even when the command succeeds. Always verify actual status
+with `docker compose ps` below.
+
 **Wait for container to be running** before proceeding. Check status:
 
 Without sudo:
@@ -92,6 +96,27 @@ With sudo:
 ```bash
 sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
 ```
+
+**Note:** During `pnpm install`, you will see 404 errors from `node-pre-gyp` like:
+
+```text
+node-pre-gyp WARN Tried to download(...): HTTP 404 Not Found
+```
+
+This is expected. Version `0.0.0` has no pre-built binaries published,
+so `node-pre-gyp` fails to download them. The install script handles this gracefully
+by falling back to `install:skip`, which allows development to proceed
+by building from source during tests.
+
+**Note:** During `pnpm fix` or `pnpm check`, you will see a `pyrefly` warning:
+
+```text
+WARN /workspace/pyproject.toml: Invalid search-path: `/workspace/.venv/Lib/site-packages` does not exist
+```
+
+This is expected on Unix/Linux systems because `pyproject.toml` contains search paths
+for both Linux and Windows to ensure cross-platform compatibility. You can safely
+ignore this warning as long as there are no actual import errors.
 
 ## Troubleshooting
 
