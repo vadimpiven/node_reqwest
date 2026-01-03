@@ -1,330 +1,335 @@
-# Dispatcher Implementation: New DispatchHandler Interface
+# Dispatcher Implementation
 
-## Problem
+Implement undici `DispatchHandler` interface with `DispatchController` for pause/resume/abort.
 
-The current `AgentImpl.dispatch()` returns the result of `Addon.agentDispatch()` directly without implementing
-the handler callback protocol. Undici requires the dispatcher to:
+## Solution
 
-1. Call handler callbacks (`onRequestStart`, `onResponseStart`, `onResponseData`, etc.)
-2. Handle backpressure via `DispatchController.pause()`/`resume()`
-3. Support abortion via `DispatchController.abort()`
-
-**Target:** Implement the new (non-deprecated) `DispatchHandler` interface with `DispatchController`.
+TypeScript creates `DispatchController`, Rust handles HTTP via reqwest with callbacks through
+`neon::event::Channel`. Backpressure via `AtomicBool + Notify`, abort via `CancellationToken`.
 
 ## Architecture
 
 ```text
 JS: AgentImpl.dispatch(opts, handler)
          ↓
-    Create DispatchController ──────────────────────────┐
-         ↓                                              │
-    handler.onRequestStart(controller, context)         │
-         ↓                                              │
-    Rust: Addon.agentDispatch(agent, options, callbacks)│
-         ↓                                              │
-    Response headers arrive                             │
-         ↓                                              │
-    JS callback: onResponseStart()                      │
-         ↓                                              │
-    Response body chunks  ←── pause/resume signals ─────┘
+    Create DispatchController ─────────────────────────┐
+         ↓                                             │
+    handler.onRequestStart(controller, context)        │
+         ↓                                             │
+    Rust: Addon.agentDispatch(agent, options, callbacks)
+         ↓                                             │
+    Response headers → onResponseStart()               │
+         ↓                                             │
+    Body chunks ←── pause/resume signals ──────────────┘
          ↓
-    JS callback: onResponseData() per chunk
-         ↓
-    JS callback: onResponseEnd() or onResponseError()
+    onResponseData() per chunk → onResponseEnd() or onResponseError()
 ```
-
-## Design Decisions
-
-### 1. Interface Choice: New vs Legacy
-
-Use the **new interface** (`onRequestStart`/`onResponseStart`/`onResponseData`/`onResponseEnd`/`onResponseError`).
-
-**Why:** The legacy interface is deprecated. The new interface provides cleaner separation via
-`DispatchController` for pause/resume/abort instead of callback parameters.
-
-### 2. Controller Ownership
-
-The **TypeScript side creates and owns** the `DispatchController`. It wraps the abort signal and
-pause/resume state, passing control signals to Rust.
-
-**Why:** The controller is purely a coordination object. Rust owns the HTTP request; JS owns the lifecycle
-callbacks. The controller bridges them.
-
-### 3. Backpressure Strategy
-
-Rust streams body chunks via async iteration. When `onResponseData()` triggers `controller.pause()`:
-
-1. JS sets `paused = true` on the controller
-2. JS signals Rust to pause via a shared `AtomicBool` or channel
-3. Rust stops polling the response body stream
-4. When `controller.resume()` is called, JS signals Rust to continue
-
-**Why reqwest supports this:** Reqwest's `Response::bytes_stream()` is an async stream.
-Backpressure is natural—just stop calling `.await` on the next chunk. The challenge is
-signaling pause/resume across the Neon FFI boundary.
-
-### 4. Abort Strategy
-
-When `controller.abort(reason)` is called:
-
-1. JS sets `aborted = true` and stores `reason`
-2. JS signals Rust via an `AbortHandle` (tokio's `CancellationToken` or reqwest's built-in abort)
-3. Rust drops the in-flight request
-4. JS calls `handler.onResponseError(controller, reason)`
-
-**Why:** Reqwest requests can be aborted by dropping the future or using `AbortHandle`. The controller
-stores the reason for the `onResponseError` callback.
 
 ## Implementation
 
-### Phase 1: DispatchController (TypeScript)
-
-Create a `DispatchController` implementation in `agent.ts`:
+### DispatchController (TypeScript)
 
 ```typescript
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+import type { Dispatcher } from 'undici';
+
+interface RequestHandle {
+  abort(): void;
+  pause(): void;
+  resume(): void;
+}
+
 class DispatchControllerImpl implements Dispatcher.DispatchController {
   #aborted = false;
   #paused = false;
   #reason: Error | null = null;
-  #abortHandle: AbortHandle;       // Passed to Rust
-  #pauseSignal: PauseSignal;       // Shared with Rust
+  #requestHandle: RequestHandle | null = null;
 
   get aborted() { return this.#aborted; }
   get paused() { return this.#paused; }
   get reason() { return this.#reason; }
 
+  setRequestHandle(handle: RequestHandle): void {
+    this.#requestHandle = handle;
+  }
+
   abort(reason: Error): void {
     if (this.#aborted) return;
     this.#aborted = true;
     this.#reason = reason;
-    this.#abortHandle.abort();
+    this.#requestHandle?.abort();
   }
 
   pause(): void {
-    this.#paused = true;
-    this.#pauseSignal.pause();
+    if (!this.#paused) {
+      this.#paused = true;
+      this.#requestHandle?.pause();
+    }
   }
 
   resume(): void {
-    this.#paused = false;
-    this.#pauseSignal.resume();
+    if (this.#paused) {
+      this.#paused = false;
+      this.#requestHandle?.resume();
+    }
   }
 }
 ```
 
-### Phase 2: Addon Interface
-
-Update `addon-def.ts` to include `DispatchCallbacks`:
+### Addon Interface
 
 ```typescript
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+import type { IncomingHttpHeaders } from 'undici';
+
 export type DispatchCallbacks = {
-  // Called when response headers arrive
-  onResponseStart: (statusCode: number, headers: Record<string, string>, statusMessage: string) => void;
-  // Called for each body chunk; return false to pause
-  onResponseData: (chunk: Buffer) => boolean;
-  // Called on successful completion
-  onResponseEnd: (trailers: Record<string, string>) => void;
-  // Called on error
+  onResponseStart: (statusCode: number, headers: IncomingHttpHeaders, statusMessage: string) => void;
+  onResponseData: (chunk: Buffer) => void;
+  onResponseEnd: (trailers: IncomingHttpHeaders) => void;
   onResponseError: (error: Error) => void;
 };
 
-// New signature
-agentDispatch(
-  agent: AgentInstance,
-  options: AgentDispatchOptions,
-  callbacks: DispatchCallbacks,
-  abortHandle: AbortHandle,
-  pauseSignal: PauseSignal
-): boolean;
+agentDispatch(agent: AgentInstance, options: AgentDispatchOptions, callbacks: DispatchCallbacks): RequestHandle;
 ```
 
-### Phase 3: Rust Dispatch Implementation
-
-In `agent.rs`, implement the core dispatch logic:
+### Rust Implementation
 
 ```rust
-#[neon::export(name = "agentDispatch", context)]
-fn agent_dispatch<'cx>(
-    cx: &mut FunctionContext<'cx>,
-    agent: Handle<'cx, JsBox<AgentInstance>>,
-    options: Handle<'cx, JsObject>,
-    callbacks: Handle<'cx, JsObject>,
-    abort_handle: Handle<'cx, JsObject>,
-    pause_signal: Handle<'cx, JsObject>,
-) -> JsResult<'cx, JsBoolean> {
-    // 1. Parse options into reqwest Request
-    // 2. Spawn async task on tokio runtime
-    // 3. Inside task:
-    //    - Build and send request
-    //    - Check abort_handle before each step
-    //    - On headers: call callbacks.onResponseStart from main thread
-    //    - Stream body: for each chunk, call callbacks.onResponseData
-    //    - Respect pause_signal: wait when paused
-    //    - On complete: call callbacks.onResponseEnd
-    //    - On error: call callbacks.onResponseError
-    // 4. Return true (backpressure handled via pause_signal)
-}
-```
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
-**Key Rust patterns:**
+use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
+use futures::StreamExt;
+use neon::prelude::*;
+use tokio::{select, sync::Notify};
+use tokio_util::sync::CancellationToken;
 
-- Use `neon::thread::ThreadSafeFunction` for callbacks from async context
-- Use `tokio::sync::watch` or `parking_lot::Condvar` for pause/resume signaling
-- Use `tokio_util::sync::CancellationToken` for abort
-
-### Phase 4: Backpressure Signal Mechanism
-
-Create shared pause/resume signal:
-
-```typescript
-// In addon-def.ts
-export interface PauseSignal {
-  pause(): void;
-  resume(): void;
-  waitIfPaused(): Promise<void>; // Used internally by Rust
-}
-```
-
-**Rust implementation:**
-
-```rust
-struct PauseSignal {
+pub struct PauseState {
     paused: AtomicBool,
     notify: Notify,
 }
 
-impl PauseSignal {
-    async fn wait_if_paused(&self) {
+impl PauseState {
+    pub fn new() -> Self {
+        Self { paused: AtomicBool::new(false), notify: Notify::new() }
+    }
+
+    pub async fn wait_if_paused(&self) {
         while self.paused.load(Ordering::SeqCst) {
             self.notify.notified().await;
         }
     }
-    
-    fn pause(&self) {
-        self.paused.store(true, Ordering::SeqCst);
-    }
-    
-    fn resume(&self) {
+
+    pub fn pause(&self) { self.paused.store(true, Ordering::SeqCst); }
+
+    pub fn resume(&self) {
         self.paused.store(false, Ordering::SeqCst);
         self.notify.notify_one();
     }
 }
-```
 
-### Phase 5: Abort Handle Mechanism
+pub struct RequestHandle {
+    token: CancellationToken,
+    pause_state: Arc<PauseState>,
+}
 
-Create abort handle that Rust can check:
+impl RequestHandle {
+    pub fn abort(&self) { self.token.cancel(); }
+    pub fn pause(&self) { self.pause_state.pause(); }
+    pub fn resume(&self) { self.pause_state.resume(); }
+}
 
-```typescript
-// In addon-def.ts
-export interface AbortHandle {
-  abort(): void;
-  readonly aborted: boolean;
+async fn stream_response_body(
+    response: reqwest::Response,
+    token: CancellationToken,
+    pause_state: Arc<PauseState>,
+    channel: Channel,
+    on_response_data: Root<JsFunction>,
+    on_response_end: Root<JsFunction>,
+    on_response_error: Root<JsFunction>,
+) {
+    let mut stream = response.bytes_stream();
+
+    loop {
+        pause_state.wait_if_paused().await;
+
+        select! {
+            () = token.cancelled() => {
+                let _ = channel.send(move |mut cx| {
+                    let error = cx.error("Request aborted")?;
+                    on_response_error.into_inner(&mut cx).call_with(&cx).arg(error).exec(&mut cx)
+                }).await;
+                return;
+            }
+            chunk = stream.next() => {
+                match chunk {
+                    Some(Ok(data)) => {
+                        let chunk_vec = data.to_vec();
+                        let _ = channel.send(move |mut cx| {
+                            fn send_chunk(cx: &mut Cx<'_>, data: &[u8]) -> NeonResult<()> {
+                                let _buffer = JsBuffer::from_slice(cx, data)?;
+                                Ok(())
+                            }
+                            send_chunk(&mut cx, &chunk_vec)
+                        }).await;
+                    }
+                    Some(Err(e)) => {
+                        let error_msg = e.to_string();
+                        let _ = channel.send(move |mut cx| {
+                            let error = cx.error(&error_msg)?;
+                            on_response_error.into_inner(&mut cx).call_with(&cx).arg(error).exec(&mut cx)
+                        }).await;
+                        return;
+                    }
+                    None => {
+                        let _ = channel.send(move |mut cx| {
+                            let trailers = cx.empty_object();
+                            on_response_end.into_inner(&mut cx).call_with(&cx).arg(trailers).exec(&mut cx)
+                        }).await;
+                        return;
+                    }
+                }
+            }
+        }
+    }
 }
 ```
 
-**Rust implementation:**
+### AbortSignal Integration
 
 ```rust
-struct AbortHandle {
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use neon::prelude::*;
+use tokio_util::sync::{CancellationToken, WaitForCancellationFuture};
+
+struct AbortSignal {
+    signal: Option<Root<JsObject>>,
     token: CancellationToken,
 }
 
-impl AbortHandle {
-    fn abort(&self) {
-        self.token.cancel();
+impl AbortSignal {
+    pub fn try_from_value<'a>(cx: &mut Cx<'a>, value: Handle<'_, JsValue>) -> NeonResult<Option<Self>> {
+        if value.is_a::<JsUndefined, _>(cx) { return Ok(None); }
+
+        let signal: Handle<'_, JsObject> = value.downcast_or_throw(cx)?;
+        let token = CancellationToken::new();
+
+        let callback = JsFunction::new(cx, {
+            let token = token.clone();
+            move |mut cx| { token.cancel(); Ok(cx.undefined()) }
+        })?;
+        signal.set(cx, "onabort", callback)?;
+
+        let aborted: Handle<'_, JsBoolean> = signal.get(cx, "aborted")?;
+        if aborted.value(cx) {
+            return signal.call_method_with(cx, "throwIfAborted")?.exec(cx)?;
+        }
+
+        Ok(Some(Self { signal: Some(signal.root(cx)), token }))
     }
-    
-    fn is_aborted(&self) -> bool {
-        self.token.is_cancelled()
-    }
+
+    pub fn aborted(&self) -> WaitForCancellationFuture<'_> { self.token.cancelled() }
 }
 ```
 
-### Phase 6: Updated dispatch() in agent.ts
+### dispatch() Method
 
 ```typescript
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 dispatch(options: Dispatcher.DispatchOptions, handler: Dispatcher.DispatchHandler): boolean {
   if (this.#closed) {
-    handler.onResponseError?.(/* create controller */, new Error('Dispatcher is closed'));
+    const controller = new DispatchControllerImpl();
+    handler.onResponseError?.(controller, new Error('Dispatcher is closed'));
     return false;
   }
 
-  const abortHandle = Addon.createAbortHandle();
-  const pauseSignal = Addon.createPauseSignal();
-  const controller = new DispatchControllerImpl(abortHandle, pauseSignal);
-
-  // Notify request start
+  const controller = new DispatchControllerImpl();
   handler.onRequestStart?.(controller, {});
 
-  const callbacks: DispatchCallbacks = {
-    onResponseStart: (statusCode, headers, statusMessage) => {
+  const callbacks = {
+    onResponseStart: (statusCode: number, headers: IncomingHttpHeaders, statusMessage: string) => {
       if (controller.aborted) return;
       handler.onResponseStart?.(controller, statusCode, headers, statusMessage);
     },
-    onResponseData: (chunk) => {
-      if (controller.aborted) return false;
+    onResponseData: (chunk: Buffer) => {
+      if (controller.aborted) return;
       handler.onResponseData?.(controller, chunk);
-      return !controller.paused;
     },
-    onResponseEnd: (trailers) => {
+    onResponseEnd: (trailers: IncomingHttpHeaders) => {
       if (controller.aborted) return;
       handler.onResponseEnd?.(controller, trailers);
     },
-    onResponseError: (error) => {
+    onResponseError: (error: Error) => {
       handler.onResponseError?.(controller, controller.reason ?? error);
     },
   };
 
-  const dispatchOptions = this.#buildDispatchOptions(options);
-  return Addon.agentDispatch(this.#agent, dispatchOptions, callbacks, abortHandle, pauseSignal);
+  const requestHandle = Addon.agentDispatch(this.#agent, this.#buildDispatchOptions(options), callbacks);
+  controller.setRequestHandle(requestHandle);
+  return true;
 }
 ```
 
-### Phase 7: close() and destroy()
+### close/destroy
 
 ```typescript
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 async close(): Promise<void> {
   this.#closed = true;
-  // Wait for pending requests via Rust
   await Addon.agentClose(this.#agent);
 }
 
 async destroy(err?: Error): Promise<void> {
   this.#destroyed = true;
   this.#closed = true;
-  // Abort all pending requests
   await Addon.agentDestroy(this.#agent, err ?? null);
 }
 ```
 
-## Headers Format
+## File Structure
 
-The new interface uses `IncomingHttpHeaders` (object form), not raw `Buffer[]` arrays:
-
-```typescript
-// onResponseStart receives:
-headers: { 'content-type': 'application/json', 'x-custom': 'value' }
-
-// Not the legacy format:
-rawHeaders: [Buffer('content-type'), Buffer('application/json'), ...]
+```text
+packages/node/
+├── export/
+│   ├── agent.ts        # Add DispatchControllerImpl, update dispatch/close/destroy
+│   └── addon-def.ts    # Add DispatchCallbacks, RequestHandle types
+├── src/
+│   ├── agent.rs        # Implement agent_dispatch with reqwest + Channel
+│   └── lib.rs          # Add tokio runtime, pause/abort types
+└── tests/vitest/
+    ├── agent.test.ts
+    ├── dispatcher.test.ts
+    ├── backpressure.test.ts
+    └── abort.test.ts
 ```
 
-Rust should build headers as `Record<string, string>` directly.
+## Dependencies
 
-## Testing Checklist
+| Crate          | Purpose                     |
+| :------------- | :-------------------------- |
+| `reqwest`      | HTTP client                 |
+| `tokio`        | Async runtime               |
+| `tokio-util`   | CancellationToken           |
+| `futures`      | StreamExt for bytes_stream  |
 
-1. **Basic request:** `fetch()` completes successfully
-2. **Abort:** `AbortController.abort()` cancels request, triggers `onResponseError`
-3. **Backpressure:** Slow consumer pauses body streaming
-4. **Error handling:** Network errors trigger `onResponseError`
-5. **Lifecycle:** `close()` waits for pending, `destroy()` aborts all
+## Implementation Order
 
-## Files to Modify
+1. DispatchController skeleton (TS)
+2. Basic Rust dispatch with Channel callbacks
+3. Wire addon interface
+4. Complete dispatch() flow
+5. Add abort support
+6. Add backpressure support
+7. Implement close/destroy
+8. Tests
 
-| File                   | Changes                                                                        |
-| :--------------------- | :----------------------------------------------------------------------------- |
-| `export/agent.ts`      | Add `DispatchControllerImpl`, update `dispatch()`, `close()`, `destroy()`      |
-| `export/addon-def.ts`  | Add `DispatchCallbacks`, `AbortHandle`, `PauseSignal`, update `agentDispatch`  |
-| `src/agent.rs`         | Implement `agent_dispatch` with reqwest, callbacks, abort/pause handling       |
-| `src/lib.rs`           | Add abort handle and pause signal exports if needed                            |
+## Open Questions
+
+- Request body streaming for POST/PUT
+- Upgrade/CONNECT handler
+- Drain event timing
+- Root cloning before spawn

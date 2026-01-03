@@ -2,7 +2,10 @@
 
 //! Module with the relevant metadata and helper methods for build.rs files.
 
-use std::{env::var, fmt, path::Path, process::Command};
+use std::env::var;
+use std::fmt;
+use std::path::Path;
+use std::process::Command;
 
 use anyhow::{Context, Result};
 use chrono::Datelike;
@@ -169,7 +172,8 @@ pub fn cdylib_win_rc(product: &str, version: &Version, filename: &str) -> Result
 
 #[cfg(test)]
 mod tests {
-    use std::env::{consts::ARCH, set_var};
+    use std::env::consts::ARCH;
+    use std::env::set_var;
 
     use pretty_assertions::assert_eq;
     use tempfile::tempdir;
@@ -216,8 +220,8 @@ mod tests {
         // This is required for `embed-resource` (used by `cdylib_win_rc`) to function correctly in the test
         // environment. Tests are run in separate processes by nextest, so there is no risk of race conditions.
         unsafe {
-            set_var("HOST", format!("{}-pc-windows-msvc", ARCH));
-            set_var("TARGET", format!("{}-pc-windows-msvc", ARCH));
+            set_var("HOST", format!("{ARCH}-pc-windows-msvc"));
+            set_var("TARGET", format!("{ARCH}-pc-windows-msvc"));
             set_var("OUT_DIR", temp_dir.path());
         }
 
