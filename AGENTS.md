@@ -36,7 +36,7 @@ docker info > /dev/null 2>&1 && echo "NO_SUDO" || echo "NEEDS_SUDO"
 grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
 grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 grep -q "^CI=" .env || echo "CI=true" >> .env
-grep -q "^COMPOSE_FILE=" .env || echo "COMPOSE_FILE=docker-compose.base.yml" >> .env
+grep -q "^COMPOSE_FILE=" .env || echo "COMPOSE_FILE=docker-compose.yml" >> .env
 ```
 
 ### Step 2: Fix cache directory ownership (BEFORE starting container)
@@ -201,7 +201,7 @@ Rebuild is required when modifying:
 - Python: `.python-version`, `pyproject.toml`
 - Node.js: `package.json` (`engines` or `packageManager` fields)
 - Rust: `rust-toolchain.toml`
-- Infrastructure: `Dockerfile`, `docker-compose.base.yml`, `docker-entrypoint.sh`, `.env`
+- Infrastructure: `Dockerfile`, `docker-compose.yml`, `docker-entrypoint.sh`, `.env`
 
 Without sudo:
 

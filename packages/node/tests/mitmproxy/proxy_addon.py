@@ -5,33 +5,7 @@ Note: Mitmproxy automatically reloads scripts when they are modified.
 Any changes to this file will be picked up immediately by the running proxy.
 """
 
-import json
-
 from mitmproxy import ctx, http
-
-
-def handle_test(request: http.Request) -> http.Response:
-    """Handle GET https://server.lan/test"""
-    return http.Response.make(
-        status_code=200,
-        headers={
-            "Content-Type": "application/json",
-            "X-Mock-Response": "true",
-        },
-        content=json.dumps(
-            {
-                "message": "This is a mock response from mitmproxy",
-                "path": request.path,
-                "method": request.method,
-            }
-        ),
-    )
-
-
-# Route patterns to handler functions
-ROUTES = {
-    "https://server.lan/test": handle_test,
-}
 
 
 class ProxyAddon:
@@ -41,11 +15,14 @@ class ProxyAddon:
         """Intercept requests and optionally return mock responses."""
         url = flow.request.pretty_url
 
-        # Check if this URL matches any mock handler
-        handler = ROUTES.get(url)
-        if handler:
-            ctx.log.info(f"Mocking request: {url}")
-            flow.response = handler(flow.request)
+        # Check if the requested host is echo.lan
+        if flow.request.pretty_host == "echo.lan":
+            ctx.log.info(f"Echoing request: {flow.request.pretty_url}")
+            flow.response = http.Response.make(
+                200,
+                flow.request.content or b"",
+                dict(flow.request.headers),
+            )
             return
 
         # Let the request pass through to the internet

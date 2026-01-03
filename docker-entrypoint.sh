@@ -21,5 +21,9 @@ if [[ -n "${MITM_PROXY:-}" ]]; then
     fi
 fi
 
+# Install dependencies (uses cache, fast on subsequent runs)
+echo "Running pnpm install..."
+CI=true HUSKY=1 pnpm install
+
 # Execute the command (e.g., sleep infinity)
 exec "$@"

@@ -1,6 +1,6 @@
 {
-  "name": "Base Dev",
-  "dockerComposeFile": ["../../docker-compose.base.yml"],
+  "name": "Dev with Transparent Network",
+  "dockerComposeFile": ["../../docker-compose.yml"],
   "service": "dev",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
