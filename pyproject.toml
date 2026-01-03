@@ -8,9 +8,19 @@ members = ["packages/node/tests/mitmproxy"]
 [dependency-groups]
 dev = [
     "mitmproxy==12.2.1",
+    "pyrefly==0.46.1",
     "ruff==0.14.10",
     "semgrep==1.146.0",
     "zizmor==1.19.0",
+]
+
+[tool.pyrefly]
+project-includes = ["packages/**/*.py"]
+use-ignore-files = true
+python-interpreter-path = ".path/python"
+search-path = [
+    ".venv/lib/python3.14/site-packages",
+    ".venv/Lib/site-packages",
 ]
 
 [tool.ruff.format]

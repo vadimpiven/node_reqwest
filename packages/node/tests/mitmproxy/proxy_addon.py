@@ -1,5 +1,8 @@
 """
-Mitmproxy stub addon that proxies all traffic.
+Mitmproxy addon that proxies all traffic except for the requests to the test server.
+
+Note: Mitmproxy automatically reloads scripts when they are modified.
+Any changes to this file will be picked up immediately by the running proxy.
 """
 
 import json
