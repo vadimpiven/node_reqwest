@@ -29,7 +29,8 @@ export default defineConfig({
       reporter: ['lcovonly', 'text'],
       reportsDirectory: './coverage-vitest',
       // Keeps coverage data on test failure to prevent ENOENT race conditions
-      reportOnFailure: true
+      reportOnFailure: true,
+      clean: false
     },
     reporters: ['default', ['junit', { outputFile: 'report-vitest.junit.xml' }]],
     include: ['tests/vitest/**/*.test.ts']
