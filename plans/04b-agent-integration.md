@@ -109,7 +109,7 @@ import type {
 } from './addon-def.ts';
 import type { Agent as AgentDef, AgentOptions } from './agent-def.ts';
 import { DispatchControllerImpl } from './dispatch-controller.ts';
-import { createUndiciError, ClientClosedError, ClientDestroyedError, NotSupportedError, RequestAbortedError, type CoreErrorInfo } from './errors.ts';
+import { createUndiciError, ClientClosedError, ClientDestroyedError, NotSupportedError, RequestAbortedError, ResponseError, type CoreErrorInfo } from './errors.ts';
 
 // Import the actual addon - this will be the native binary
 import AddonImpl from '../index.node';
@@ -176,8 +176,8 @@ class AgentImpl extends Dispatcher {
   readonly #agent: AgentInstance;
   #closed = false;
   #destroyed = false;
-  #lastOrigin: URL | null = null;
-  #connectionEstablished = false;
+  /** Origins that have established at least one successful connection */
+  #connectedOrigins = new Set<string>();
 
   constructor(options?: AgentOptions) {
     super();
@@ -260,7 +260,8 @@ class AgentImpl extends Dispatcher {
       upgrade: null,
     };
 
-    this.#lastOrigin = options.origin ? new URL(String(options.origin)) : null;
+    const origin = options.origin ? new URL(String(options.origin)) : null;
+    const originKey = origin?.origin ?? null;
     // Track whether this request established a connection (for event emission)
     let requestConnected = false;
 
@@ -271,13 +272,27 @@ class AgentImpl extends Dispatcher {
         statusMessage: string
       ) => {
         if (controller.aborted) return;
+
         // Mark that connection was established for this request
         requestConnected = true;
-        // Emit 'connect' event on first successful connection
-        if (!this.#connectionEstablished && this.#lastOrigin) {
-          this.#connectionEstablished = true;
-          queueMicrotask(() => this.emit('connect', this.#lastOrigin, [this]));
+
+        // Emit 'connect' event on first successful connection to this origin
+        if (originKey && !this.#connectedOrigins.has(originKey)) {
+          this.#connectedOrigins.add(originKey);
+          queueMicrotask(() => this.emit('connect', origin, [this]));
         }
+
+        // Handle throwOnError option
+        if (dispatchOptions.throwOnError && statusCode >= 400) {
+          const error = new ResponseError(
+            `Request failed with status code ${statusCode}`,
+            statusCode
+          );
+          handler.onResponseError?.(controller, error);
+          controller.abort(error);
+          return;
+        }
+
         handler.onResponseStart?.(controller, statusCode, headers, statusMessage);
       },
       onResponseData: (chunk: Buffer) => {
@@ -290,22 +305,29 @@ class AgentImpl extends Dispatcher {
         handler.onResponseEnd?.(controller, trailers);
       },
       onResponseError: (errorInfo: CoreErrorInfo) => {
+        // If controller was aborted with a reason, use that instead of the generic error
+        // This handles user-initiated aborts with custom reasons
+        if (controller.aborted && errorInfo.code === 'UND_ERR_ABORTED') {
+          handler.onResponseError?.(controller, controller.reason ?? new RequestAbortedError());
+          return;
+        }
+
         const undiciError = createUndiciError(errorInfo);
         const isConnectionError =
           errorInfo.code === 'UND_ERR_SOCKET' ||
-          errorInfo.code === 'UND_ERR_CONNECT_TIMEOUT' ||
-          errorInfo.code === 'UND_ERR_SECURE_PROXY_CONNECTION';
+          errorInfo.code === 'UND_ERR_CONNECT_TIMEOUT';
 
-        if (this.#lastOrigin && isConnectionError) {
+        if (origin && isConnectionError) {
           if (requestConnected) {
             // Connection was established then lost -> 'disconnect'
-            queueMicrotask(() => this.emit('disconnect', this.#lastOrigin, [this], undiciError));
+            queueMicrotask(() => this.emit('disconnect', origin, [this], undiciError));
           } else {
             // Connection never established -> 'connectionError'
-            queueMicrotask(() => this.emit('connectionError', this.#lastOrigin, [this], undiciError));
+            queueMicrotask(() => this.emit('connectionError', origin, [this], undiciError));
           }
         }
-        handler.onResponseError?.(controller, controller.reason ?? undiciError);
+
+        handler.onResponseError?.(controller, undiciError);
       },
     };
 
@@ -456,6 +478,95 @@ describe('E2E Dispatch Integration', () => {
     }
   });
 
+  it('should properly encode query parameters', async () => {
+    const server = createServer((req, res) => {
+      // Verify the query string is properly encoded
+      const url = new URL(req.url!, `http://localhost`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        q: url.searchParams.get('q'),
+        special: url.searchParams.get('special&key'),
+      }));
+    });
+
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const port = (server.address() as { port: number }).port;
+
+    try {
+      const agent = new Agent();
+
+      await new Promise<void>((resolve, reject) => {
+        const chunks: Buffer[] = [];
+
+        agent.dispatch(
+          {
+            origin: `http://localhost:${port}`,
+            path: '/search',
+            method: 'GET',
+            query: { q: 'hello world', 'special&key': 'value=1' },
+          },
+          {
+            onResponseStart: (_controller, code) => {
+              expect(code).toBe(200);
+            },
+            onResponseData: (_controller, chunk) => {
+              chunks.push(chunk);
+            },
+            onResponseEnd: () => {
+              const body = JSON.parse(Buffer.concat(chunks).toString());
+              expect(body.q).toBe('hello world');
+              expect(body.special).toBe('value=1');
+              resolve();
+            },
+            onResponseError: (_controller, err) => {
+              reject(err);
+            },
+          }
+        );
+      });
+
+      await agent.close();
+    } finally {
+      server.close();
+    }
+  });
+
+  it('should handle throwOnError option', async () => {
+    const server = createServer((req, res) => {
+      res.writeHead(404);
+      res.end('Not Found');
+    });
+
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const port = (server.address() as { port: number }).port;
+
+    try {
+      const agent = new Agent();
+
+      await new Promise<void>((resolve) => {
+        agent.dispatch(
+          {
+            origin: `http://localhost:${port}`,
+            path: '/',
+            method: 'GET',
+            throwOnError: true,
+          },
+          {
+            onResponseError: (_controller, err) => {
+              expect(err).toBeInstanceOf(Error);
+              expect(err.message).toContain('404');
+              resolve();
+            },
+          }
+        );
+      });
+
+      await agent.close();
+    } finally {
+      server.close();
+    }
+  });
+
 });
 ```
 
@@ -464,9 +575,10 @@ describe('E2E Dispatch Integration', () => {
 | Metric | Value |
 | :--- | :--- |
 | **Exports** | `Agent`, `DispatchControllerImpl`, `hello` |
-| **Events** | `connect`, `disconnect`, `connectionError` |
+| **Events** | `connect` (per-origin), `disconnect`, `connectionError` |
 | **dispatch() return** | Always `true` (reqwest manages pooling) |
-| **Tests** | 2 E2E integration tests |
+| **throwOnError** | Emits `ResponseError` for 4xx/5xx when enabled |
+| **Tests** | 4 E2E integration tests |
 
 ## File Structure
 

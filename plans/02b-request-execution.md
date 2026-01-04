@@ -203,7 +203,10 @@ impl Agent {
 
             select! {
                 () = token.cancelled() => {
-                    // Drop stream to ensure response is properly cleaned up
+                    // Drop stream on abort - do NOT consume remaining bytes.
+                    // This avoids useless copying over the FFI boundary.
+                    // The underlying TCP connection may be closed rather than reused,
+                    // but this is acceptable for abort scenarios.
                     drop(stream);
                     handler.on_response_error(CoreError::RequestAborted).await;
                     return;
@@ -213,6 +216,7 @@ impl Agent {
                     match result {
                         Ok(Some(Ok(data))) => handler.on_response_data(data).await,
                         Ok(Some(Err(e))) => {
+                            // Drop stream on error - avoids useless FFI copying
                             drop(stream);
                             handler.on_response_error(CoreError::from_reqwest(e, true)).await;
                             return;

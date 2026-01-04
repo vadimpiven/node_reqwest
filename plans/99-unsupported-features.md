@@ -25,7 +25,7 @@ limitations or scope decisions.
 | **drain event** | Emitted when ready for more | Not emitted |
 | **onRequestStart context** | Contains retry state | Always `{}` (no retries) |
 | **Trailers in onResponseEnd** | Contains HTTP trailers | Always `{}` |
-| **1xx informational** | Multiple onResponseStart calls | Single call |
+| **1xx informational** | Multiple `onResponseStart` calls for 1xx headers | Single `onResponseStart` (reqwest doesn't expose 1xx) |
 
 ## Error Mapping
 
@@ -38,7 +38,7 @@ limitations or scope decisions.
 | `is_status()` | `ResponseError` | HTTP error status |
 | `is_body()` | `SocketError` | Body read failure |
 | `is_builder()` | `InvalidArgumentError` | Bad request config |
-| Proxy TLS error | `SocketError` | `SecureProxyConnectionError` not implemented |
+| Proxy TLS error | `SocketError` | reqwest doesn't distinguish proxy errors |
 
 ## Runtime Behavior
 

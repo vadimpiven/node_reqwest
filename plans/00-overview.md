@@ -84,6 +84,7 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | Request body | reqwest::Body (Bytes or Stream) | Supports both materialized and streaming bodies |
 | Request body stream | Pull-based via oneshot channels | JS never blocked, Rust polls when ready |
 | Response data | Sync-ack via oneshot in Channel closure | Rust waits for JS callback execution per chunk |
+| Response body on error | Drop without consuming | Avoids useless FFI copying; connection may close |
 | Handler API | New controller API only | Undici wraps legacy handlers |
 | WebSocket/Upgrade | NotSupportedError | Post-undici-compliance |
 | Tokio runtime | Neon's global shared runtime | Single runtime, no custom init |
@@ -91,7 +92,8 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | User pause/resume | PauseState + watch channel | Manual backpressure control |
 | Request body cleanup | Drop cancels stream + releases Root | Proper abort handling, no resource leaks |
 | dispatch() return | Always true | No internal queue limit |
-| Events | connect, disconnect, connectionError | Per undici Dispatcher spec |
+| Events | connect (per-origin), disconnect, connectionError | Per undici Dispatcher spec |
+| throwOnError | ResponseError for 4xx/5xx | Matches undici behavior |
 
 ## Undici Dispatcher Compliance Checklist
 
@@ -103,9 +105,10 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | DispatchController | ✅ | abort(), pause(), resume() |
 | Error codes (UND_ERR_*) | ✅ | Symbol.for instanceof |
 | close() / destroy() | ✅ | Placeholder (reqwest manages) |
-| connect event | ✅ | On first successful response |
+| connect event | ✅ | Per-origin, on first successful response |
 | disconnect event | ✅ | On connection loss after established |
 | connectionError event | ✅ | On initial connection failure |
+| throwOnError | ✅ | ResponseError for 4xx/5xx status codes |
 | drain event | ⚠️ | Not emitted (dispatch always returns true) |
 | CONNECT method | ❌ | NotSupportedError |
 | Upgrade requests | ❌ | NotSupportedError |
@@ -118,7 +121,7 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | **Target Runtime** | Node.js 20+ |
 | **Rust Version** | 1.75+ |
 | **Total Est. Time** | ~16-20 hours |
-| **Total Tests** | ~31 |
+| **Total Tests** | ~35 |
 
 ## File Structure (Final)
 

@@ -82,9 +82,8 @@ define_errors! {
     #[error("Socket error: {0}")]
     Socket(String) => ("UND_ERR_SOCKET", "SocketError"),
 
-    #[error("Secure proxy connection error: {0}")]
-    SecureProxyConnection(String) =>
-        ("UND_ERR_SECURE_PROXY_CONNECTION", "SecureProxyConnectionError"),
+    #[error("Headers overflow")]
+    HeadersOverflow => ("UND_ERR_HEADERS_OVERFLOW", "HeadersOverflowError"),
 
     #[error("Invalid argument: {0}")]
     InvalidArgument(String) => ("UND_ERR_INVALID_ARG", "InvalidArgumentError"),
@@ -260,6 +259,12 @@ export const BodyTimeoutError = defineError(
 
 export const SocketError = defineError('UND_ERR_SOCKET', 'Socket error', 'SocketError');
 
+export const HeadersOverflowError = defineError(
+  'UND_ERR_HEADERS_OVERFLOW',
+  'Headers overflow',
+  'HeadersOverflowError'
+);
+
 export const InvalidArgumentError = defineError(
   'UND_ERR_INVALID_ARG',
   'Invalid argument',
@@ -284,11 +289,7 @@ export const NotSupportedError = defineError(
   'NotSupportedError'
 );
 
-export const SecureProxyConnectionError = defineError(
-  'UND_ERR_SECURE_PROXY_CONNECTION',
-  'Secure proxy connection error',
-  'SecureProxyConnectionError'
-);
+
 
 const kResponseError = Symbol.for('undici.error.UND_ERR_RESPONSE');
 
@@ -323,8 +324,8 @@ export function createUndiciError(info: CoreErrorInfo): Error {
       return new BodyTimeoutError(message);
     case 'UND_ERR_SOCKET':
       return new SocketError(message);
-    case 'UND_ERR_SECURE_PROXY_CONNECTION':
-      return new SecureProxyConnectionError(message);
+    case 'UND_ERR_HEADERS_OVERFLOW':
+      return new HeadersOverflowError(message);
     case 'UND_ERR_DESTROYED':
       return new ClientDestroyedError(message);
     case 'UND_ERR_CLOSED':
@@ -399,6 +400,9 @@ describe('Undici Error Classes', () => {
 | **Rust Dependency** | `thiserror = "2.0"`, `reqwest` |
 | **Error Classes** | 11 (10 specific + 1 base) |
 | **Est. Time** | 1.5 hours |
+
+**Note:** `SecureProxyConnectionError` is not implemented as reqwest doesn't
+distinguish proxy TLS errors from general socket errors.
 
 ## File Structure
 
