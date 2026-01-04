@@ -42,6 +42,34 @@ JavaScript Handler
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! JsDispatchHandler bridges Rust async trait to JS callbacks via Neon Channel.
+//!
+//! ## Response Backpressure Design
+//!
+//! Response data delivery uses **acknowledgment-based flow control**:
+//!
+//! 1. Rust sends chunk to JS via `Channel::send`
+//! 2. JS callback runs, delivers chunk to user handler
+//! 3. JS sends acknowledgment via oneshot channel
+//! 4. Rust awaits acknowledgment before reading next chunk
+//!
+//! ```text
+//! Rust (async)                    JS (event loop)
+//!     │                                │
+//!     ├─► Channel::send(chunk) ───────►│
+//!     │                                ├─► onResponseData(chunk)
+//!     │                                │
+//!     │◄── oneshot::send(ack) ◄───────┤
+//!     ▼                                │
+//!  await ack                           │
+//!     │                                │
+//!  read next chunk                     │
+//! ```
+//!
+//! This ensures:
+//! - No unbounded buffering in Rust
+//! - Rust reads at exactly the pace JS can process
+//! - JS event loop never blocked
+//! - Natural backpressure
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -49,6 +77,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use bytes::Bytes;
 use neon::prelude::*;
+use tokio::sync::oneshot;
 
 use core::{CoreError, DispatchHandler, ResponseStart};
 
@@ -75,6 +104,9 @@ fn headers_to_js<'a>(
 }
 
 /// DispatchHandler implementation that forwards events to JS callbacks.
+///
+/// Uses acknowledgment-based flow control for response data to prevent
+/// unbounded memory growth when JS is slower than the network.
 pub struct JsDispatchHandler {
     channel: Channel,
     on_start: Arc<Root<JsFunction>>,
@@ -104,6 +136,7 @@ impl JsDispatchHandler {
 #[async_trait]
 impl DispatchHandler for JsDispatchHandler {
     async fn on_response_start(&self, response: ResponseStart) {
+        // Response start is fire-and-forget (small, infrequent)
         let channel = self.channel.clone();
         let on_start = Arc::clone(&self.on_start);
         let status_code = response.status_code;
@@ -123,20 +156,33 @@ impl DispatchHandler for JsDispatchHandler {
     }
 
     async fn on_response_data(&self, chunk: Bytes) {
+        // Use acknowledgment-based flow control to prevent unbounded buffering
+        let (tx, rx) = oneshot::channel::<()>();
         let channel = self.channel.clone();
         let on_data = Arc::clone(&self.on_data);
 
+        // Send chunk to JS with acknowledgment callback
         channel.send(move |mut cx| {
             let buffer = JsBuffer::from_slice(&mut cx, &chunk)?;
             on_data
                 .to_inner(&mut cx)
                 .call_with(&cx)
                 .arg(buffer)
-                .exec(&mut cx)
+                .exec(&mut cx)?;
+
+            // Acknowledge that JS has processed the chunk
+            // This unblocks Rust to read the next chunk
+            let _ = tx.send(());
+            Ok(())
         });
+
+        // Wait for acknowledgment before returning (allows reading next chunk)
+        // This is async and non-blocking - it yields control to the tokio runtime
+        let _ = rx.await;
     }
 
     async fn on_response_end(&self, trailers: HashMap<String, Vec<String>>) {
+        // Response end is fire-and-forget (small, infrequent)
         let channel = self.channel.clone();
         let on_end = Arc::clone(&self.on_end);
 
@@ -151,6 +197,7 @@ impl DispatchHandler for JsDispatchHandler {
     }
 
     async fn on_response_error(&self, error: CoreError) {
+        // Errors are fire-and-forget (terminal event)
         let channel = self.channel.clone();
         let on_error = Arc::clone(&self.on_error);
         let error_code = error.error_code().to_string();
@@ -183,118 +230,173 @@ impl DispatchHandler for JsDispatchHandler {
 
 //! Request body streaming from JS ReadableStreamBYOBReader.
 //!
-//! Backpressure handling:
-//! - Uses mpsc::channel with bounded capacity (4 chunks = ~256KB max buffer)
-//! - When channel is full, the reader pauses until Rust consumes chunks
-//! - This prevents unbounded memory growth during slow uploads
+//! ## Architecture: Pull-Based Non-Blocking Design
 //!
-//! Note: blocking_send() is used in JS callback context which is synchronous.
-//! The bounded channel provides backpressure by blocking when full.
+//! This module uses a **pull-based** architecture to ensure the JS event loop
+//! is NEVER blocked:
+//!
+//! 1. Rust requests chunks only when ready (via `Channel::send`)
+//! 2. JS reads from the stream and responds via oneshot channel
+//! 3. Rust awaits the oneshot (async, non-blocking)
+//!
+//! ```text
+//! Rust (async)                    JS (event loop)
+//!     │                                │
+//!     ├─► Channel::send(request) ─────►│
+//!     │                                ├─► reader.read(buffer)
+//!     │                                │   (async, non-blocking)
+//!     │                                │
+//!     │◄── oneshot.send(chunk) ◄──────┤
+//!     ▼                                │
+//!  await rx                            │
+//! ```
+//!
+//! ## Backpressure
+//! Natural! Rust only requests chunks when the HTTP body stream is polled.
+//! JS never reads ahead - it only reads when explicitly requested.
+//!
+//! ## Cleanup on Abort
+//! When a request is aborted:
+//! 1. The Rust request task is cancelled (CancellationToken)
+//! 2. JsBodyReader is dropped
+//! 3. Drop impl releases the JS reader reference via Channel::send
+//! 4. Any pending oneshot::Receiver gets an error (sender dropped)
+//! 5. The JS stream read (if in progress) completes but response is discarded
+
+use std::sync::{Arc, Mutex};
 
 use bytes::Bytes;
 use neon::prelude::*;
-use tokio::sync::mpsc;
+use tokio::sync::oneshot;
 
-/// Reads body chunks from JS via bounded channel (backpressure via channel capacity).
+/// Reads body chunks from JS ReadableStreamBYOBReader on demand.
+///
+/// Uses a pull-based model: Rust requests chunks, JS responds.
+/// The JS event loop is never blocked.
 pub struct JsBodyReader {
-    receiver: mpsc::Receiver<Option<Bytes>>,
+    channel: Channel,
+    reader_root: Arc<Mutex<Option<Root<JsObject>>>>,
+    /// Set to true when EOF or error encountered
+    finished: bool,
 }
 
 impl JsBodyReader {
-    /// Create a new body reader that pulls from a JS ReadableStreamBYOBReader.
-    ///
-    /// The bounded channel (capacity 4) provides backpressure:
-    /// - Each chunk is up to 64KB, so max 256KB buffered
-    /// - When Rust is slower than JS, blocking_send blocks the JS read loop
-    pub fn new(
-        cx: &mut FunctionContext,
-        reader: Handle<JsObject>,
-    ) -> NeonResult<(Self, mpsc::Sender<Option<Bytes>>)> {
-        // Bounded channel for backpressure (4 chunks * 64KB = 256KB max buffer)
-        let (tx, rx) = mpsc::channel(4);
+    /// Create a new body reader wrapping a JS ReadableStreamBYOBReader.
+    pub fn new(cx: &mut FunctionContext, reader: Handle<JsObject>) -> NeonResult<Self> {
         let channel = cx.channel();
-        let reader_root = reader.root(cx);
+        let reader_root = Arc::new(Mutex::new(Some(reader.root(cx))));
 
-        // Start the read loop in JS context
-        let tx_clone = tx.clone();
-        channel.send(move |mut cx| {
-            continue_reading(&mut cx, reader_root, tx_clone)
-        });
-
-        Ok((Self { receiver: rx }, tx))
+        Ok(Self {
+            channel,
+            reader_root,
+            finished: false,
+        })
     }
 
-    /// Get the next chunk, None indicates EOF.
+    /// Get the next chunk. Returns None on EOF or error.
+    ///
+    /// This method is fully async and never blocks the JS event loop:
+    /// 1. Sends a read request to JS via Channel::send
+    /// 2. JS reads from the stream (async)
+    /// 3. JS sends result back via oneshot channel
+    /// 4. Rust awaits the oneshot (async)
     pub async fn next(&mut self) -> Option<Bytes> {
-        self.receiver.recv().await.flatten()
-    }
-}
+        if self.finished {
+            return None;
+        }
 
-/// Iteratively read from JS reader (avoids deep recursion).
-/// Called from JS context (not async Rust).
-fn continue_reading(
-    cx: &mut Cx,
-    reader_root: Root<JsObject>,
-    tx: mpsc::Sender<Option<Bytes>>,
-) -> NeonResult<()> {
-    let reader = reader_root.to_inner(cx);
-    let buffer = JsArrayBuffer::new(cx, 64 * 1024)?; // 64KB chunks
-    let uint8 = JsTypedArray::<u8>::from_buffer(cx, buffer)?;
+        // Create oneshot for this chunk request
+        let (tx, rx) = oneshot::channel::<Option<Bytes>>();
 
-    let read_promise: Handle<JsPromise> = reader
-        .call_method_with(cx, "read")?
-        .arg(uint8)
-        .apply(cx)?;
+        let reader_root = Arc::clone(&self.reader_root);
+        let channel = self.channel.clone();
 
-    let channel = cx.channel();
-    let reader_root_clone = reader_root.clone(cx);
+        // Request JS to read a chunk (non-blocking send to event queue)
+        channel.send(move |mut cx| {
+            // Get the reader, or signal EOF if already released
+            let reader_guard = reader_root.lock().unwrap();
+            let Some(root) = reader_guard.as_ref() else {
+                let _ = tx.send(None);
+                return Ok(());
+            };
+            let reader = root.to_inner(&mut cx);
+            drop(reader_guard); // Release lock before async work
 
-    read_promise.to_future(cx, move |mut cx, result| {
-        match result {
-            Ok(value) => {
-                let obj = value.downcast_or_throw::<JsObject, _>(&mut cx)?;
-                let done: Handle<JsBoolean> = obj.get(&mut cx, "done")?;
+            // Create buffer for BYOB read (64KB chunks)
+            let buffer = JsArrayBuffer::new(&mut cx, 64 * 1024)?;
+            let uint8 = JsTypedArray::<u8>::from_buffer(&mut cx, buffer)?;
 
-                if done.value(&mut cx) {
-                    // EOF - signal end to Rust
-                    // Note: blocking_send may block if buffer is full, providing backpressure
-                    let _ = tx.blocking_send(None);
-                } else {
-                    let view: Handle<JsTypedArray<u8>> = obj.get(&mut cx, "value")?;
-                    let data = view.as_slice(&cx).to_vec();
+            // Call reader.read(buffer) - returns Promise
+            let read_promise: Handle<JsPromise> = reader
+                .call_method_with(&cx, "read")?
+                .arg(uint8)
+                .apply(&mut cx)?;
 
-                    // blocking_send blocks if channel is full - this is the backpressure!
-                    // When Rust is slow to consume, this naturally slows JS reading.
-                    match tx.blocking_send(Some(Bytes::from(data))) {
-                        Ok(()) => {
-                            // Continue reading - schedule next iteration
-                            channel.send(move |mut cx| {
-                                continue_reading(&mut cx, reader_root_clone, tx)
-                            });
+            // Handle promise resolution (runs on JS main thread, non-blocking)
+            read_promise.to_future(&mut cx, move |mut cx, result| {
+                match result {
+                    Ok(value) => {
+                        let obj = value.downcast_or_throw::<JsObject, _>(&mut cx)?;
+                        let done: Handle<JsBoolean> = obj.get(&mut cx, "done")?;
+
+                        if done.value(&mut cx) {
+                            // EOF - stream exhausted
+                            let _ = tx.send(None);
+                        } else {
+                            // Got data - copy to Bytes (one copy, Electron compatible)
+                            let view: Handle<JsTypedArray<u8>> = obj.get(&mut cx, "value")?;
+                            let chunk = Bytes::copy_from_slice(view.as_slice(&cx));
+                            let _ = tx.send(Some(chunk));
                         }
-                        Err(_) => {
-                            // Channel closed - Rust side cancelled the request
-                            // Do not continue reading
-                        }
+                        Ok(())
+                    }
+                    Err(_) => {
+                        // JS error (stream closed, network error, etc.)
+                        let _ = tx.send(None);
+                        Ok(())
                     }
                 }
-                Ok(())
+            })
+        });
+
+        // Await response from JS (async, non-blocking!)
+        match rx.await {
+            Ok(Some(chunk)) => Some(chunk),
+            Ok(None) => {
+                self.finished = true;
+                None
             }
-            Err(e) => {
-                // JS read error - signal EOF to Rust
-                let _ = tx.blocking_send(None);
-                Err(e)
+            Err(_) => {
+                // Sender dropped (abort or cleanup)
+                self.finished = true;
+                None
             }
         }
-    })
-}
+    }
 
-/// Convert JsBodyReader to bytes::Bytes stream for reqwest.
-impl JsBodyReader {
+    /// Convert to a bytes stream for reqwest body.
     pub fn into_stream(mut self) -> impl futures::Stream<Item = Result<Bytes, std::io::Error>> {
         async_stream::stream! {
             while let Some(chunk) = self.next().await {
                 yield Ok(chunk);
+            }
+        }
+    }
+}
+
+impl Drop for JsBodyReader {
+    fn drop(&mut self) {
+        // Release the JS reader reference on the JS thread
+        // This ensures proper cleanup even if dropped from any thread
+        if let Ok(mut guard) = self.reader_root.lock() {
+            if let Some(root) = guard.take() {
+                let channel = self.channel.clone();
+                // Schedule release on JS event loop (non-blocking)
+                channel.send(move |_cx| {
+                    // Dropping Root releases the reference
+                    drop(root);
+                    Ok(())
+                });
             }
         }
     }
@@ -398,10 +500,15 @@ fn hello<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsString> {
 
 | Metric | Value |
 | :--- | :--- |
-| **Communication** | `neon::event::Channel` |
-| **Body Streaming** | `mpsc::channel` + async read loop |
+| **Communication** | `neon::event::Channel` (non-blocking) |
+| **Request Body** | Pull-based via `tokio::sync::oneshot` |
+| **Response Data** | Acknowledgment-based via `tokio::sync::oneshot` |
+| **Backpressure** | Natural - Rust controls read pace, waits for JS |
+| **Memory Bounds** | 1 chunk in flight (request or response) |
+| **JS Event Loop** | Never blocked |
 | **Data Copy** | 1 copy per chunk (Electron compatible) |
 | **Thread Safety** | Arc-wrapped JS function roots |
+| **Cleanup on Abort** | Drop impl releases JS reader via Channel |
 
 ## File Structure
 

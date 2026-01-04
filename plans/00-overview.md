@@ -19,10 +19,10 @@ TypeScript Layer (undici Dispatcher API)
        ├── DispatchController (pause/resume/abort)
        └── Error classes (Symbol.for instanceof)
        │
-FFI Boundary (Neon / Channel)
+FFI Boundary (Neon / Channel) — All operations non-blocking
        │
-       ├── JsDispatchHandler (callback marshaling)
-       ├── JsBodyReader (request body streaming)
+       ├── JsDispatchHandler (callback marshaling via Channel)
+       ├── JsBodyReader (pull-based: Rust requests → JS reads → oneshot response)
        └── RequestHandleInstance (control)
        │
 Rust Core (reqwest / tokio)
@@ -31,6 +31,16 @@ Rust Core (reqwest / tokio)
        ├── DispatchHandler trait
        ├── RequestController (cancel + backpressure)
        └── CoreError (undici-compatible codes)
+
+Body Streaming Flow (non-blocking):
+┌──────────┐                          ┌──────────┐
+│  Rust    │  Channel::send(request)  │    JS    │
+│  async   │ ───────────────────────► │  event   │
+│  task    │                          │  loop    │
+│          │  oneshot::send(chunk)    │          │
+│          │ ◄─────────────────────── │          │
+│  await   │                          │ read()   │
+└──────────┘                          └──────────┘
 ```
 
 ## Implementation Sequence
@@ -71,12 +81,14 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 
 | Decision | Choice | Rationale |
 | :--- | :--- | :--- |
-| Request body | ReadableStreamBYOBReader → bounded channel | Backpressure via blocking_send |
+| Request body | Pull-based via oneshot channels | JS never blocked, natural backpressure |
+| Response data | Acknowledgment-based via oneshot | Rust waits for JS to process each chunk |
 | Handler API | New controller API only | Undici wraps legacy handlers |
 | WebSocket/Upgrade | NotSupportedError | Post-undici-compliance |
 | Tokio runtime | Neon's global shared runtime | Single runtime, no custom init |
 | Error types | CoreError + from_reqwest() | Unified mapping to undici codes |
-| Backpressure | PauseState + watch channel | Race-condition-free signaling |
+| User pause/resume | PauseState + watch channel | Manual backpressure control |
+| Request body cleanup | Drop impl releases JS reader | Proper abort handling |
 | dispatch() return | Always true | No internal queue limit |
 | Events | connect, disconnect, connectionError | Per undici Dispatcher spec |
 
