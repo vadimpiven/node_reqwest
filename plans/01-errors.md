@@ -82,6 +82,10 @@ define_errors! {
     #[error("Socket error: {0}")]
     Socket(String) => ("UND_ERR_SOCKET", "SocketError"),
 
+    #[error("Secure proxy connection error: {0}")]
+    SecureProxyConnection(String) =>
+        ("UND_ERR_SECURE_PROXY_CONNECTION", "SecureProxyConnectionError"),
+
     #[error("Invalid argument: {0}")]
     InvalidArgument(String) => ("UND_ERR_INVALID_ARG", "InvalidArgumentError"),
 
@@ -280,6 +284,12 @@ export const NotSupportedError = defineError(
   'NotSupportedError'
 );
 
+export const SecureProxyConnectionError = defineError(
+  'UND_ERR_SECURE_PROXY_CONNECTION',
+  'Secure proxy connection error',
+  'SecureProxyConnectionError'
+);
+
 const kResponseError = Symbol.for('undici.error.UND_ERR_RESPONSE');
 
 export class ResponseError extends UndiciError {
@@ -313,6 +323,8 @@ export function createUndiciError(info: CoreErrorInfo): Error {
       return new BodyTimeoutError(message);
     case 'UND_ERR_SOCKET':
       return new SocketError(message);
+    case 'UND_ERR_SECURE_PROXY_CONNECTION':
+      return new SecureProxyConnectionError(message);
     case 'UND_ERR_DESTROYED':
       return new ClientDestroyedError(message);
     case 'UND_ERR_CLOSED':
@@ -385,7 +397,7 @@ describe('Undici Error Classes', () => {
 | Metric | Value |
 | :--- | :--- |
 | **Rust Dependency** | `thiserror = "2.0"`, `reqwest` |
-| **Error Classes** | 10 (9 specific + 1 base) |
+| **Error Classes** | 11 (10 specific + 1 base) |
 | **Est. Time** | 1.5 hours |
 
 ## File Structure

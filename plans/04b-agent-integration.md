@@ -251,9 +251,9 @@ class AgentImpl extends Dispatcher {
       origin: String(options.origin ?? ''),
       path: options.path,
       query: options.query
-        ? new URLSearchParams(
-            Object.entries(options.query).map(([k, v]) => [k, String(v)])
-          ).toString()
+        ? Object.entries(options.query)
+            .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+            .join('&')
         : '',
       reset: options.reset ?? false,
       throwOnError: options.throwOnError ?? false,

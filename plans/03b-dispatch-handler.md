@@ -70,6 +70,19 @@ JavaScript Handler
 //! - Rust reads at exactly the pace JS can process
 //! - JS event loop never blocked
 //! - Natural backpressure
+//!
+//! ## Oneshot Channel Allocation Note
+//!
+//! We use oneshot channels per-chunk rather than reusable mpsc channels.
+//! Each oneshot is ~48 bytes and mimalloc handles small allocations efficiently.
+//! For typical responses (10 chunks), this is ~480 bytes quickly freed.
+//!
+//! Alternatives considered:
+//! - `mpsc::channel(1)` per request: Adds `Arc<Mutex<Receiver>>` complexity
+//! - `watch` channel: More complex signaling logic
+//!
+//! If profiling shows allocation pressure, optimize with object pooling.
+//! In practice, network I/O and JS callbacks dominate latency.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -382,17 +395,31 @@ impl JsBodyReader {
             }
         }
     }
+
+    /// Convert to a reqwest::Body for use in Agent::dispatch.
+    ///
+    /// This is the primary integration point - call this when constructing
+    /// DispatchOptions from a JS streaming body.
+    pub fn into_body(self) -> reqwest::Body {
+        reqwest::Body::wrap_stream(self.into_stream())
+    }
 }
 
 impl Drop for JsBodyReader {
     fn drop(&mut self) {
-        // Release the JS reader reference on the JS thread
+        // Cancel and release the JS reader reference on the JS thread
         // This ensures proper cleanup even if dropped from any thread
         if let Ok(mut guard) = self.reader_root.lock() {
             if let Some(root) = guard.take() {
                 let channel = self.channel.clone();
-                // Schedule release on JS event loop (non-blocking)
-                channel.send(move |_cx| {
+                // Schedule cancel + release on JS event loop (non-blocking)
+                channel.send(move |mut cx| {
+                    let reader = root.to_inner(&mut cx);
+                    // Cancel the stream to release underlying resources
+                    // This is fire-and-forget - we don't wait for the promise
+                    let _ = reader
+                        .call_method_with(&cx, "cancel")
+                        .and_then(|m| m.exec(&mut cx));
                     // Dropping Root releases the reference
                     drop(root);
                     Ok(())
@@ -415,6 +442,8 @@ use std::collections::HashMap;
 use neon::prelude::*;
 
 use core::{DispatchOptions, Method};
+
+use crate::body::JsBodyReader;
 
 pub fn parse_dispatch_options(
     cx: &mut FunctionContext<'_>,
@@ -458,13 +487,24 @@ pub fn parse_dispatch_options(
     let headers_timeout: Handle<JsNumber> = obj.get(cx, "headersTimeout")?;
     let body_timeout: Handle<JsNumber> = obj.get(cx, "bodyTimeout")?;
 
+    // Body handling: null = no body, otherwise a ReadableStreamBYOBReader
+    let body_value: Handle<JsValue> = obj.get(cx, "body")?;
+    let body = if body_value.is_a::<JsNull, _>(cx) || body_value.is_a::<JsUndefined, _>(cx) {
+        None
+    } else {
+        // It's a ReadableStreamBYOBReader - wrap it in JsBodyReader and convert to reqwest::Body
+        let reader = body_value.downcast_or_throw::<JsObject, _>(cx)?;
+        let js_body_reader = JsBodyReader::new(cx, reader)?;
+        Some(js_body_reader.into_body())
+    };
+
     Ok(DispatchOptions {
         origin: origin_str,
         path: path.value(cx),
         query: query.value(cx),
         method,
         headers,
-        body: None, // Body handling in 03c
+        body,
         headers_timeout_ms: headers_timeout.value(cx) as u64,
         body_timeout_ms: body_timeout.value(cx) as u64,
     })
@@ -501,14 +541,15 @@ fn hello<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsString> {
 | Metric | Value |
 | :--- | :--- |
 | **Communication** | `neon::event::Channel` (non-blocking) |
-| **Request Body** | Pull-based via `tokio::sync::oneshot` |
-| **Response Data** | Acknowledgment-based via `tokio::sync::oneshot` |
-| **Backpressure** | Natural - Rust controls read pace, waits for JS |
+| **Request Body** | `reqwest::Body` (Bytes or streaming via JsBodyReader) |
+| **Request Body Stream** | Pull-based via `tokio::sync::oneshot` |
+| **Response Data** | Sync-ack via `tokio::sync::oneshot` in Channel closure |
+| **Backpressure** | Natural - Rust controls read pace, waits for JS callback |
 | **Memory Bounds** | 1 chunk in flight (request or response) |
 | **JS Event Loop** | Never blocked |
 | **Data Copy** | 1 copy per chunk (Electron compatible) |
 | **Thread Safety** | Arc-wrapped JS function roots |
-| **Cleanup on Abort** | Drop impl releases JS reader via Channel |
+| **Cleanup on Abort** | Drop cancels stream + releases JS reader via Channel |
 
 ## File Structure
 

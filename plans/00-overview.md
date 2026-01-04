@@ -81,14 +81,15 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 
 | Decision | Choice | Rationale |
 | :--- | :--- | :--- |
-| Request body | Pull-based via oneshot channels | JS never blocked, natural backpressure |
-| Response data | Acknowledgment-based via oneshot | Rust waits for JS to process each chunk |
+| Request body | reqwest::Body (Bytes or Stream) | Supports both materialized and streaming bodies |
+| Request body stream | Pull-based via oneshot channels | JS never blocked, Rust polls when ready |
+| Response data | Sync-ack via oneshot in Channel closure | Rust waits for JS callback execution per chunk |
 | Handler API | New controller API only | Undici wraps legacy handlers |
 | WebSocket/Upgrade | NotSupportedError | Post-undici-compliance |
 | Tokio runtime | Neon's global shared runtime | Single runtime, no custom init |
 | Error types | CoreError + from_reqwest() | Unified mapping to undici codes |
 | User pause/resume | PauseState + watch channel | Manual backpressure control |
-| Request body cleanup | Drop impl releases JS reader | Proper abort handling |
+| Request body cleanup | Drop cancels stream + releases Root | Proper abort handling, no resource leaks |
 | dispatch() return | Always true | No internal queue limit |
 | Events | connect, disconnect, connectionError | Per undici Dispatcher spec |
 

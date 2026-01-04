@@ -12,5 +12,6 @@
     "MD041": false
   },
   "globs": ["*.md", "packages/**/*.md", "plans/*.md"],
+  "ignores": ["**/*_REFERENCE.md"],
   "gitignore": ".gitignore"
 }

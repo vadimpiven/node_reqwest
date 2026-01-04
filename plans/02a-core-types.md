@@ -93,24 +93,41 @@ impl Method {
 }
 
 /// Options for dispatching a request.
-#[derive(Debug, Clone)]
+///
+/// Note: Cannot derive Clone because reqwest::Body is not Clone.
+/// This is intentional - bodies are consumed during request execution.
 pub struct DispatchOptions {
     /// Origin URL (scheme + host + port), e.g., "https://example.com:8080"
     pub origin: Option<String>,
     /// Request path, e.g., "/api/users"
     pub path: String,
     /// Pre-encoded query string (without leading '?'), e.g., "key=value&key2=value2"
-    /// Keys and values should already be URL-encoded.
+    /// Keys and values should already be URL-encoded via encodeURIComponent.
     pub query: String,
     pub method: Method,
     pub headers: HashMap<String, Vec<String>>,
-    /// Request body (None for bodyless requests like GET/HEAD).
-    /// For streaming bodies, this is populated by JsBodyReader in the FFI layer.
-    pub body: Option<Bytes>,
+    /// Request body. Supports both materialized (Bytes) and streaming bodies.
+    /// None for bodyless requests like GET/HEAD.
+    pub body: Option<reqwest::Body>,
     /// Time (ms) to wait for response headers. 0 = use default (300000ms).
     pub headers_timeout_ms: u64,
     /// Idle time (ms) between body chunks. 0 = use default (300000ms).
     pub body_timeout_ms: u64,
+}
+
+impl std::fmt::Debug for DispatchOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DispatchOptions")
+            .field("origin", &self.origin)
+            .field("path", &self.path)
+            .field("query", &self.query)
+            .field("method", &self.method)
+            .field("headers", &self.headers)
+            .field("body", &self.body.as_ref().map(|_| "<body>"))
+            .field("headers_timeout_ms", &self.headers_timeout_ms)
+            .field("body_timeout_ms", &self.body_timeout_ms)
+            .finish()
+    }
 }
 
 impl Default for DispatchOptions {
