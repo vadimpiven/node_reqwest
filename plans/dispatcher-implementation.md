@@ -2,12 +2,252 @@
 
 Implement undici `DispatchHandler` interface with `DispatchController` for pause/resume/abort.
 
+## Goals
+
+1. **Design Guidelines Compliance** — Concise, copy-paste-ready code, no verbose prose
+2. **Clear Core/Node Separation** — Core: business logic + async trait; Node: JS↔Rust marshaling only
+3. **Rust Best Practices** — Proper error handling, zero-cost abstractions, `async_trait`
+4. **undici Interface Compliance** — All `DispatchHandler`/`DispatchController` callbacks satisfied
+5. **Complete Dependencies** — All required crates/features in Cargo.toml
+6. **Testing Framework** — Core: wiremock + tokio-test; Node: vitest + playwright
+7. **Backpressure Correctness** — No unlimited queues, bounded memory, proper pause/resume
+8. **Minimal Copying** — Data copied only at Node/Rust boundary, `Bytes` arc-backed elsewhere
+9. **Undici Error Compatibility** — Replicate Undici errors with `Symbol.for`, proper instanceof checks
+
+## Error Handling Strategy
+
+Core Rust errors map to Undici-compatible JS errors using `Symbol.for` for proper `instanceof` checks.
+
+### Error Handling Architecture
+
+```text
+Core (Rust)              Node (Rust FFI)          Node (TypeScript)
+┌─────────────┐          ┌───────────┐           ┌──────────────────┐
+│ CoreError   │─────────▶│ error_code│──────────▶│ createUndiciError│
+│ enum        │          │ error_name│           │ + Symbol.for     │
+└─────────────┘          └───────────┘           └──────────────────┘
+```
+
+### Core Error Types (packages/core/src/error.rs)
+
+```rust
+#[derive(Debug, Clone, Error)]
+pub enum CoreError {
+    #[error("Request aborted")]
+    RequestAborted,
+    #[error("Connect timeout")]
+    ConnectTimeout,
+    #[error("Headers timeout")]
+    HeadersTimeout,
+    #[error("Body timeout")]
+    BodyTimeout,
+    #[error("Socket error: {0}")]
+    Socket(String),
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
+    #[error("The client is destroyed")]
+    ClientDestroyed,
+    #[error("The client is closed")]
+    ClientClosed,
+    #[error("Request body length does not match content-length header")]
+    RequestContentLengthMismatch,
+    #[error("Response body length does not match content-length header")]
+    ResponseContentLengthMismatch,
+    #[error("Response content exceeded max size")]
+    ResponseExceededMaxSize,
+    #[error("Not supported: {0}")]
+    NotSupported(String),
+    #[error("Response error")]
+    ResponseError { status_code: u16, message: String },
+    #[error("Network error: {0}")]
+    Network(String),
+}
+
+impl CoreError {
+    pub fn error_code(&self) -> &'static str { /* maps to UND_ERR_* codes */ }
+    pub fn error_name(&self) -> &'static str { /* maps to error class names */ }
+}
+```
+
+### Undici Error Classes (packages/node/export/errors.ts)
+
+Pattern: Each error class uses `Symbol.for('undici.error.CODE')` for cross-library `instanceof`.
+
+```typescript
+const kUndiciError = Symbol.for('undici.error.UND_ERR');
+
+export class UndiciError extends Error {
+  code: string;
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'UndiciError';
+    this.code = code;
+  }
+  static [Symbol.hasInstance](instance: any): boolean {
+    return instance?.[kUndiciError] === true;
+  }
+  get [kUndiciError](): boolean { return true; }
+}
+
+const kRequestAbortedError = Symbol.for('undici.error.UND_ERR_ABORTED');
+export class RequestAbortedError extends UndiciError {
+  constructor(message = 'Request aborted') {
+    super(message, 'UND_ERR_ABORTED');
+    this.name = 'AbortError';
+  }
+  static [Symbol.hasInstance](instance: any): boolean {
+    return instance?.[kRequestAbortedError] === true;
+  }
+  get [kRequestAbortedError](): boolean { return true; }
+}
+
+const kSocketError = Symbol.for('undici.error.UND_ERR_SOCKET');
+export class SocketError extends UndiciError {
+  socket: any;
+  constructor(message = 'Socket error', socket?: any) {
+    super(message, 'UND_ERR_SOCKET');
+    this.name = 'SocketError';
+    this.socket = socket || null;
+  }
+  static [Symbol.hasInstance](instance: any): boolean {
+    return instance?.[kSocketError] === true;
+  }
+  get [kSocketError](): boolean { return true; }
+}
+
+const kResponseError = Symbol.for('undici.error.UND_ERR_RESPONSE');
+export class ResponseError extends UndiciError {
+  statusCode: number;
+  body: any;
+  headers: any;
+  constructor(message: string, statusCode: number, options: { headers?: any; body?: any } = {}) {
+    super(message, 'UND_ERR_RESPONSE');
+    this.name = 'ResponseError';
+    this.statusCode = statusCode;
+    this.body = options.body || null;
+    this.headers = options.headers || null;
+  }
+  static [Symbol.hasInstance](instance: any): boolean {
+    return instance?.[kResponseError] === true;
+  }
+  get [kResponseError](): boolean { return true; }
+}
+
+// ... Similar pattern for: ConnectTimeoutError, HeadersTimeoutError, BodyTimeoutError,
+//     ClientDestroyedError, ClientClosedError, InvalidArgumentError,
+//     RequestContentLengthMismatchError, ResponseContentLengthMismatchError,
+//     ResponseExceededMaxSizeError, NotSupportedError
+
+export interface CoreErrorInfo {
+  code: string;
+  name: string;
+  message: string;
+  statusCode?: number;
+}
+
+export function createUndiciError(errorInfo: CoreErrorInfo): Error {
+  const { code, message, statusCode } = errorInfo;
+  switch (code) {
+    case 'UND_ERR_ABORTED': return new RequestAbortedError(message);
+    case 'UND_ERR_CONNECT_TIMEOUT': return new ConnectTimeoutError(message);
+    case 'UND_ERR_HEADERS_TIMEOUT': return new HeadersTimeoutError(message);
+    case 'UND_ERR_BODY_TIMEOUT': return new BodyTimeoutError(message);
+    case 'UND_ERR_SOCKET': return new SocketError(message);
+    case 'UND_ERR_DESTROYED': return new ClientDestroyedError(message);
+    case 'UND_ERR_CLOSED': return new ClientClosedError(message);
+    case 'UND_ERR_INVALID_ARG': return new InvalidArgumentError(message);
+    case 'UND_ERR_REQ_CONTENT_LENGTH_MISMATCH': return new RequestContentLengthMismatchError(message);
+    case 'UND_ERR_RES_CONTENT_LENGTH_MISMATCH': return new ResponseContentLengthMismatchError(message);
+    case 'UND_ERR_RES_EXCEEDED_MAX_SIZE': return new ResponseExceededMaxSizeError(message);
+    case 'UND_ERR_NOT_SUPPORTED': return new NotSupportedError(message);
+    case 'UND_ERR_RESPONSE': return new ResponseError(message, statusCode || 500);
+    default: return new UndiciError(message, code);
+  }
+}
+```
+
+### Rust FFI Error Marshaling (packages/node/src/agent.rs)
+
+```rust
+async fn on_response_error(&self, error: CoreError) {
+    let channel = self.channel.clone();
+    let on_error = Arc::clone(&self.on_error);
+    let error_code = error.error_code().to_string();
+    let error_name = error.error_name().to_string();
+    let error_msg = error.to_string();
+    let status_code = match &error {
+        CoreError::ResponseError { status_code, .. } => Some(*status_code),
+        _ => None,
+    };
+
+    channel.send(move |mut cx| {
+        let error_info = cx.empty_object();
+        error_info.set(&mut cx, "code", cx.string(&error_code))?;
+        error_info.set(&mut cx, "name", cx.string(&error_name))?;
+        error_info.set(&mut cx, "message", cx.string(&error_msg))?;
+        if let Some(code) = status_code {
+            error_info.set(&mut cx, "statusCode", cx.number(code as f64))?;
+        }
+        on_error.to_inner(&mut cx).call_with(&cx).arg(error_info).exec(&mut cx)
+    });
+}
+```
+
+### TypeScript Error Callback (packages/node/export/agent.ts)
+
+```typescript
+import { createUndiciError, type CoreErrorInfo } from './errors';
+
+const callbacks: DispatchCallbacks = {
+  onResponseError: (errorInfo: CoreErrorInfo) => {
+    this.#onRequestComplete();
+    const undiciError = createUndiciError(errorInfo);
+    handler.onResponseError?.(controller, controller.reason ?? undiciError);
+  },
+};
+```
+
+### Error Mapping Table
+
+| Core Error                          | Undici Error                         | Symbol                                | Code                           |
+| :---------------------------------- | :----------------------------------- | :------------------------------------ | :----------------------------- |
+| `CoreError::RequestAborted`         | `RequestAbortedError`                | `undici.error.UND_ERR_ABORTED`        | `UND_ERR_ABORTED`              |
+| `CoreError::ConnectTimeout`         | `ConnectTimeoutError`                | `undici.error.UND_ERR_CONNECT_TIMEOUT`| `UND_ERR_CONNECT_TIMEOUT`      |
+| `CoreError::HeadersTimeout`         | `HeadersTimeoutError`                | `undici.error.UND_ERR_HEADERS_TIMEOUT`| `UND_ERR_HEADERS_TIMEOUT`      |
+| `CoreError::BodyTimeout`            | `BodyTimeoutError`                   | `undici.error.UND_ERR_BODY_TIMEOUT`   | `UND_ERR_BODY_TIMEOUT`         |
+| `CoreError::Socket`                 | `SocketError`                        | `undici.error.UND_ERR_SOCKET`         | `UND_ERR_SOCKET`               |
+| `CoreError::Network`                | `SocketError`                        | `undici.error.UND_ERR_SOCKET`         | `UND_ERR_SOCKET`               |
+| `CoreError::InvalidArgument`        | `InvalidArgumentError`               | `undici.error.UND_ERR_INVALID_ARG`    | `UND_ERR_INVALID_ARG`          |
+| `CoreError::ClientDestroyed`        | `ClientDestroyedError`               | `undici.error.UND_ERR_DESTROYED`      | `UND_ERR_DESTROYED`            |
+| `CoreError::ClientClosed`           | `ClientClosedError`                  | `undici.error.UND_ERR_CLOSED`         | `UND_ERR_CLOSED`               |
+| `CoreError::RequestContentLength…`  | `RequestContentLengthMismatchError`  | `undici.error.UND_ERR_REQ_CONTENT_…`  | `UND_ERR_REQ_CONTENT_LENGTH_…` |
+| `CoreError::ResponseContentLength…` | `ResponseContentLengthMismatchError` | `undici.error.UND_ERR_RES_CONTENT_…`  | `UND_ERR_RES_CONTENT_LENGTH_…` |
+| `CoreError::ResponseExceededMaxSize`| `ResponseExceededMaxSizeError`       | `undici.error.UND_ERR_RES_EXCEEDED_…` | `UND_ERR_RES_EXCEEDED_MAX_SIZE`|
+| `CoreError::NotSupported`           | `NotSupportedError`                  | `undici.error.UND_ERR_NOT_SUPPORTED`  | `UND_ERR_NOT_SUPPORTED`        |
+| `CoreError::ResponseError`          | `ResponseError`                      | `undici.error.UND_ERR_RESPONSE`       | `UND_ERR_RESPONSE`             |
+
+### Files Modified/Created
+
+```text
+packages/
+├── core/src/
+│   ├── error.rs      # NEW: CoreError enum with error_code(), error_name()
+│   └── lib.rs        # UPDATE: pub mod error; re-export
+└── node/
+    ├── export/
+    │   ├── errors.ts      # NEW: Undici error classes + createUndiciError()
+    │   ├── addon-def.ts   # UPDATE: CoreErrorInfo interface
+    │   └── agent.ts       # UPDATE: import createUndiciError, use in callbacks
+    └── src/
+        └── agent.rs       # UPDATE: JsDispatchHandler::on_response_error marshaling
+```
+
 ## Solution
 
 TypeScript creates `DispatchController`, Rust handles HTTP via reqwest with callbacks through
 `neon::event::Channel`. Backpressure via `AtomicBool + Notify`, abort via `CancellationToken`.
 
-## Architecture
+## Request Flow Architecture
 
 ```text
 JS: AgentImpl.dispatch(opts, handler)
@@ -25,11 +265,34 @@ JS: AgentImpl.dispatch(opts, handler)
     onResponseData() per chunk → onResponseEnd() or onResponseError()
 ```
 
+## undici DispatchHandler Interface (from types/dispatcher.d.ts)
+
+| Method             | Signature                                                    | Our Implementation                    |
+| :----------------- | :----------------------------------------------------------- | :------------------------------------ |
+| `onRequestStart`   | `(controller, context) => void`                              | TS calls before dispatch              |
+| `onRequestUpgrade` | `(controller, statusCode, headers, socket) => void`          | Rust callback via Channel (WebSocket) |
+| `onResponseStart`  | `(controller, statusCode, headers, statusMessage?) => void`  | Rust callback via Channel             |
+| `onResponseData`   | `(controller, chunk: Buffer) => void`                        | Rust callback via Channel             |
+| `onResponseEnd`    | `(controller, trailers) => void`                             | Rust callback via Channel             |
+| `onResponseError`  | `(controller, error: Error) => void`                         | Rust callback via Channel             |
+
+## undici DispatchController Interface (from types/dispatcher.d.ts)
+
+| Property/Method | Type                     | Our Implementation               |
+| :-------------- | :----------------------- | :------------------------------- |
+| `aborted`       | `boolean` (getter)       | `#aborted` private field         |
+| `paused`        | `boolean` (getter)       | `#paused` private field          |
+| `reason`        | `Error \| null` (getter) | `#reason` private field          |
+| `abort(reason)` | `(Error) => void`        | Calls `RequestHandle.abort()`    |
+| `pause()`       | `() => void`             | Calls `RequestHandle.pause()`    |
+| `resume()`      | `() => void`             | Calls `RequestHandle.resume()`   |
+
 ## Implementation
 
 ### DispatchController (TypeScript)
 
 ```typescript
+// packages/node/export/agent.ts
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 import type { Dispatcher } from 'undici';
@@ -46,12 +309,18 @@ class DispatchControllerImpl implements Dispatcher.DispatchController {
   #reason: Error | null = null;
   #requestHandle: RequestHandle | null = null;
 
-  get aborted() { return this.#aborted; }
-  get paused() { return this.#paused; }
-  get reason() { return this.#reason; }
+  get aborted(): boolean { return this.#aborted; }
+  get paused(): boolean { return this.#paused; }
+  get reason(): Error | null { return this.#reason; }
 
   setRequestHandle(handle: RequestHandle): void {
     this.#requestHandle = handle;
+    // Apply pending state if abort/pause was called before handle was set
+    if (this.#aborted) {
+      this.#requestHandle.abort();
+    } else if (this.#paused) {
+      this.#requestHandle.pause();
+    }
   }
 
   abort(reason: Error): void {
@@ -77,12 +346,18 @@ class DispatchControllerImpl implements Dispatcher.DispatchController {
 }
 ```
 
-### Addon Interface
+### Addon Interface (TypeScript)
 
 ```typescript
+// packages/node/export/addon-def.ts
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+import type { ReadableStreamBYOBReader } from 'node:stream/web';
 import type { IncomingHttpHeaders } from 'undici';
+
+export interface RequestHandle {
+  readonly _: unique symbol;
+}
 
 export type DispatchCallbacks = {
   onResponseStart: (statusCode: number, headers: IncomingHttpHeaders, statusMessage: string) => void;
@@ -91,152 +366,65 @@ export type DispatchCallbacks = {
   onResponseError: (error: Error) => void;
 };
 
-agentDispatch(agent: AgentInstance, options: AgentDispatchOptions, callbacks: DispatchCallbacks): RequestHandle;
-```
+export type AgentCreationOptions = {
+  allowH2: boolean;
+  ca: string[];
+  keepAliveInitialDelay: number;
+  keepAliveTimeout: number;
+  localAddress: string | null;
+  maxCachedSessions: number;
+  proxy:
+    | { type: 'no-proxy' | 'system' }
+    | {
+        type: 'custom';
+        uri: string;
+        headers: Record<string, string>;
+        token: string | null;
+      };
+  rejectInvalidHostnames: boolean;
+  rejectUnauthorized: boolean;
+  timeout: number;
+};
 
-### Rust Implementation
+export type AgentDispatchOptions = {
+  blocking: boolean;
+  body: ReadableStreamBYOBReader | null;
+  bodyTimeout: number;
+  expectContinue: boolean;
+  headers: Record<string, string>;
+  headersTimeout: number;
+  idempotent: boolean;
+  method: string;
+  origin: string;
+  path: string;
+  query: string;
+  reset: boolean;
+  throwOnError: boolean;
+  upgrade: string | null;
+};
 
-```rust
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-
-use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
-use futures::StreamExt;
-use neon::prelude::*;
-use tokio::{select, sync::Notify};
-use tokio_util::sync::CancellationToken;
-
-pub struct PauseState {
-    paused: AtomicBool,
-    notify: Notify,
+export interface AgentInstance {
+  readonly _: unique symbol;
 }
 
-impl PauseState {
-    pub fn new() -> Self {
-        Self { paused: AtomicBool::new(false), notify: Notify::new() }
-    }
+export interface Addon {
+  hello(): string;
 
-    pub async fn wait_if_paused(&self) {
-        while self.paused.load(Ordering::SeqCst) {
-            self.notify.notified().await;
-        }
-    }
+  agentCreate(options: AgentCreationOptions): AgentInstance;
+  agentDispatch(agent: AgentInstance, options: AgentDispatchOptions, callbacks: DispatchCallbacks): RequestHandle;
+  agentClose(agent: AgentInstance): Promise<void>;
+  agentDestroy(agent: AgentInstance, error: Error | null): Promise<void>;
 
-    pub fn pause(&self) { self.paused.store(true, Ordering::SeqCst); }
-
-    pub fn resume(&self) {
-        self.paused.store(false, Ordering::SeqCst);
-        self.notify.notify_one();
-    }
-}
-
-pub struct RequestHandle {
-    token: CancellationToken,
-    pause_state: Arc<PauseState>,
-}
-
-impl RequestHandle {
-    pub fn abort(&self) { self.token.cancel(); }
-    pub fn pause(&self) { self.pause_state.pause(); }
-    pub fn resume(&self) { self.pause_state.resume(); }
-}
-
-async fn stream_response_body(
-    response: reqwest::Response,
-    token: CancellationToken,
-    pause_state: Arc<PauseState>,
-    channel: Channel,
-    on_response_data: Root<JsFunction>,
-    on_response_end: Root<JsFunction>,
-    on_response_error: Root<JsFunction>,
-) {
-    let mut stream = response.bytes_stream();
-
-    loop {
-        pause_state.wait_if_paused().await;
-
-        select! {
-            () = token.cancelled() => {
-                let _ = channel.send(move |mut cx| {
-                    let error = cx.error("Request aborted")?;
-                    on_response_error.into_inner(&mut cx).call_with(&cx).arg(error).exec(&mut cx)
-                }).await;
-                return;
-            }
-            chunk = stream.next() => {
-                match chunk {
-                    Some(Ok(data)) => {
-                        let chunk_vec = data.to_vec();
-                        let _ = channel.send(move |mut cx| {
-                            fn send_chunk(cx: &mut Cx<'_>, data: &[u8]) -> NeonResult<()> {
-                                let _buffer = JsBuffer::from_slice(cx, data)?;
-                                Ok(())
-                            }
-                            send_chunk(&mut cx, &chunk_vec)
-                        }).await;
-                    }
-                    Some(Err(e)) => {
-                        let error_msg = e.to_string();
-                        let _ = channel.send(move |mut cx| {
-                            let error = cx.error(&error_msg)?;
-                            on_response_error.into_inner(&mut cx).call_with(&cx).arg(error).exec(&mut cx)
-                        }).await;
-                        return;
-                    }
-                    None => {
-                        let _ = channel.send(move |mut cx| {
-                            let trailers = cx.empty_object();
-                            on_response_end.into_inner(&mut cx).call_with(&cx).arg(trailers).exec(&mut cx)
-                        }).await;
-                        return;
-                    }
-                }
-            }
-        }
-    }
+  requestHandleAbort(handle: RequestHandle): void;
+  requestHandlePause(handle: RequestHandle): void;
+  requestHandleResume(handle: RequestHandle): void;
 }
 ```
 
-### AbortSignal Integration
-
-```rust
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-
-use neon::prelude::*;
-use tokio_util::sync::{CancellationToken, WaitForCancellationFuture};
-
-struct AbortSignal {
-    signal: Option<Root<JsObject>>,
-    token: CancellationToken,
-}
-
-impl AbortSignal {
-    pub fn try_from_value<'a>(cx: &mut Cx<'a>, value: Handle<'_, JsValue>) -> NeonResult<Option<Self>> {
-        if value.is_a::<JsUndefined, _>(cx) { return Ok(None); }
-
-        let signal: Handle<'_, JsObject> = value.downcast_or_throw(cx)?;
-        let token = CancellationToken::new();
-
-        let callback = JsFunction::new(cx, {
-            let token = token.clone();
-            move |mut cx| { token.cancel(); Ok(cx.undefined()) }
-        })?;
-        signal.set(cx, "onabort", callback)?;
-
-        let aborted: Handle<'_, JsBoolean> = signal.get(cx, "aborted")?;
-        if aborted.value(cx) {
-            return signal.call_method_with(cx, "throwIfAborted")?.exec(cx)?;
-        }
-
-        Ok(Some(Self { signal: Some(signal.root(cx)), token }))
-    }
-
-    pub fn aborted(&self) -> WaitForCancellationFuture<'_> { self.token.cancelled() }
-}
-```
-
-### dispatch() Method
+### dispatch() Method (TypeScript)
 
 ```typescript
+// packages/node/export/agent.ts
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 dispatch(options: Dispatcher.DispatchOptions, handler: Dispatcher.DispatchHandler): boolean {
@@ -246,10 +434,22 @@ dispatch(options: Dispatcher.DispatchOptions, handler: Dispatcher.DispatchHandle
     return false;
   }
 
+  if (this.#destroyed) {
+    const controller = new DispatchControllerImpl();
+    handler.onResponseError?.(controller, new Error('Dispatcher is destroyed'));
+    return false;
+  }
+
   const controller = new DispatchControllerImpl();
   handler.onRequestStart?.(controller, {});
 
-  const callbacks = {
+  // Check if aborted during onRequestStart
+  if (controller.aborted) {
+    handler.onResponseError?.(controller, controller.reason ?? new Error('Aborted'));
+    return true;
+  }
+
+  const callbacks: DispatchCallbacks = {
     onResponseStart: (statusCode: number, headers: IncomingHttpHeaders, statusMessage: string) => {
       if (controller.aborted) return;
       handler.onResponseStart?.(controller, statusCode, headers, statusMessage);
@@ -260,51 +460,114 @@ dispatch(options: Dispatcher.DispatchOptions, handler: Dispatcher.DispatchHandle
     },
     onResponseEnd: (trailers: IncomingHttpHeaders) => {
       if (controller.aborted) return;
+      this.#onRequestComplete();
       handler.onResponseEnd?.(controller, trailers);
     },
     onResponseError: (error: Error) => {
+      this.#onRequestComplete();
       handler.onResponseError?.(controller, controller.reason ?? error);
     },
   };
 
-  const requestHandle = Addon.agentDispatch(this.#agent, this.#buildDispatchOptions(options), callbacks);
+  this.#pendingRequests++;
+  const busy = this.#pendingRequests >= this.#maxConcurrent;
+  if (busy) this.#needDrain = true;
+
+  const nativeHandle = Addon.agentDispatch(this.#agent, this.#buildDispatchOptions(options), callbacks);
+  
+  // Wrap native handle as RequestHandle interface
+  const requestHandle: RequestHandle = {
+    abort: () => Addon.requestHandleAbort(nativeHandle),
+    pause: () => Addon.requestHandlePause(nativeHandle),
+    resume: () => Addon.requestHandleResume(nativeHandle),
+  };
   controller.setRequestHandle(requestHandle);
-  return true;
+
+  return !busy;
+}
+
+#pendingRequests = 0;
+#needDrain = false;
+#maxConcurrent = 100;
+#origin: URL | null = null;
+
+#onRequestComplete(): void {
+  this.#pendingRequests--;
+  if (this.#needDrain && this.#pendingRequests < this.#maxConcurrent) {
+    this.#needDrain = false;
+    if (this.#origin) {
+      queueMicrotask(() => this.emit('drain', this.#origin));
+    }
+  }
 }
 ```
 
-### close/destroy
+### close/destroy (TypeScript)
 
 ```typescript
+// packages/node/export/agent.ts
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#closed = false;
+#destroyed = false;
+
 async close(): Promise<void> {
+  if (this.#closed) return;
   this.#closed = true;
   await Addon.agentClose(this.#agent);
 }
 
 async destroy(err?: Error): Promise<void> {
+  if (this.#destroyed) return;
   this.#destroyed = true;
   this.#closed = true;
   await Addon.agentDestroy(this.#agent, err ?? null);
 }
 ```
 
-## Rust Trait Abstraction
+## Core Package
 
-Core defines an async trait using `#[async_trait]`. `packages/node` provides `DispatchCallbacks`
-struct that implements this trait by bridging to JS via Neon Channel.
+### Cargo.toml (packages/core/Cargo.toml)
 
-### Core Trait (packages/core/src/dispatcher.rs)
+```toml
+[package]
+name = "core"
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tokio-util = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+tempfile.workspace = true
+tokio-test = { workspace = true }
+wiremock = { workspace = true }
+```
+
+### Core Types (packages/core/src/dispatcher.rs)
 
 ```rust
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use async_trait::async_trait;
 use bytes::Bytes;
-use tokio::sync::mpsc;
+use thiserror::Error;
+use tokio::sync::{mpsc, Notify};
 use tokio_util::sync::CancellationToken;
 
 /// HTTP method
@@ -322,13 +585,23 @@ pub struct DispatchOptions {
     pub headers: HashMap<String, Vec<String>>,
     pub body: Option<BodySource>,
     pub upgrade: Option<String>,
-    pub timeout: Option<std::time::Duration>,
+    pub headers_timeout: Option<std::time::Duration>,
+    pub body_timeout: Option<std::time::Duration>,
 }
 
 /// Request body source
 pub enum BodySource {
     Bytes(Bytes),
     Stream(mpsc::Receiver<Bytes>),
+}
+
+impl std::fmt::Debug for BodySource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Bytes(b) => f.debug_tuple("Bytes").field(&b.len()).finish(),
+            Self::Stream(_) => f.debug_tuple("Stream").finish(),
+        }
+    }
 }
 
 /// Response metadata
@@ -340,40 +613,66 @@ pub struct ResponseStart {
 }
 
 /// Dispatch error types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Error)]
 pub enum DispatchError {
+    #[error("Request aborted")]
     Aborted,
+    #[error("Request timeout")]
     Timeout,
+    #[error("Network error: {0}")]
     Network(String),
+    #[error("HTTP {0}: {1}")]
     Http(u16, String),
 }
 
-impl std::fmt::Display for DispatchError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Aborted => write!(f, "Request aborted"),
-            Self::Timeout => write!(f, "Request timeout"),
-            Self::Network(msg) => write!(f, "Network error: {msg}"),
-            Self::Http(code, msg) => write!(f, "HTTP {code}: {msg}"),
-        }
-    }
-}
-impl std::error::Error for DispatchError {}
-
-/// Async trait for dispatch lifecycle callbacks (defined in core)
+/// Async trait for dispatch lifecycle callbacks
 #[async_trait]
 pub trait DispatchHandler: Send + Sync {
-    /// Called when response headers are received
     async fn on_response_start(&self, response: ResponseStart);
-
-    /// Called for each body chunk
     async fn on_response_data(&self, chunk: Bytes);
-
-    /// Called when response completes successfully
     async fn on_response_end(&self, trailers: HashMap<String, Vec<String>>);
-
-    /// Called on error
     async fn on_response_error(&self, error: DispatchError);
+}
+
+/// Pause state for backpressure
+pub struct PauseState {
+    paused: AtomicBool,
+    notify: Notify,
+}
+
+impl PauseState {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            paused: AtomicBool::new(false),
+            notify: Notify::new(),
+        }
+    }
+
+    /// Blocks until not paused. Uses SeqCst for cross-thread visibility.
+    pub async fn wait_if_paused(&self) {
+        while self.paused.load(Ordering::SeqCst) {
+            self.notify.notified().await;
+        }
+    }
+
+    pub fn pause(&self) {
+        self.paused.store(true, Ordering::SeqCst);
+    }
+
+    pub fn resume(&self) {
+        self.paused.store(false, Ordering::SeqCst);
+        self.notify.notify_one();
+    }
+
+    #[must_use]
+    pub fn is_paused(&self) -> bool {
+        self.paused.load(Ordering::SeqCst)
+    }
+}
+
+impl Default for PauseState {
+    fn default() -> Self { Self::new() }
 }
 
 /// Handle for controlling in-flight request
@@ -383,6 +682,7 @@ pub struct RequestController {
 }
 
 impl RequestController {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             token: CancellationToken::new(),
@@ -394,45 +694,17 @@ impl RequestController {
     pub fn pause(&self) { self.pause_state.pause(); }
     pub fn resume(&self) { self.pause_state.resume(); }
 
+    #[must_use]
     pub fn token(&self) -> CancellationToken { self.token.clone() }
+    
+    #[must_use]
     pub fn pause_state(&self) -> Arc<PauseState> { Arc::clone(&self.pause_state) }
+    
+    #[must_use]
+    pub fn is_cancelled(&self) -> bool { self.token.is_cancelled() }
 }
 
 impl Default for RequestController {
-    fn default() -> Self { Self::new() }
-}
-
-/// Pause state for backpressure
-pub struct PauseState {
-    paused: std::sync::atomic::AtomicBool,
-    notify: tokio::sync::Notify,
-}
-
-impl PauseState {
-    pub fn new() -> Self {
-        Self {
-            paused: std::sync::atomic::AtomicBool::new(false),
-            notify: tokio::sync::Notify::new(),
-        }
-    }
-
-    pub async fn wait_if_paused(&self) {
-        while self.paused.load(std::sync::atomic::Ordering::SeqCst) {
-            self.notify.notified().await;
-        }
-    }
-
-    pub fn pause(&self) {
-        self.paused.store(true, std::sync::atomic::Ordering::SeqCst);
-    }
-
-    pub fn resume(&self) {
-        self.paused.store(false, std::sync::atomic::Ordering::SeqCst);
-        self.notify.notify_one();
-    }
-}
-
-impl Default for PauseState {
     fn default() -> Self { Self::new() }
 }
 ```
@@ -445,40 +717,73 @@ impl Default for PauseState {
 use crate::dispatcher::*;
 use futures::StreamExt;
 use reqwest::Client;
+use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
+use thiserror::Error;
 use tokio::select;
 
 /// HTTP agent wrapping reqwest Client
 pub struct Agent {
     client: Client,
-    runtime: tokio::runtime::Handle,
+}
+
+#[derive(Debug, Error)]
+pub enum AgentError {
+    #[error("Failed to build HTTP client: {0}")]
+    Build(String),
+}
+
+impl From<reqwest::Error> for AgentError {
+    fn from(e: reqwest::Error) -> Self { Self::Build(e.to_string()) }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct AgentConfig {
+    pub timeout: Option<Duration>,
+    pub connect_timeout: Option<Duration>,
+    pub pool_idle_timeout: Option<Duration>,
+    pub proxy: Option<reqwest::Proxy>,
+    pub ca_certs: Vec<reqwest::Certificate>,
+    pub accept_invalid_certs: bool,
+    pub http2_only: bool,
 }
 
 impl Agent {
     pub fn new(config: AgentConfig) -> Result<Self, AgentError> {
-        let mut builder = Client::builder()
-            .timeout(config.timeout)
-            .connect_timeout(config.connect_timeout);
+        let mut builder = Client::builder();
 
+        if let Some(timeout) = config.timeout {
+            builder = builder.timeout(timeout);
+        }
+        if let Some(timeout) = config.connect_timeout {
+            builder = builder.connect_timeout(timeout);
+        }
+        if let Some(timeout) = config.pool_idle_timeout {
+            builder = builder.pool_idle_timeout(timeout);
+        }
         if let Some(proxy) = config.proxy {
             builder = builder.proxy(proxy);
         }
-
-        if let Some(ca) = config.ca {
-            for cert in ca {
-                builder = builder.add_root_certificate(cert);
-            }
+        for cert in config.ca_certs {
+            builder = builder.add_root_certificate(cert);
+        }
+        if config.accept_invalid_certs {
+            builder = builder.danger_accept_invalid_certs(true);
+        }
+        if config.http2_only {
+            builder = builder.http2_prior_knowledge();
         }
 
         let client = builder.build()?;
-        let runtime = tokio::runtime::Handle::current();
-
-        Ok(Self { client, runtime })
+        Ok(Self { client })
     }
 
-    /// Dispatch a request with async trait handler
+    /// Dispatch a request. Returns controller for abort/pause/resume.
+    /// Spawns async task on provided runtime handle.
     pub fn dispatch(
         &self,
+        runtime: tokio::runtime::Handle,
         options: DispatchOptions,
         handler: Arc<dyn DispatchHandler>,
     ) -> RequestController {
@@ -487,7 +792,7 @@ impl Agent {
         let token = controller.token();
         let pause_state = controller.pause_state();
 
-        self.runtime.spawn(async move {
+        runtime.spawn(async move {
             Self::execute_request(client, options, handler, token, pause_state).await;
         });
 
@@ -501,7 +806,6 @@ impl Agent {
         token: CancellationToken,
         pause_state: Arc<PauseState>,
     ) {
-        // Build request
         let method = match options.method {
             Method::Get => reqwest::Method::GET,
             Method::Post => reqwest::Method::POST,
@@ -516,7 +820,7 @@ impl Agent {
 
         let url = format!(
             "{}{}",
-            options.origin.unwrap_or_default(),
+            options.origin.as_deref().unwrap_or(""),
             options.path
         );
 
@@ -524,7 +828,7 @@ impl Agent {
 
         for (key, values) in &options.headers {
             for value in values {
-                request = request.header(key, value);
+                request = request.header(key.as_str(), value.as_str());
             }
         }
 
@@ -540,7 +844,12 @@ impl Agent {
             };
         }
 
-        // Send request
+        // Apply timeouts
+        if let Some(timeout) = options.headers_timeout {
+            request = request.timeout(timeout);
+        }
+
+        // Send request with cancellation support
         let response = select! {
             () = token.cancelled() => {
                 handler.on_response_error(DispatchError::Aborted).await;
@@ -549,6 +858,10 @@ impl Agent {
             result = request.send() => {
                 match result {
                     Ok(resp) => resp,
+                    Err(e) if e.is_timeout() => {
+                        handler.on_response_error(DispatchError::Timeout).await;
+                        return;
+                    }
                     Err(e) => {
                         handler.on_response_error(DispatchError::Network(e.to_string())).await;
                         return;
@@ -560,7 +873,7 @@ impl Agent {
         // Extract headers
         let headers = response.headers()
             .iter()
-            .fold(std::collections::HashMap::new(), |mut acc, (k, v)| {
+            .fold(HashMap::new(), |mut acc, (k, v)| {
                 acc.entry(k.to_string())
                     .or_insert_with(Vec::new)
                     .push(v.to_str().unwrap_or("").to_string());
@@ -573,9 +886,10 @@ impl Agent {
             headers,
         }).await;
 
-        // Stream body
+        // Stream body with backpressure
         let mut stream = response.bytes_stream();
         loop {
+            // Block if paused - core backpressure mechanism
             pause_state.wait_if_paused().await;
 
             select! {
@@ -585,13 +899,17 @@ impl Agent {
                 }
                 chunk = stream.next() => {
                     match chunk {
-                        Some(Ok(data)) => handler.on_response_data(data).await,
+                        Some(Ok(data)) => {
+                            // `data` is Bytes (arc-backed) - no copy here
+                            handler.on_response_data(data).await;
+                        }
                         Some(Err(e)) => {
                             handler.on_response_error(DispatchError::Network(e.to_string())).await;
                             return;
                         }
                         None => {
-                            handler.on_response_end(std::collections::HashMap::new()).await;
+                            // Stream complete
+                            handler.on_response_end(HashMap::new()).await;
                             return;
                         }
                     }
@@ -600,24 +918,54 @@ impl Agent {
         }
     }
 }
-
-#[derive(Default)]
-pub struct AgentConfig {
-    pub timeout: Option<std::time::Duration>,
-    pub connect_timeout: Option<std::time::Duration>,
-    pub proxy: Option<reqwest::Proxy>,
-    pub ca: Option<Vec<reqwest::Certificate>>,
-}
-
-#[derive(Debug)]
-pub struct AgentError(pub String);
-
-impl From<reqwest::Error> for AgentError {
-    fn from(e: reqwest::Error) -> Self { Self(e.to_string()) }
-}
 ```
 
-### Node Bindings (packages/node/src/agent.rs)
+### Core Lib (packages/core/src/lib.rs)
+
+```rust
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+//! Core functionality for `node_reqwest`.
+
+pub mod agent;
+pub mod dispatcher;
+
+pub use agent::{Agent, AgentConfig, AgentError};
+pub use dispatcher::{
+    BodySource, DispatchError, DispatchHandler, DispatchOptions, Method, PauseState,
+    RequestController, ResponseStart,
+};
+```
+
+## Node Package
+
+### Cargo.toml (packages/node/Cargo.toml)
+
+```toml
+[package]
+name = "node_reqwest"
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+async-trait = { workspace = true }
+bytes = { workspace = true }
+core = { workspace = true }
+mimalloc = { workspace = true }
+neon = { workspace = true }
+tokio = { workspace = true }
+
+[build-dependencies]
+anyhow.workspace = true
+meta = { workspace = true }
+```
+
+### Node Agent Bindings (packages/node/src/agent.rs)
 
 ```rust
 // SPDX-License-Identifier: Apache-2.0 OR MIT
@@ -626,19 +974,31 @@ impl From<reqwest::Error> for AgentError {
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use core::{Agent, AgentConfig, DispatchHandler, DispatchOptions, DispatchError, ResponseStart};
+use core::{
+    Agent, AgentConfig, DispatchError, DispatchHandler, DispatchOptions, Method,
+    RequestController, ResponseStart,
+};
 use neon::prelude::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+/// Wrapper for core::Agent
 pub struct AgentInstance {
     inner: Agent,
+    runtime: tokio::runtime::Handle,
 }
 
 impl Finalize for AgentInstance {}
 
-/// DispatchCallbacks implements DispatchHandler trait by bridging to JS
-pub struct DispatchCallbacks {
+/// Wrapper for RequestController
+pub struct RequestHandleInstance {
+    inner: RequestController,
+}
+
+impl Finalize for RequestHandleInstance {}
+
+/// DispatchCallbacks bridges Rust async trait to JS callbacks via Neon Channel
+struct JsDispatchHandler {
     channel: Channel,
     on_start: Arc<Root<JsFunction>>,
     on_data: Arc<Root<JsFunction>>,
@@ -647,70 +1007,65 @@ pub struct DispatchCallbacks {
 }
 
 #[async_trait]
-impl DispatchHandler for DispatchCallbacks {
+impl DispatchHandler for JsDispatchHandler {
     async fn on_response_start(&self, response: ResponseStart) {
         let channel = self.channel.clone();
         let on_start = Arc::clone(&self.on_start);
-        let _ = channel.send(move |mut cx| {
-            fn call(cx: &mut Cx<'_>, root: &Root<JsFunction>, resp: ResponseStart) -> NeonResult<()> {
-                let headers = headers_to_js(cx, &resp.headers)?;
-                root.to_inner(cx)
-                    .call_with(cx)
-                    .arg(cx.number(resp.status_code as f64))
-                    .arg(headers)
-                    .arg(cx.string(&resp.status_message))
-                    .exec(cx)
-            }
-            call(&mut cx, &on_start, resp)
-        }).await;
+        let status_code = response.status_code;
+        let status_message = response.status_message.clone();
+        let headers = response.headers.clone();
+
+        channel.send(move |mut cx| {
+            let headers_obj = headers_to_js(&mut cx, &headers)?;
+            on_start.to_inner(&mut cx)
+                .call_with(&cx)
+                .arg(cx.number(status_code as f64))
+                .arg(headers_obj)
+                .arg(cx.string(&status_message))
+                .exec(&mut cx)
+        });
     }
 
     async fn on_response_data(&self, chunk: Bytes) {
         let channel = self.channel.clone();
         let on_data = Arc::clone(&self.on_data);
-        let _ = channel.send(move |mut cx| {
-            fn call(cx: &mut Cx<'_>, root: &Root<JsFunction>, data: &[u8]) -> NeonResult<()> {
-                let buffer = JsBuffer::from_slice(cx, data)?;
-                root.to_inner(cx).call_with(cx).arg(buffer).exec(cx)
-            }
-            call(&mut cx, &on_data, &chunk)
-        }).await;
+
+        channel.send(move |mut cx| {
+            // One copy here: Rust Bytes → V8 ArrayBuffer
+            let buffer = JsBuffer::from_slice(&mut cx, &chunk)?;
+            on_data.to_inner(&mut cx)
+                .call_with(&cx)
+                .arg(buffer)
+                .exec(&mut cx)
+        });
     }
 
     async fn on_response_end(&self, trailers: HashMap<String, Vec<String>>) {
         let channel = self.channel.clone();
         let on_end = Arc::clone(&self.on_end);
-        let _ = channel.send(move |mut cx| {
-            fn call(cx: &mut Cx<'_>, root: &Root<JsFunction>, trailers: &HashMap<String, Vec<String>>) -> NeonResult<()> {
-                let obj = headers_to_js(cx, trailers)?;
-                root.to_inner(cx).call_with(cx).arg(obj).exec(cx)
-            }
-            call(&mut cx, &on_end, &trailers)
-        }).await;
+
+        channel.send(move |mut cx| {
+            let trailers_obj = headers_to_js(&mut cx, &trailers)?;
+            on_end.to_inner(&mut cx)
+                .call_with(&cx)
+                .arg(trailers_obj)
+                .exec(&mut cx)
+        });
     }
 
     async fn on_response_error(&self, error: DispatchError) {
         let channel = self.channel.clone();
         let on_error = Arc::clone(&self.on_error);
         let error_msg = error.to_string();
-        let _ = channel.send(move |mut cx| {
-            fn call(cx: &mut Cx<'_>, root: &Root<JsFunction>, msg: &str) -> NeonResult<()> {
-                let err = cx.error(msg)?;
-                root.to_inner(cx).call_with(cx).arg(err).exec(cx)
-            }
-            call(&mut cx, &on_error, &error_msg)
-        }).await;
-    }
-}
 
-fn create_handler(cx: &mut FunctionContext<'_>, js_callbacks: Handle<'_, JsObject>) -> NeonResult<Arc<dyn DispatchHandler>> {
-    Ok(Arc::new(DispatchCallbacks {
-        channel: cx.channel(),
-        on_start: Arc::new(js_callbacks.get::<JsFunction, _, _>(cx, "onResponseStart")?.root(cx)),
-        on_data: Arc::new(js_callbacks.get::<JsFunction, _, _>(cx, "onResponseData")?.root(cx)),
-        on_end: Arc::new(js_callbacks.get::<JsFunction, _, _>(cx, "onResponseEnd")?.root(cx)),
-        on_error: Arc::new(js_callbacks.get::<JsFunction, _, _>(cx, "onResponseError")?.root(cx)),
-    }))
+        channel.send(move |mut cx| {
+            let err = cx.error(&error_msg)?;
+            on_error.to_inner(&mut cx)
+                .call_with(&cx)
+                .arg(err)
+                .exec(&mut cx)
+        });
+    }
 }
 
 fn headers_to_js<'a>(cx: &mut Cx<'a>, headers: &HashMap<String, Vec<String>>) -> JsResult<'a, JsObject> {
@@ -731,11 +1086,74 @@ fn headers_to_js<'a>(cx: &mut Cx<'a>, headers: &HashMap<String, Vec<String>>) ->
     Ok(obj)
 }
 
+fn parse_dispatch_options(cx: &mut FunctionContext<'_>, obj: Handle<'_, JsObject>) -> NeonResult<DispatchOptions> {
+    let path: Handle<JsString> = obj.get(cx, "path")?;
+    let method_str: Handle<JsString> = obj.get(cx, "method")?;
+    let origin: Handle<JsValue> = obj.get(cx, "origin")?;
+
+    let method = match method_str.value(cx).to_uppercase().as_str() {
+        "GET" => Method::Get,
+        "POST" => Method::Post,
+        "PUT" => Method::Put,
+        "DELETE" => Method::Delete,
+        "HEAD" => Method::Head,
+        "OPTIONS" => Method::Options,
+        "PATCH" => Method::Patch,
+        "CONNECT" => Method::Connect,
+        "TRACE" => Method::Trace,
+        _ => return cx.throw_error("Invalid HTTP method"),
+    };
+
+    let origin_str = if origin.is_a::<JsString, _>(cx) {
+        Some(origin.downcast_or_throw::<JsString, _>(cx)?.value(cx))
+    } else {
+        None
+    };
+
+    // Parse headers
+    let headers_obj: Handle<JsObject> = obj.get(cx, "headers")?;
+    let headers_keys = headers_obj.get_own_property_names(cx)?;
+    let mut headers = HashMap::new();
+    for i in 0..headers_keys.len(cx) {
+        let key: Handle<JsString> = headers_keys.get(cx, i)?;
+        let key_str = key.value(cx);
+        let value: Handle<JsString> = headers_obj.get(cx, key)?;
+        headers.insert(key_str, vec![value.value(cx)]);
+    }
+
+    Ok(DispatchOptions {
+        origin: origin_str,
+        path: path.value(cx),
+        method,
+        headers,
+        body: None, // TODO: implement body streaming
+        upgrade: None,
+        headers_timeout: None,
+        body_timeout: None,
+    })
+}
+
 #[neon::export(name = "agentCreate", context)]
-fn agent_create<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsBox<AgentInstance>> {
-    let config = AgentConfig::default(); // TODO: parse from cx
-    let agent = Agent::new(config).map_err(|e| cx.throw_error::<_, ()>(e.0).unwrap_err())?;
-    Ok(cx.boxed(AgentInstance { inner: agent }))
+fn agent_create<'cx>(cx: &mut FunctionContext<'cx>, options: Handle<'cx, JsObject>) -> JsResult<'cx, JsBox<AgentInstance>> {
+    // TODO: parse options from JS object
+    let config = AgentConfig::default();
+    
+    let runtime = tokio::runtime::Handle::try_current()
+        .or_else(|_| {
+            // Create runtime if not already in async context
+            tokio::runtime::Runtime::new()
+                .map(|rt| {
+                    let handle = rt.handle().clone();
+                    std::mem::forget(rt); // Leak to keep runtime alive
+                    handle
+                })
+        })
+        .map_err(|e| cx.throw_error::<_, ()>(format!("Failed to get tokio runtime: {e}")).unwrap_err())?;
+
+    let agent = Agent::new(config)
+        .map_err(|e| cx.throw_error::<_, ()>(e.to_string()).unwrap_err())?;
+
+    Ok(cx.boxed(AgentInstance { inner: agent, runtime }))
 }
 
 #[neon::export(name = "agentDispatch", context)]
@@ -746,63 +1164,97 @@ fn agent_dispatch<'cx>(
     callbacks: Handle<'cx, JsObject>,
 ) -> JsResult<'cx, JsBox<RequestHandleInstance>> {
     let dispatch_options = parse_dispatch_options(cx, options)?;
-    let handler = create_handler(cx, callbacks)?;
 
-    let controller = agent.inner.dispatch(dispatch_options, handler);
+    let handler = Arc::new(JsDispatchHandler {
+        channel: cx.channel(),
+        on_start: Arc::new(callbacks.get::<JsFunction, _, _>(cx, "onResponseStart")?.root(cx)),
+        on_data: Arc::new(callbacks.get::<JsFunction, _, _>(cx, "onResponseData")?.root(cx)),
+        on_end: Arc::new(callbacks.get::<JsFunction, _, _>(cx, "onResponseEnd")?.root(cx)),
+        on_error: Arc::new(callbacks.get::<JsFunction, _, _>(cx, "onResponseError")?.root(cx)),
+    });
+
+    let controller = agent.inner.dispatch(agent.runtime.clone(), dispatch_options, handler);
     Ok(cx.boxed(RequestHandleInstance { inner: controller }))
 }
 
-fn parse_dispatch_options<'cx>(cx: &mut FunctionContext<'cx>, obj: Handle<'cx, JsObject>) -> NeonResult<DispatchOptions> {
-    let path: Handle<JsString> = obj.get(cx, "path")?;
-    let method_str: Handle<JsString> = obj.get(cx, "method")?;
-
-    let method = match method_str.value(cx).to_uppercase().as_str() {
-        "GET" => core::Method::Get,
-        "POST" => core::Method::Post,
-        "PUT" => core::Method::Put,
-        "DELETE" => core::Method::Delete,
-        "HEAD" => core::Method::Head,
-        "OPTIONS" => core::Method::Options,
-        "PATCH" => core::Method::Patch,
-        "CONNECT" => core::Method::Connect,
-        "TRACE" => core::Method::Trace,
-        _ => return cx.throw_error("Invalid HTTP method"),
-    };
-
-    Ok(DispatchOptions {
-        origin: obj.get_opt::<JsString, _, _>(cx, "origin")?.map(|s| s.value(cx)),
-        path: path.value(cx),
-        method,
-        headers: HashMap::new(), // TODO: parse headers
-        body: None,              // TODO: parse body
-        upgrade: None,
-        timeout: None,
-    })
+#[neon::export(name = "agentClose", context)]
+fn agent_close<'cx>(
+    cx: &mut FunctionContext<'cx>,
+    _agent: Handle<'cx, JsBox<AgentInstance>>,
+) -> JsResult<'cx, JsPromise> {
+    let (deferred, promise) = cx.promise();
+    // reqwest Client uses reference counting, dropping cleans up
+    deferred.settle_with(&cx.channel(), move |mut cx| Ok(cx.undefined()));
+    Ok(promise)
 }
 
-pub struct RequestHandleInstance {
-    inner: core::RequestController,
+#[neon::export(name = "agentDestroy", context)]
+fn agent_destroy<'cx>(
+    cx: &mut FunctionContext<'cx>,
+    _agent: Handle<'cx, JsBox<AgentInstance>>,
+    _error: Handle<'cx, JsValue>,
+) -> JsResult<'cx, JsPromise> {
+    let (deferred, promise) = cx.promise();
+    // reqwest Client uses reference counting, dropping cleans up
+    deferred.settle_with(&cx.channel(), move |mut cx| Ok(cx.undefined()));
+    Ok(promise)
 }
-
-impl Finalize for RequestHandleInstance {}
 
 #[neon::export(name = "requestHandleAbort", context)]
-fn request_handle_abort<'cx>(cx: &mut FunctionContext<'cx>, handle: Handle<'cx, JsBox<RequestHandleInstance>>) -> JsResult<'cx, JsUndefined> {
+fn request_handle_abort<'cx>(
+    cx: &mut FunctionContext<'cx>,
+    handle: Handle<'cx, JsBox<RequestHandleInstance>>,
+) -> JsResult<'cx, JsUndefined> {
     handle.inner.abort();
     Ok(cx.undefined())
 }
 
 #[neon::export(name = "requestHandlePause", context)]
-fn request_handle_pause<'cx>(cx: &mut FunctionContext<'cx>, handle: Handle<'cx, JsBox<RequestHandleInstance>>) -> JsResult<'cx, JsUndefined> {
+fn request_handle_pause<'cx>(
+    cx: &mut FunctionContext<'cx>,
+    handle: Handle<'cx, JsBox<RequestHandleInstance>>,
+) -> JsResult<'cx, JsUndefined> {
     handle.inner.pause();
     Ok(cx.undefined())
 }
 
 #[neon::export(name = "requestHandleResume", context)]
-fn request_handle_resume<'cx>(cx: &mut FunctionContext<'cx>, handle: Handle<'cx, JsBox<RequestHandleInstance>>) -> JsResult<'cx, JsUndefined> {
+fn request_handle_resume<'cx>(
+    cx: &mut FunctionContext<'cx>,
+    handle: Handle<'cx, JsBox<RequestHandleInstance>>,
+) -> JsResult<'cx, JsUndefined> {
     handle.inner.resume();
     Ok(cx.undefined())
 }
+```
+
+### Node Lib (packages/node/src/lib.rs)
+
+```rust
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+//! Node.js bindings for reqwest - Rust HTTP client library
+
+mod agent;
+
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
+use neon::prelude::*;
+
+#[neon::export(name = "hello", context)]
+fn hello<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsString> {
+    Ok(cx.string("hello"))
+}
+```
+
+## Workspace Dependencies (add to root Cargo.toml)
+
+```toml
+# Add to [workspace.dependencies]
+thiserror = { version = "2.0.12" }
 ```
 
 ## File Structure
@@ -810,66 +1262,35 @@ fn request_handle_resume<'cx>(cx: &mut FunctionContext<'cx>, handle: Handle<'cx,
 ```text
 packages/
 ├── core/
-│   ├── Cargo.toml
+│   ├── Cargo.toml           # async-trait, bytes, futures, reqwest, thiserror, tokio, tokio-util
 │   └── src/
-│       ├── lib.rs           # pub mod dispatcher; pub mod agent;
-│       ├── dispatcher.rs    # DispatchHandler trait, DispatchOptions, etc.
-│       └── agent.rs         # Agent impl with reqwest, runtime-agnostic
+│       ├── lib.rs           # pub mod dispatcher; pub mod agent; re-exports
+│       ├── dispatcher.rs    # DispatchHandler trait, DispatchOptions, PauseState, RequestController
+│       └── agent.rs         # Agent impl with reqwest, execute_request
 └── node/
-    ├── Cargo.toml
+    ├── Cargo.toml           # core, neon, tokio, async-trait, bytes, mimalloc
     ├── export/
-    │   ├── agent.ts         # DispatchControllerImpl, AgentImpl
-    │   └── addon-def.ts     # TypeScript types for addon
+    │   ├── agent.ts         # DispatchControllerImpl, AgentImpl, dispatch/close/destroy
+    │   └── addon-def.ts     # TypeScript types: DispatchCallbacks, RequestHandle, etc.
     └── src/
-        ├── lib.rs           # Neon exports
-        └── agent.rs         # NeonHandler impl, JS↔Rust marshaling ONLY
+        ├── lib.rs           # Neon module registration
+        └── agent.rs         # JsDispatchHandler, Neon exports (agentCreate, agentDispatch, etc.)
 ```
 
-## Dependencies
+## Testing Framework
 
-| Crate              | Purpose                              |
-| :----------------- | :----------------------------------- |
-| `reqwest`          | HTTP client                          |
-| `reqwest-websocket`| WebSocket upgrade support            |
-| `tokio`            | Async runtime                        |
-| `tokio-util`       | CancellationToken                    |
-| `futures`          | StreamExt for bytes_stream           |
+### Core Tests (packages/core/tests/)
 
-## Implementation Order
+| Test File                  | Purpose                               |
+| :------------------------- | :------------------------------------ |
+| `support/mod.rs`           | Test utilities                        |
+| `support/mock_handler.rs`  | Mock `DispatchHandler` implementation |
+| `agent_dispatch.rs`        | Integration tests with wiremock       |
 
-1. DispatchController skeleton (TS)
-2. Basic Rust dispatch with Channel callbacks
-3. Wire addon interface
-4. Complete dispatch() flow
-5. Add abort support
-6. Add backpressure support
-7. Implement close/destroy
-8. Add drain event
-9. Add WebSocket upgrade support
-10. Tests
-
-## Core Package Testing
-
-### Testability Analysis
-
-The design is highly testable because:
-
-1. **Trait abstraction**: `DispatchHandler` is an async trait - easy to mock
-2. **No FFI in tests**: Core tests don't need Neon/Node.js
-3. **Pure Rust async**: Can use tokio-test and standard Rust testing
-4. **HTTP mocking**: `wiremock` provides isolated mock servers per test
-
-### Test Strategy
-
-We test the **integration** between `Agent` and mock HTTP servers. We don't re-test:
-
-- `reqwest` internals (compression, TLS, cookies) - trusted
-- `tokio` runtime behavior - trusted
-- HTTP parsing - handled by hyper/reqwest
-
-We focus on testing our code paths: dispatcher lifecycle, abort, pause/resume, error handling.
-
-### Mock DispatchHandler for Tests
+```rust
+// packages/core/tests/support/mod.rs
+pub mod mock_handler;
+```
 
 ```rust
 // packages/core/tests/support/mock_handler.rs
@@ -880,7 +1301,7 @@ use bytes::Bytes;
 use core::{DispatchError, DispatchHandler, ResponseStart};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify};
 
 #[derive(Debug, Default)]
 pub struct RecordedEvents {
@@ -892,12 +1313,21 @@ pub struct RecordedEvents {
 
 pub struct MockHandler {
     events: Arc<Mutex<RecordedEvents>>,
+    done: Arc<Notify>,
 }
 
 impl MockHandler {
-    pub fn new() -> (Self, Arc<Mutex<RecordedEvents>>) {
+    pub fn new() -> (Self, Arc<Mutex<RecordedEvents>>, Arc<Notify>) {
         let events = Arc::new(Mutex::new(RecordedEvents::default()));
-        (Self { events: Arc::clone(&events) }, events)
+        let done = Arc::new(Notify::new());
+        (
+            Self {
+                events: Arc::clone(&events),
+                done: Arc::clone(&done),
+            },
+            events,
+            done,
+        )
     }
 }
 
@@ -913,32 +1343,15 @@ impl DispatchHandler for MockHandler {
 
     async fn on_response_end(&self, trailers: HashMap<String, Vec<String>>) {
         self.events.lock().await.response_ends.push(trailers);
+        self.done.notify_one();
     }
 
     async fn on_response_error(&self, error: DispatchError) {
         self.events.lock().await.errors.push(error);
+        self.done.notify_one();
     }
 }
 ```
-
-### Test Scenarios
-
-| #  | Scenario                | What it tests                                                        | Priority |
-| :- | :---------------------- | :------------------------------------------------------------------- | :------- |
-| 1  | **GET 200 OK**          | Basic flow: on_response_start → on_response_data → on_response_end   | High     |
-| 2  | **POST with body**      | Request body is sent correctly                                       | High     |
-| 3  | **Response headers**    | Headers map correctly converted                                      | High     |
-| 4  | **Streamed response**   | Multiple data chunks received in order                               | High     |
-| 5  | **404 response**        | HTTP errors call on_response_start with status                       | High     |
-| 6  | **Network error**       | Connection refused → on_response_error(Network)                      | High     |
-| 7  | **Abort before send**   | cancel() before request → on_response_error(Aborted)                 | High     |
-| 8  | **Abort during stream** | cancel() mid-body → on_response_error(Aborted)                       | Medium   |
-| 9  | **Pause/resume**        | pause() delays data, resume() continues                              | Medium   |
-| 10 | **Request timeout**     | Slow server → on_response_error(Timeout)                             | Medium   |
-| 11 | **Empty response body** | 204 No Content → on_response_end with no data                        | Low      |
-| 12 | **Multi-value headers** | Headers like Set-Cookie appear as Vec                                | Low      |
-
-### Example Test
 
 ```rust
 // packages/core/tests/agent_dispatch.rs
@@ -948,13 +1361,13 @@ mod support;
 
 use core::{Agent, AgentConfig, DispatchOptions, Method};
 use std::sync::Arc;
+use std::time::Duration;
 use support::mock_handler::MockHandler;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[tokio::test]
 async fn test_get_200_ok() {
-    // Start mock server
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/test"))
@@ -962,13 +1375,9 @@ async fn test_get_200_ok() {
         .mount(&server)
         .await;
 
-    // Create agent
-    let agent = Agent::new(AgentConfig::default()).unwrap();
+    let agent = Agent::new(AgentConfig::default()).expect("agent");
+    let (handler, events, done) = MockHandler::new();
 
-    // Create mock handler
-    let (handler, events) = MockHandler::new();
-
-    // Dispatch request
     let opts = DispatchOptions {
         origin: Some(server.uri()),
         path: "/test".to_string(),
@@ -976,15 +1385,16 @@ async fn test_get_200_ok() {
         headers: Default::default(),
         body: None,
         upgrade: None,
-        timeout: None,
+        headers_timeout: None,
+        body_timeout: None,
     };
 
-    let _controller = agent.dispatch(opts, Arc::new(handler));
+    let _controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
 
-    // Wait for completion (in real tests, use proper sync)
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    tokio::time::timeout(Duration::from_secs(5), done.notified())
+        .await
+        .expect("timeout waiting for request");
 
-    // Assert events
     let events = events.lock().await;
     assert_eq!(events.response_starts.len(), 1);
     assert_eq!(events.response_starts[0].status_code, 200);
@@ -999,12 +1409,12 @@ async fn test_abort_before_response() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/slow"))
-        .respond_with(ResponseTemplate::new(200).set_delay(std::time::Duration::from_secs(10)))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(10)))
         .mount(&server)
         .await;
 
-    let agent = Agent::new(AgentConfig::default()).unwrap();
-    let (handler, events) = MockHandler::new();
+    let agent = Agent::new(AgentConfig::default()).expect("agent");
+    let (handler, events, done) = MockHandler::new();
 
     let opts = DispatchOptions {
         origin: Some(server.uri()),
@@ -1013,26 +1423,27 @@ async fn test_abort_before_response() {
         headers: Default::default(),
         body: None,
         upgrade: None,
-        timeout: None,
+        headers_timeout: None,
+        body_timeout: None,
     };
 
-    let controller = agent.dispatch(opts, Arc::new(handler));
-
-    // Abort immediately
+    let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
     controller.abort();
 
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    tokio::time::timeout(Duration::from_secs(5), done.notified())
+        .await
+        .expect("timeout waiting for abort");
 
     let events = events.lock().await;
     assert!(events.response_starts.is_empty());
     assert_eq!(events.errors.len(), 1);
-    matches!(&events.errors[0], core::DispatchError::Aborted);
+    assert!(matches!(&events.errors[0], core::DispatchError::Aborted));
 }
 
 #[tokio::test]
 async fn test_network_error() {
-    let agent = Agent::new(AgentConfig::default()).unwrap();
-    let (handler, events) = MockHandler::new();
+    let agent = Agent::new(AgentConfig::default()).expect("agent");
+    let (handler, events, done) = MockHandler::new();
 
     let opts = DispatchOptions {
         origin: Some("http://127.0.0.1:1".to_string()), // Unreachable port
@@ -1041,295 +1452,67 @@ async fn test_network_error() {
         headers: Default::default(),
         body: None,
         upgrade: None,
-        timeout: None,
+        headers_timeout: None,
+        body_timeout: None,
     };
 
-    let _controller = agent.dispatch(opts, Arc::new(handler));
+    let _controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
 
-    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    tokio::time::timeout(Duration::from_secs(5), done.notified())
+        .await
+        .expect("timeout waiting for error");
 
     let events = events.lock().await;
     assert_eq!(events.errors.len(), 1);
-    matches!(&events.errors[0], core::DispatchError::Network(_));
+    assert!(matches!(&events.errors[0], core::DispatchError::Network(_)));
 }
 ```
 
-### Test Dependencies
+### Node Tests (packages/node/tests/)
 
-| Crate               | Purpose                               |
-| :------------------ | :------------------------------------ |
-| `wiremock`          | Mock HTTP server (per-test isolation) |
-| `tokio-test`        | Async test utilities                  |
-| `pretty_assertions` | Better assertion diffs                |
+| Test File                 | Purpose                  |
+| :------------------------ | :----------------------- |
+| `vitest/agent.test.ts`    | Unit tests for Agent     |
+| `playwright/e2e.spec.ts`  | E2E tests with real HTTP |
 
-## Backpressure Analysis
+## Backpressure Verification
 
-### How undici Implements Backpressure
+| Concern                    | Status | Implementation                                                           |
+| :------------------------- | :----- | :----------------------------------------------------------------------- |
+| **Minimal copying**        | ✅     | `Bytes` arc-backed; single copy at JS boundary (`JsBuffer::from_slice`)  |
+| **No unlimited queues**    | ✅     | No buffering; `wait_if_paused()` blocks before next chunk                |
+| **Request order**          | N/A    | Each request independent                                                 |
+| **Cancellation isolation** | ✅     | Per-request `CancellationToken`                                          |
+| **Memory bounded**         | ✅     | Max 1 chunk in flight during pause                                       |
+| **Deadlock risk**          | ✅     | `while` loop handles spurious wakeups                                    |
 
-From `unwrap-handler.js` and `wrap-handler.js`:
-
-1. **Return value protocol**: `onHeaders()` and `onData()` return `boolean`:
-   - `true` → continue reading socket
-   - `false` → pause socket, stop reading
-
-2. **Controller pattern**: Handler calls `controller.pause()`, socket is paused internally
-
-3. **Resume mechanism**: `onHeaders` receives `resume()` callback, stored in controller
-
-4. **Integration**: The underlying socket is paused/resumed directly
-
-### Our Implementation Approach
-
-We use `AtomicBool + Notify` polling pattern:
-
-```rust
-pub struct PauseState {
-    paused: AtomicBool,
-    notify: Notify,
-}
-
-// In streaming loop:
-loop {
-    pause_state.wait_if_paused().await;  // Block if paused
-    // ... read next chunk ...
-}
-```
-
-### Verification Checklist
-
-| Concern                    | Status | Analysis                                                                          |
-| :------------------------- | :----- | :-------------------------------------------------------------------------------- |
-| **Minimal copying**        | OK     | `Bytes` uses arc-backed buffer, moved through callbacks                           |
-| **No unlimited queues**    | OK     | No buffering between chunks; pause stops reqwest stream polling                   |
-| **Request order**          | N/A    | No ordering needed; each request is independent                                   |
-| **Cancellation isolation** | OK     | Each request has its own `CancellationToken`; canceling one doesn't affect others |
-| **Memory bounded**         | OK     | At most 1 chunk in flight per request during pause                                |
-| **Deadlock risk**          | WARN   | See note below                                                                    |
-
-### Key Implementation Details
-
-**1. Zero-copy data flow:**
+### Data Flow (Zero-Copy Path)
 
 ```text
-reqwest stream → Bytes (arc-backed) → on_response_data() → Neon JsBuffer
-                      ↑ no copy                   ↑ one copy into V8 heap
+reqwest stream → Bytes (arc-backed, no copy)
+                      ↓
+              handler.on_response_data(data)
+                      ↓
+              JsBuffer::from_slice() ← ONE COPY into V8 heap
+                      ↓
+              JS callback receives Buffer
 ```
 
-**2. Bounded buffering:**
+### Memory Bounds
 
-- reqwest's `bytes_stream()` uses internal hyper buffering (typically 16KB)
-- Our loop reads one chunk, waits for callback, then reads next
-- When paused, `wait_if_paused()` blocks before polling next chunk
-- **Max memory per request**: hyper read buffer + 1 chunk in callback
+- hyper read buffer: ~16KB (configurable)
+- Max in-flight per request: 1 chunk
+- **Total: hyper buffer + chunk size per request**
 
-**3. Request isolation:**
+## Implementation Order
 
-```rust
-// Each request spawns its own task with unique state
-self.runtime.spawn(async move {
-    let token = controller.token();         // New token per request
-    let pause_state = controller.pause_state(); // New state per request
-    // ...
-});
-```
-
-**4. undici compatibility:**
-
-| undici behavior              | Our implementation                                           |
-| :--------------------------- | :----------------------------------------------------------- |
-| `controller.pause()`         | Sets `AtomicBool`, Rust loop blocks on `Notify`              |
-| `controller.resume()`        | Clears `AtomicBool`, `notify_one()` wakes loop               |
-| `controller.abort(reason)`   | Cancels token, `select!` picks cancellation branch           |
-| Multiple rapid pause/resume  | Works correctly due to `SeqCst` ordering                     |
-
-### Potential Issues and Mitigations
-
-#### Issue 1: Notify wakeup race
-
-```rust
-// Current code - potential race:
-pub fn resume(&self) {
-    self.paused.store(false, Ordering::SeqCst);
-    self.notify.notify_one();  // What if waiter hasn't entered notified() yet?
-}
-```
-
-**Mitigation**: The `while` loop handles spurious wakeups correctly:
-
-```rust
-pub async fn wait_if_paused(&self) {
-    while self.paused.load(Ordering::SeqCst) {
-        self.notify.notified().await;  // Will re-check condition after wakeup
-    }
-}
-```
-
-#### Issue 2: Channel.send() backpressure to JS
-
-The `channel.send()` awaits until JS event loop processes the callback. If JS is slow:
-
-- Rust task blocks in `channel.send().await`
-- This naturally provides backpressure to reqwest stream
-- However, we're not pausing reqwest based on JS slowness
-
-**Recommendation**: Consider if we need to propagate JS backpressure:
-
-```rust
-// Option: Pause when JS callback is slow
-handler.on_response_data(data).await; // Blocks until JS processes
-// If this takes > threshold, JS should call pause() itself
-```
-
-Current design relies on JS calling `pause()` explicitly.
-
-#### Issue 3: Request ordering (HTTP/2 multiplexing)
-
-- undici: No strict ordering required between independent requests
-- Our design: Each request is independent parallel task
-- HTTP/2: reqwest handles multiplexing internally
-- **No ordering guarantees needed or provided**
-
-### Performance Characteristics
-
-| Metric               | Value                                                    |
-| :------------------- | :------------------------------------------------------- |
-| Chunks in flight     | 1 per request (waiting in callback)                      |
-| Buffer memory        | hyper default (16KB) + chunk size (varies)               |
-| Pause latency        | Near-instant (AtomicBool check per chunk)                |
-| Resume latency       | Notify wakeup time (~microseconds)                       |
-| Cross-request impact | None (isolated tokens and pause states)                  |
-
-### Backpressure Test Scenarios
-
-| Test                       | What to verify                                             |
-| :------------------------- | :--------------------------------------------------------- |
-| Pause mid-stream           | No more chunks delivered after pause()                     |
-| Resume after pause         | Chunks resume flowing, no data lost                        |
-| Rapid pause/resume toggle  | No stuck state, no lost chunks                             |
-| Pause during slow server   | Pause takes effect on next chunk boundary                  |
-| Abort while paused         | Clean termination, no hanging                              |
-| Parallel slow requests     | Each paused independently, no cross-contamination          |
-
-## Resolved Design Decisions
-
-### Request Body Streaming
-
-JS normalizes body to `ReadableStreamBYOBReader` (see `normalizeBody` in agent.ts). Rust
-receives chunks via repeated addon calls:
-
-```rust
-// Rust receives body as channel receiver
-struct RequestBody {
-    receiver: mpsc::Receiver<Bytes>,
-}
-
-impl From<RequestBody> for reqwest::Body {
-    fn from(body: RequestBody) -> Self {
-        reqwest::Body::wrap_stream(ReceiverStream::new(body.receiver))
-    }
-}
-```
-
-```typescript
-// JS pumps BYOB reader to Rust
-async function pumpBody(reader: ReadableStreamBYOBReader, requestId: number) {
-  while (true) {
-    const buffer = new Uint8Array(65536);
-    const { done, value } = await reader.read(buffer);
-    if (done) {
-      Addon.finishBody(requestId);
-      break;
-    }
-    Addon.sendBodyChunk(requestId, value);
-  }
-}
-```
-
-### WebSocket Upgrade Support
-
-Use `reqwest-websocket` crate (wraps tokio-tungstenite):
-
-```rust
-use reqwest_websocket::RequestBuilderExt;
-
-async fn handle_upgrade(
-    client: &reqwest::Client,
-    url: &str,
-    channel: Channel,
-    on_upgrade: Root<JsFunction>,
-) -> Result<(), Error> {
-    let response = client.get(url).upgrade().send().await?;
-    let websocket = response.into_websocket().await?;
-
-    // Return socket handle to JS for onRequestUpgrade callback
-    channel.send(move |mut cx| {
-        let socket_handle = /* wrap websocket */;
-        on_upgrade.into_inner(&mut cx)
-            .call_with(&cx)
-            .arg(/* statusCode */)
-            .arg(/* headers */)
-            .arg(socket_handle)
-            .exec(&mut cx)
-    }).await;
-
-    Ok(())
-}
-```
-
-Difficulty: **Medium** - reqwest-websocket provides clean API, main work is exposing
-WebSocket as JS Duplex stream via Neon.
-
-### Drain Event
-
-Track pending requests, emit `drain` when no longer busy:
-
-```typescript
-class AgentImpl extends Dispatcher {
-  #pendingRequests = 0;
-  #needDrain = false;
-  #maxConcurrent = 100;
-
-  dispatch(options, handler): boolean {
-    this.#pendingRequests++;
-    // ... dispatch ...
-
-    const busy = this.#pendingRequests >= this.#maxConcurrent;
-    if (busy) this.#needDrain = true;
-    return !busy;
-  }
-
-  // Called from Rust on request complete
-  #onRequestComplete() {
-    this.#pendingRequests--;
-    if (this.#needDrain && this.#pendingRequests < this.#maxConcurrent) {
-      this.#needDrain = false;
-      queueMicrotask(() => this.emit('drain', this.#origin));
-    }
-  }
-}
-```
-
-### Root Cloning
-
-Wrap `Root<JsFunction>` in `Arc` before spawning async task:
-
-```rust
-// Clone roots into Arc before async block
-let on_data = Arc::new(callbacks.get::<JsFunction, _, _>(cx, "onResponseData")?.root(cx));
-let channel = cx.channel();
-
-runtime.spawn(async move {
-    loop {
-        let on_data = Arc::clone(&on_data);
-        let channel = channel.clone();
-
-        // Use to_inner() for borrowed access (does not consume)
-        let _ = channel.send(move |mut cx| {
-            on_data.to_inner(&mut cx)
-                .call_with(&cx)
-                .arg(buffer)
-                .exec(&mut cx)
-        }).await;
-    }
-});
-```
+1. Core: `dispatcher.rs` types + `PauseState` + `RequestController`
+2. Core: `agent.rs` with `Agent::new()` and `Agent::dispatch()`
+3. Node: Update `Cargo.toml` with dependencies
+4. Node: `JsDispatchHandler` implementing `DispatchHandler` trait
+5. Node: Neon exports (`agentCreate`, `agentDispatch`, `requestHandle*`)
+6. TypeScript: `DispatchControllerImpl` class
+7. TypeScript: Update `addon-def.ts` with new types
+8. TypeScript: Update `AgentImpl.dispatch()` to use callbacks
+9. Core tests: `MockHandler` + wiremock tests
+10. Node tests: vitest + playwright integration
