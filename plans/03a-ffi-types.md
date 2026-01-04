@@ -39,6 +39,7 @@ bytes = { workspace = true }
 core = { path = "../core" }
 mimalloc = { workspace = true }
 neon = { workspace = true, features = ["tokio-rt-multi-thread"] }
+parking_lot = { workspace = true }
 tokio = { workspace = true }
 
 [build-dependencies]
@@ -184,7 +185,6 @@ export type AgentDispatchOptions = {
   blocking: boolean;
   body: ReadableStreamBYOBReader | null;
   bodyTimeout: number;
-  expectContinue: boolean;
   headers: Record<string, string>;
   headersTimeout: number;
   idempotent: boolean;
@@ -194,7 +194,8 @@ export type AgentDispatchOptions = {
   query: string;
   reset: boolean;
   throwOnError: boolean;
-  upgrade: string | null;
+  // Note: 'upgrade' is not supported (NotSupportedError thrown)
+  // Note: 'expectContinue' is not exposed (reqwest handles internally for H2)
 };
 
 export interface AgentInstance {

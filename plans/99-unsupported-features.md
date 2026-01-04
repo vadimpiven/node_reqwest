@@ -16,6 +16,7 @@ limitations or scope decisions.
 | **Pipelining** | reqwest uses HTTP/2 multiplexing | N/A |
 | **Connection count** | reqwest manages pool internally | N/A |
 | **drain event** | dispatch() always returns true | N/A |
+| **expectContinue** | reqwest handles internally for H2 | N/A |
 
 ## Behavioral Differences from undici
 
@@ -44,7 +45,7 @@ limitations or scope decisions.
 
 - `dispatch()` with `method: 'CONNECT'` calls `onResponseError` with `NotSupportedError`
 - `dispatch()` with `upgrade` option calls `onResponseError` with `NotSupportedError`
-- Response bodies always fully consumed in Rust (no caller drain required)
+- Response bodies dropped on abort/error (connection may close rather than reuse)
 - `bodyTimeout` is an idle timeout (between chunks), not total timeout
 
 ## Future Enhancements (Post-undici compliance)

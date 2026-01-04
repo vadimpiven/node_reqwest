@@ -44,8 +44,9 @@ use crate::dispatch::parse_dispatch_options;
 use crate::handler::JsDispatchHandler;
 
 /// Wrapper for core::Agent stored as JsBox.
+/// Uses Arc to allow cloning for async close/destroy operations.
 pub struct AgentInstance {
-    pub inner: Agent,
+    pub inner: Arc<Agent>,
 }
 
 impl Finalize for AgentInstance {}
@@ -89,7 +90,7 @@ fn agent_create<'cx>(
     let agent = Agent::new(config)
         .map_err(|e| cx.throw_error::<_, ()>(e.to_string()).unwrap_err())?;
 
-    Ok(cx.boxed(AgentInstance { inner: agent }))
+    Ok(cx.boxed(AgentInstance { inner: Arc::new(agent) }))
 }
 
 #[neon::export(name = "agentDispatch", context)]
@@ -111,7 +112,8 @@ fn agent_dispatch<'cx>(
 
     // Use tokio's current runtime handle (Neon's global runtime)
     let runtime = tokio::runtime::Handle::current();
-    let controller = agent.inner.dispatch(runtime, dispatch_options, handler);
+    let controller = agent.inner.dispatch(runtime, dispatch_options, handler)
+        .map_err(|e| cx.throw_error::<_, ()>(e.to_string()).unwrap_err())?;
 
     Ok(cx.boxed(RequestHandleInstance { inner: controller }))
 }
@@ -119,21 +121,45 @@ fn agent_dispatch<'cx>(
 #[neon::export(name = "agentClose", context)]
 fn agent_close<'cx>(
     cx: &mut FunctionContext<'cx>,
-    _agent: Handle<'cx, JsBox<AgentInstance>>,
+    agent: Handle<'cx, JsBox<AgentInstance>>,
 ) -> JsResult<'cx, JsPromise> {
-    let (deferred, promise) = cx.promise();
-    deferred.settle_with(&cx.channel(), move |mut cx| Ok(cx.undefined()));
-    Ok(promise)
+    use core::Lifecycle;
+    use neon::macro_internal::spawn;
+
+    let agent = Arc::clone(&agent.inner);
+    spawn(
+        cx,
+        async move {
+            agent.close().await;
+            Ok(())
+        },
+        |mut cx, result: Result<(), String>| match result {
+            Ok(()) => Ok(cx.undefined()),
+            Err(e) => cx.throw_error(e),
+        },
+    )
 }
 
 #[neon::export(name = "agentDestroy", context)]
 fn agent_destroy<'cx>(
     cx: &mut FunctionContext<'cx>,
-    _agent: Handle<'cx, JsBox<AgentInstance>>,
+    agent: Handle<'cx, JsBox<AgentInstance>>,
 ) -> JsResult<'cx, JsPromise> {
-    let (deferred, promise) = cx.promise();
-    deferred.settle_with(&cx.channel(), move |mut cx| Ok(cx.undefined()));
-    Ok(promise)
+    use core::{CoreError, Lifecycle};
+    use neon::macro_internal::spawn;
+
+    let agent = Arc::clone(&agent.inner);
+    spawn(
+        cx,
+        async move {
+            agent.destroy(CoreError::ClientDestroyed).await;
+            Ok(())
+        },
+        |mut cx, result: Result<(), String>| match result {
+            Ok(()) => Ok(cx.undefined()),
+            Err(e) => cx.throw_error(e),
+        },
+    )
 }
 
 #[neon::export(name = "requestHandleAbort", context)]
@@ -214,17 +240,15 @@ describe('Addon Smoke Tests', () => {
         blocking: false,
         body: null,
         bodyTimeout: 300000,
-        expectContinue: false,
         headers: {},
         headersTimeout: 300000,
         idempotent: true,
         method: 'GET',
-        origin: '',
+        origin: 'http://localhost:9999',
         path: '/',
         query: '',
         reset: false,
         throwOnError: false,
-        upgrade: null,
       },
       {
         onResponseStart: vi.fn(),
@@ -256,17 +280,15 @@ describe('Addon Smoke Tests', () => {
         blocking: false,
         body: null,
         bodyTimeout: 300000,
-        expectContinue: false,
         headers: {},
         headersTimeout: 300000,
         idempotent: true,
         method: 'GET',
-        origin: '',
+        origin: 'http://localhost:9999',
         path: '/',
         query: '',
         reset: false,
         throwOnError: false,
-        upgrade: null,
       },
       {
         onResponseStart: vi.fn(),
@@ -281,6 +303,36 @@ describe('Addon Smoke Tests', () => {
     Addon.requestHandleResume(handle);
     Addon.requestHandleAbort(handle);
   });
+
+  it('should close agent gracefully', async () => {
+    const agent = Addon.agentCreate({
+      allowH2: true,
+      ca: [],
+      keepAliveTimeout: 4000,
+      localAddress: null,
+      proxy: { type: 'system' },
+      rejectInvalidHostnames: true,
+      rejectUnauthorized: true,
+      timeout: 10000,
+    });
+
+    await Addon.agentClose(agent);
+  });
+
+  it('should destroy agent', async () => {
+    const agent = Addon.agentCreate({
+      allowH2: true,
+      ca: [],
+      keepAliveTimeout: 4000,
+      localAddress: null,
+      proxy: { type: 'system' },
+      rejectInvalidHostnames: true,
+      rejectUnauthorized: true,
+      timeout: 10000,
+    });
+
+    await Addon.agentDestroy(agent);
+  });
 });
 ```
 
@@ -291,7 +343,8 @@ describe('Addon Smoke Tests', () => {
 | **Control Types** | Abort, Pause, Resume |
 | **Handle Lifecycle** | JS garbage collected via `Finalize` |
 | **Runtime Access** | `tokio::runtime::Handle::current()` |
-| **Tests** | 5 smoke tests |
+| **Lifecycle** | close/destroy via Lifecycle trait |
+| **Tests** | 7 smoke tests |
 
 ## File Structure
 

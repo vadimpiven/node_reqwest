@@ -30,7 +30,7 @@ GitHub Action
 
 import { Pool as UndiciPool } from 'undici';
 // Note: This imports from the built output. Ensure `pnpm build` is run first.
-import { Agent as NodeReqwestAgent } from '../dist/export/agent.js';
+import { Agent as NodeReqwestAgent } from '../dist/index.js';
 import { cronometro } from 'cronometro';
 import { makeParallelRequests, printResults } from './_util/index.js';
 import { config } from './config.js';
@@ -138,7 +138,7 @@ cronometro(
 
 import { Client as UndiciClient } from 'undici';
 // Note: This imports from the built output. Ensure `pnpm build` is run first.
-import { Agent as NodeReqwestAgent } from '../dist/export/agent.js';
+import { Agent as NodeReqwestAgent } from '../dist/index.js';
 import { cronometro } from 'cronometro';
 import { makeParallelRequests, printResults } from './_util/index.js';
 import { config } from './config.js';

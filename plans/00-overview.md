@@ -94,6 +94,9 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | dispatch() return | Always true | No internal queue limit |
 | Events | connect (per-origin), disconnect, connectionError | Per undici Dispatcher spec |
 | throwOnError | ResponseError for 4xx/5xx | Matches undici behavior |
+| AbortSignal | Handled in dispatch(), triggers controller.abort() | Matches undici abort semantics |
+| Lifecycle (close/destroy) | Rust trait with request tracking | Graceful shutdown + request cancellation |
+| expectContinue | Not exposed | reqwest handles internally for H2 |
 
 ## Undici Dispatcher Compliance Checklist
 
@@ -104,7 +107,7 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | DispatchHandler callbacks | ✅ | onRequestStart, onResponseStart, etc. |
 | DispatchController | ✅ | abort(), pause(), resume() |
 | Error codes (UND_ERR_*) | ✅ | Symbol.for instanceof |
-| close() / destroy() | ✅ | Placeholder (reqwest manages) |
+| close() / destroy() | ✅ | Lifecycle trait with request tracking |
 | connect event | ✅ | Per-origin, on first successful response |
 | disconnect event | ✅ | On connection loss after established |
 | connectionError event | ✅ | On initial connection failure |
@@ -121,7 +124,7 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | **Target Runtime** | Node.js 20+ |
 | **Rust Version** | 1.75+ |
 | **Total Est. Time** | ~16-20 hours |
-| **Total Tests** | ~35 |
+| **Total Tests** | ~40 |
 
 ## File Structure (Final)
 

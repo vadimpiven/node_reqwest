@@ -3,12 +3,13 @@
 ## Problem/Purpose
 
 Define foundational types for the undici-compatible dispatcher including backpressure
-primitives that work with the new controller-based API.
+primitives, lifecycle management (close/destroy), and controller-based API.
 
 ## Solution
 
-Implement core HTTP data structures, `DispatchHandler` trait, and `RequestController`
-with atomic pause state and cancellation token.
+Implement core HTTP data structures, `DispatchHandler` trait, `RequestController`
+with atomic pause state and cancellation token, and `Lifecycle` trait for graceful
+shutdown with request tracking.
 
 ## Architecture
 
@@ -32,6 +33,7 @@ edition.workspace = true
 async-trait = { workspace = true }
 bytes = { workspace = true }
 futures = { workspace = true }
+parking_lot = { workspace = true }
 reqwest = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
@@ -190,16 +192,11 @@ impl PauseState {
     }
 
     /// Block until not paused. Returns immediately if not paused.
+    /// Uses wait_for for atomic check-and-wait to avoid race conditions.
     pub async fn wait_if_paused(&self) {
         let mut rx = self.receiver.clone();
-        // Wait until not paused - watch guarantees no missed state changes
-        while *rx.borrow() {
-            // changed() waits for the next state change
-            if rx.changed().await.is_err() {
-                // Sender dropped, return
-                return;
-            }
-        }
+        // wait_for handles the initial check + waiting atomically
+        let _ = rx.wait_for(|paused| !*paused).await;
     }
 
     pub fn pause(&self) {
@@ -271,6 +268,24 @@ impl RequestController {
     }
 }
 
+/// Trait for managing dispatcher lifecycle.
+///
+/// Implementations must track active requests and handle graceful/abrupt shutdown.
+#[async_trait]
+pub trait Lifecycle: Send + Sync {
+    /// Close gracefully: wait for all pending requests to complete.
+    async fn close(&self);
+
+    /// Destroy abruptly: cancel all pending requests with the given error.
+    async fn destroy(&self, error: CoreError);
+
+    /// Check if the dispatcher is closed.
+    fn is_closed(&self) -> bool;
+
+    /// Check if the dispatcher is destroyed.
+    fn is_destroyed(&self) -> bool;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -315,6 +330,16 @@ mod tests {
             .expect("timeout")
             .expect("join");
         assert!(result);
+    }
+
+    #[tokio::test]
+    async fn pause_state_wait_for_immediate_resume() {
+        // Test that wait_if_paused returns immediately when not paused
+        let state = PauseState::new();
+        // Should complete instantly
+        tokio::time::timeout(std::time::Duration::from_millis(10), state.wait_if_paused())
+            .await
+            .expect("should not timeout");
     }
 }
 ```
@@ -409,7 +434,8 @@ pub mod error;
 
 pub use agent::{Agent, AgentConfig};
 pub use dispatcher::{
-    DispatchHandler, DispatchOptions, Method, PauseState, RequestController, ResponseStart,
+    DispatchHandler, DispatchOptions, Lifecycle, Method, PauseState, RequestController,
+    ResponseStart,
 };
 pub use error::CoreError;
 ```

@@ -28,21 +28,25 @@ Agent::dispatch(options, handler) ─► RequestController
 ```rust
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! HTTP Agent wrapping reqwest::Client.
+//! HTTP Agent wrapping reqwest::Client with lifecycle management.
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+use async_trait::async_trait;
 use futures::StreamExt;
+use parking_lot::Mutex;
 use reqwest::Client;
 use tokio::select;
 use tokio::runtime::Handle;
+use tokio::sync::Notify;
 use tokio::time::timeout;
 use tokio_util::sync::CancellationToken;
 
 use crate::dispatcher::{
-    DispatchHandler, DispatchOptions, PauseState, RequestController, ResponseStart,
+    DispatchHandler, DispatchOptions, Lifecycle, PauseState, RequestController, ResponseStart,
 };
 use crate::error::CoreError;
 
@@ -54,9 +58,36 @@ pub struct AgentConfig {
     pub pool_idle_timeout: Option<Duration>,
 }
 
-/// HTTP Agent managing connection pooling.
+/// Internal state for tracking active requests.
+struct AgentState {
+    /// Cancellation tokens for all active requests (for destroy).
+    active_tokens: Mutex<Vec<CancellationToken>>,
+    /// Count of active requests.
+    active_count: AtomicUsize,
+    /// Notified when active_count reaches zero.
+    idle_notify: Notify,
+    /// Whether the agent is closed (no new requests).
+    closed: AtomicBool,
+    /// Whether the agent is destroyed.
+    destroyed: AtomicBool,
+}
+
+impl Default for AgentState {
+    fn default() -> Self {
+        Self {
+            active_tokens: Mutex::new(Vec::new()),
+            active_count: AtomicUsize::new(0),
+            idle_notify: Notify::new(),
+            closed: AtomicBool::new(false),
+            destroyed: AtomicBool::new(false),
+        }
+    }
+}
+
+/// HTTP Agent managing connection pooling and request lifecycle.
 pub struct Agent {
-    pub(crate) client: Client,
+    client: Client,
+    state: Arc<AgentState>,
 }
 
 impl Agent {
@@ -78,26 +109,61 @@ impl Agent {
             .build()
             .map_err(|e| CoreError::from_reqwest(e, false))?;
 
-        Ok(Self { client })
+        Ok(Self {
+            client,
+            state: Arc::new(AgentState::default()),
+        })
+    }
+
+    /// Get a reference to the underlying client.
+    pub fn client(&self) -> &Client {
+        &self.client
     }
 
     /// Dispatch a request, returning a controller for abort/pause.
+    ///
+    /// Returns `Err(CoreError::ClientClosed)` if the agent is closed.
+    /// Returns `Err(CoreError::ClientDestroyed)` if the agent is destroyed.
     pub fn dispatch(
         &self,
         runtime: Handle,
         options: DispatchOptions,
         handler: Arc<dyn DispatchHandler>,
-    ) -> RequestController {
+    ) -> Result<RequestController, CoreError> {
+        if self.state.destroyed.load(Ordering::Acquire) {
+            return Err(CoreError::ClientDestroyed);
+        }
+        if self.state.closed.load(Ordering::Acquire) {
+            return Err(CoreError::ClientClosed);
+        }
+
         let controller = RequestController::new();
         let client = self.client.clone();
         let token = controller.token();
         let pause_state = controller.pause_state();
+        let state = Arc::clone(&self.state);
+
+        // Track this request
+        state.active_count.fetch_add(1, Ordering::AcqRel);
+        state.active_tokens.lock().push(token.clone());
 
         runtime.spawn(async move {
-            Self::execute_request(client, options, handler, token, pause_state).await;
+            Self::execute_request(client, options, handler, token.clone(), pause_state).await;
+
+            // Cleanup: remove token and decrement count
+            {
+                let mut tokens = state.active_tokens.lock();
+                if let Some(pos) = tokens.iter().position(|t| t.is_cancelled() == token.is_cancelled()) {
+                    tokens.swap_remove(pos);
+                }
+            }
+            if state.active_count.fetch_sub(1, Ordering::AcqRel) == 1 {
+                // Was the last request
+                state.idle_notify.notify_waiters();
+            }
         });
 
-        controller
+        Ok(controller)
     }
 
     async fn execute_request(
@@ -110,19 +176,11 @@ impl Agent {
         let method = options.method.to_reqwest();
 
         // Build URL with query string if provided
+        let origin = options.origin.as_deref().unwrap_or_default();
         let url = if options.query.is_empty() {
-            format!(
-                "{}{}",
-                options.origin.as_deref().unwrap_or(""),
-                options.path
-            )
+            format!("{}{}", origin, options.path)
         } else {
-            format!(
-                "{}{}?{}",
-                options.origin.as_deref().unwrap_or(""),
-                options.path,
-                options.query
-            )
+            format!("{}{}?{}", origin, options.path, options.query)
         };
 
         let mut request = client.request(method, &url);
@@ -172,7 +230,7 @@ impl Agent {
             .fold(HashMap::new(), |mut acc, (k, v)| {
                 acc.entry(k.to_string())
                     .or_insert_with(Vec::new)
-                    .push(v.to_str().unwrap_or("").to_string());
+                    .push(v.to_str().unwrap_or_default().to_string());
                 acc
             });
 
@@ -182,7 +240,7 @@ impl Agent {
                 status_message: response
                     .status()
                     .canonical_reason()
-                    .unwrap_or("")
+                    .unwrap_or_default()
                     .to_string(),
                 headers,
             })
@@ -238,6 +296,51 @@ impl Agent {
     }
 }
 
+#[async_trait]
+impl Lifecycle for Agent {
+    async fn close(&self) {
+        // Mark as closed to reject new requests
+        self.state.closed.store(true, Ordering::Release);
+
+        // Wait for all active requests to complete
+        while self.state.active_count.load(Ordering::Acquire) > 0 {
+            self.state.idle_notify.notified().await;
+        }
+    }
+
+    async fn destroy(&self, error: CoreError) {
+        // Mark as destroyed
+        self.state.destroyed.store(true, Ordering::Release);
+        self.state.closed.store(true, Ordering::Release);
+
+        // Cancel all active requests
+        let tokens: Vec<CancellationToken> = {
+            let mut guard = self.state.active_tokens.lock();
+            std::mem::take(&mut *guard)
+        };
+
+        for token in tokens {
+            token.cancel();
+        }
+
+        // Wait for all to complete (they will error out quickly)
+        while self.state.active_count.load(Ordering::Acquire) > 0 {
+            self.state.idle_notify.notified().await;
+        }
+
+        // error parameter available for logging if needed
+        let _ = error;
+    }
+
+    fn is_closed(&self) -> bool {
+        self.state.closed.load(Ordering::Acquire)
+    }
+
+    fn is_destroyed(&self) -> bool {
+        self.state.destroyed.load(Ordering::Acquire)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -257,6 +360,13 @@ mod tests {
         };
         let agent = Agent::new(config);
         assert!(agent.is_ok());
+    }
+
+    #[test]
+    fn agent_lifecycle_states() {
+        let agent = Agent::new(AgentConfig::default()).expect("agent");
+        assert!(!agent.is_closed());
+        assert!(!agent.is_destroyed());
     }
 }
 ```
@@ -363,7 +473,7 @@ async fn test_get_200_ok() {
         body_timeout_ms: 0,
     };
 
-    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
     done.notified().await;
 
     let events = events.lock().await;
@@ -411,7 +521,7 @@ async fn test_abort_before_response() {
         body_timeout_ms: 0,
     };
 
-    let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
     controller.abort();
     done.notified().await;
 
@@ -444,7 +554,7 @@ async fn test_abort_during_streaming() {
         body_timeout_ms: 0,
     };
 
-    let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
     tokio::time::sleep(Duration::from_millis(50)).await;
     controller.abort();
     done.notified().await;
@@ -477,7 +587,7 @@ async fn test_pause_resume_backpressure() {
         body_timeout_ms: 0,
     };
 
-    let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
     controller.pause();
     assert!(controller.is_paused());
     tokio::time::sleep(Duration::from_millis(50)).await;
@@ -517,7 +627,7 @@ async fn test_timeout() {
         body_timeout_ms: 0,
     };
 
-    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
     done.notified().await;
 
     let events = events.lock().await;
@@ -551,7 +661,7 @@ async fn test_query_parameters() {
         body_timeout_ms: 0,
     };
 
-    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
     done.notified().await;
 
     let events = events.lock().await;
@@ -583,13 +693,73 @@ async fn test_per_request_headers_timeout() {
         body_timeout_ms: 0,
     };
 
-    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
     done.notified().await;
 
     let events = events.lock().await;
     assert_eq!(events.errors.len(), 1);
     // Headers timeout produces HeadersTimeout error
     assert!(events.errors[0].contains("Headers timeout") || events.errors[0].contains("timeout"));
+}
+
+#[tokio::test]
+async fn test_close_rejects_new_requests() {
+    use core::Lifecycle;
+
+    let agent = Agent::new(AgentConfig::default()).expect("agent");
+    agent.close().await;
+
+    let (handler, _events, _done) = MockHandler::new();
+    let opts = DispatchOptions {
+        origin: Some("http://example.com".to_string()),
+        path: "/".to_string(),
+        query: String::new(),
+        method: Method::Get,
+        headers: Default::default(),
+        body: None,
+        headers_timeout_ms: 0,
+        body_timeout_ms: 0,
+    };
+
+    let result = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_destroy_cancels_pending() {
+    use core::{CoreError, Lifecycle};
+
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/slow"))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(60)))
+        .mount(&server)
+        .await;
+
+    let agent = Arc::new(Agent::new(AgentConfig::default()).expect("agent"));
+    let (handler, events, done) = MockHandler::new();
+    let opts = DispatchOptions {
+        origin: Some(server.uri()),
+        path: "/slow".to_string(),
+        query: String::new(),
+        method: Method::Get,
+        headers: Default::default(),
+        body: None,
+        headers_timeout_ms: 0,
+        body_timeout_ms: 0,
+    };
+
+    // Start a request
+    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
+
+    // Destroy while request is pending
+    tokio::time::sleep(Duration::from_millis(10)).await;
+    agent.destroy(CoreError::ClientDestroyed).await;
+
+    // Request should have been aborted
+    done.notified().await;
+    let events = events.lock().await;
+    assert_eq!(events.errors.len(), 1);
 }
 
 // Note: Content-Length validation is handled internally by hyper/reqwest.
@@ -607,7 +777,7 @@ async fn test_per_request_headers_timeout() {
 | **Concurrency** | `tokio::spawn` for non-blocking dispatch |
 | **Backpressure** | `select!` + `wait_if_paused()` |
 | **Per-request timeout** | `tokio::time::timeout` wrapping send and body phases |
-| **Tests** | 6 integration tests |
+| **Tests** | 8 integration tests |
 
 ## File Structure
 

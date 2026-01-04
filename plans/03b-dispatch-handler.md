@@ -276,10 +276,11 @@ impl DispatchHandler for JsDispatchHandler {
 //! 4. Any pending oneshot::Receiver gets an error (sender dropped)
 //! 5. The JS stream read (if in progress) completes but response is discarded
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use bytes::Bytes;
 use neon::prelude::*;
+use parking_lot::Mutex;
 use tokio::sync::oneshot;
 
 /// Reads body chunks from JS ReadableStreamBYOBReader on demand.
@@ -327,7 +328,7 @@ impl JsBodyReader {
         // Request JS to read a chunk (non-blocking send to event queue)
         channel.send(move |mut cx| {
             // Get the reader, or signal EOF if already released
-            let reader_guard = reader_root.lock().unwrap();
+            let reader_guard = reader_root.lock();
             let Some(root) = reader_guard.as_ref() else {
                 let _ = tx.send(None);
                 return Ok(());
@@ -409,22 +410,22 @@ impl Drop for JsBodyReader {
     fn drop(&mut self) {
         // Cancel and release the JS reader reference on the JS thread
         // This ensures proper cleanup even if dropped from any thread
-        if let Ok(mut guard) = self.reader_root.lock() {
-            if let Some(root) = guard.take() {
-                let channel = self.channel.clone();
-                // Schedule cancel + release on JS event loop (non-blocking)
-                channel.send(move |mut cx| {
-                    let reader = root.to_inner(&mut cx);
-                    // Cancel the stream to release underlying resources
-                    // This is fire-and-forget - we don't wait for the promise
-                    let _ = reader
-                        .call_method_with(&cx, "cancel")
-                        .and_then(|m| m.exec(&mut cx));
-                    // Dropping Root releases the reference
-                    drop(root);
-                    Ok(())
-                });
-            }
+        // parking_lot::Mutex doesn't panic on lock
+        let mut guard = self.reader_root.lock();
+        if let Some(root) = guard.take() {
+            let channel = self.channel.clone();
+            // Schedule cancel + release on JS event loop (non-blocking)
+            channel.send(move |mut cx| {
+                let reader = root.to_inner(&mut cx);
+                // Cancel the stream to release underlying resources
+                // This is fire-and-forget - we don't wait for the promise
+                let _ = reader
+                    .call_method_with(&cx, "cancel")
+                    .and_then(|m| m.exec(&mut cx));
+                // Dropping Root releases the reference
+                drop(root);
+                Ok(())
+            });
         }
     }
 }

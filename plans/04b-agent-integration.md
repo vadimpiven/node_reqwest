@@ -109,7 +109,7 @@ import type {
 } from './addon-def.ts';
 import type { Agent as AgentDef, AgentOptions } from './agent-def.ts';
 import { DispatchControllerImpl } from './dispatch-controller.ts';
-import { createUndiciError, ClientClosedError, ClientDestroyedError, NotSupportedError, RequestAbortedError, ResponseError, type CoreErrorInfo } from './errors.ts';
+import { createUndiciError, ClientClosedError, ClientDestroyedError, InvalidArgumentError, NotSupportedError, RequestAbortedError, ResponseError, type CoreErrorInfo } from './errors.ts';
 
 // Import the actual addon - this will be the native binary
 import AddonImpl from '../index.node';
@@ -232,10 +232,42 @@ class AgentImpl extends Dispatcher {
     }
 
     // Call onRequestStart with empty context (no retries supported - all bodies are streams)
-    handler.onRequestStart?.(controller, {});
+    try {
+      handler.onRequestStart?.(controller, {});
+    } catch (err) {
+      handler.onResponseError?.(controller, err instanceof Error ? err : new Error(String(err)));
+      return true;
+    }
 
     if (controller.aborted) {
       handler.onResponseError?.(controller, controller.reason ?? new RequestAbortedError());
+      return true;
+    }
+
+    // Handle external abort signal
+    if (options.signal) {
+      const signal = options.signal as AbortSignal;
+      if (signal.aborted) {
+        const reason = signal.reason instanceof Error ? signal.reason : new RequestAbortedError();
+        handler.onResponseError?.(controller, reason);
+        return true;
+      }
+      signal.addEventListener('abort', () => {
+        const reason = signal.reason instanceof Error ? signal.reason : new RequestAbortedError();
+        controller.abort(reason);
+      }, { once: true });
+    }
+
+    // Validate origin
+    if (!options.origin) {
+      handler.onResponseError?.(controller, new InvalidArgumentError('origin is required'));
+      return true;
+    }
+    let origin: URL;
+    try {
+      origin = new URL(String(options.origin));
+    } catch {
+      handler.onResponseError?.(controller, new InvalidArgumentError('origin must be a valid URL'));
       return true;
     }
 
@@ -243,12 +275,11 @@ class AgentImpl extends Dispatcher {
       blocking: options.blocking ?? options.method !== 'HEAD',
       body: normalizeBody(options.body),
       bodyTimeout: options.bodyTimeout ?? 300000,
-      expectContinue: options.expectContinue ?? false,
       headers: normalizeHeaders(options.headers),
       headersTimeout: options.headersTimeout ?? 300000,
       idempotent: options.idempotent ?? (options.method === 'GET' || options.method === 'HEAD'),
       method: options.method,
-      origin: String(options.origin ?? ''),
+      origin: origin.origin,
       path: options.path,
       query: options.query
         ? Object.entries(options.query)
@@ -257,11 +288,9 @@ class AgentImpl extends Dispatcher {
         : '',
       reset: options.reset ?? false,
       throwOnError: options.throwOnError ?? false,
-      upgrade: null,
     };
 
-    const origin = options.origin ? new URL(String(options.origin)) : null;
-    const originKey = origin?.origin ?? null;
+    const originKey = origin.origin;
     // Track whether this request established a connection (for event emission)
     let requestConnected = false;
 
@@ -317,7 +346,7 @@ class AgentImpl extends Dispatcher {
           errorInfo.code === 'UND_ERR_SOCKET' ||
           errorInfo.code === 'UND_ERR_CONNECT_TIMEOUT';
 
-        if (origin && isConnectionError) {
+        if (isConnectionError) {
           if (requestConnected) {
             // Connection was established then lost -> 'disconnect'
             queueMicrotask(() => this.emit('disconnect', origin, [this], undiciError));
@@ -515,7 +544,7 @@ describe('E2E Dispatch Integration', () => {
             onResponseEnd: () => {
               const body = JSON.parse(Buffer.concat(chunks).toString());
               expect(body.q).toBe('hello world');
-              expect(body.special).toBe('value=1');
+              expect(body['special&key']).toBe('value=1');
               resolve();
             },
             onResponseError: (_controller, err) => {
@@ -567,6 +596,66 @@ describe('E2E Dispatch Integration', () => {
     }
   });
 
+  it('should stream request body', async () => {
+    const server = createServer((req, res) => {
+      let body = '';
+      req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      req.on('end', () => {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end(`Received ${body.length} bytes`);
+      });
+    });
+
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const port = (server.address() as { port: number }).port;
+
+    try {
+      const agent = new Agent();
+
+      // Create a readable stream with test data
+      const testData = 'A'.repeat(10 * 1024); // 10KB
+      const readable = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(testData));
+          controller.close();
+        }
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        const chunks: Buffer[] = [];
+
+        agent.dispatch(
+          {
+            origin: `http://localhost:${port}`,
+            path: '/upload',
+            method: 'POST',
+            body: readable,
+          },
+          {
+            onResponseStart: (_controller, code) => {
+              expect(code).toBe(200);
+            },
+            onResponseData: (_controller, chunk) => {
+              chunks.push(chunk);
+            },
+            onResponseEnd: () => {
+              const response = Buffer.concat(chunks).toString();
+              expect(response).toContain('10240 bytes');
+              resolve();
+            },
+            onResponseError: (_controller, err) => {
+              reject(err);
+            },
+          }
+        );
+      });
+
+      await agent.close();
+    } finally {
+      server.close();
+    }
+  });
+
 });
 ```
 
@@ -578,7 +667,7 @@ describe('E2E Dispatch Integration', () => {
 | **Events** | `connect` (per-origin), `disconnect`, `connectionError` |
 | **dispatch() return** | Always `true` (reqwest manages pooling) |
 | **throwOnError** | Emits `ResponseError` for 4xx/5xx when enabled |
-| **Tests** | 4 E2E integration tests |
+| **Tests** | 5 E2E integration tests |
 
 ## File Structure
 
