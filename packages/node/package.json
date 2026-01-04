@@ -68,7 +68,6 @@
     "@rollup/plugin-node-resolve": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "cargo-cp-artifact": "catalog:",
     "electron": "catalog:",
     "monocart-reporter": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
@@ -80,7 +79,7 @@
   "scripts": {
     "bump-version": "cargo run -p meta --bin npm_version -r --locked",
     "type-check": "pnpm exec tsc --noEmit",
-    "build:cargo": "pnpm exec cargo-cp-artifact -nc ./dist/napi-v8/node_reqwest.node -- cargo build --message-format=json",
+    "build:cargo": "cargo build",
     "build:ts": "vite build && pnpm pack --out package.tar.gz",
     "build": "pnpm run build:cargo && pnpm run build:ts",
     "test:vitest": "pnpm exec vitest run --coverage",

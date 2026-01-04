@@ -4,9 +4,17 @@
 
 use anyhow::Result;
 use meta::{SEMVER, cdylib_win_rc};
+use neon_build::Setup;
 
 fn main() -> Result<()> {
+    const FILENAME: &str = "node_reqwest.node";
+    Setup::options()
+        .output_dir("dist/napi-v8")
+        .output_file(FILENAME)
+        .setup();
+
     let version = SEMVER.unwrap_or_default();
-    cdylib_win_rc("Node Reqwest", &version, "node_reqwest.node")?;
+    cdylib_win_rc("Node Reqwest", &version, FILENAME)?;
+
     Ok(())
 }

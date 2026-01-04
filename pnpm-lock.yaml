@@ -45,9 +45,6 @@ catalogs:
     '@vitest/coverage-istanbul':
       specifier: ^4.0.16
       version: 4.0.16
-    cargo-cp-artifact:
-      specifier: ^0.1.9
-      version: 0.1.9
     electron:
       specifier: ^39.2.7
       version: 39.2.7
@@ -152,9 +149,6 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.0.16(vitest@4.0.16(@types/node@22.19.3))
-      cargo-cp-artifact:
-        specifier: 'catalog:'
-        version: 0.1.9
       electron:
         specifier: 'catalog:'
         version: 39.2.7
@@ -989,10 +983,6 @@ packages:
 
   caniuse-lite@1.0.30001761:
     resolution: {integrity: sha512-JF9ptu1vP2coz98+5051jZ4PwQgd2ni8A+gYSN7EA7dPKIMf0pDlSUxhdmVOaV3/fYK5uWBkgSXJaRLr4+3A6g==}
-
-  cargo-cp-artifact@0.1.9:
-    resolution: {integrity: sha512-6F+UYzTaGB+awsTXg0uSJA1/b/B3DDJzpKVRu0UmyI7DmNeaAl2RFHuTGIN6fEgpadRxoXGb7gbC1xo4C3IdyA==}
-    hasBin: true
 
   chai@6.2.2:
     resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
@@ -3098,8 +3088,6 @@ snapshots:
       responselike: 2.0.1
 
   caniuse-lite@1.0.30001761: {}
-
-  cargo-cp-artifact@0.1.9: {}
 
   chai@6.2.2: {}
 

@@ -15,6 +15,8 @@
     "aquasecurityofficial.trivy-vulnerability-scanner",
     "meta.pyrefly",
     "charliermarsh.ruff",
-    "ms-python.python"
+    "ms-python.python",
+    "redhat.vscode-yaml",
+    "timonwong.shellcheck"
   ]
 }
