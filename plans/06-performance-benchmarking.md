@@ -1,7 +1,9 @@
-# Benchmark Strategy
+# Performance Benchmarking
 
 Verify node_reqwest performance matches or exceeds undici across HTTP/1, HTTP/2, WebSocket,
 with/without proxy.
+
+**Prerequisites**: 01-05 complete - full dispatcher implementation tested and working
 
 ## Solution
 
