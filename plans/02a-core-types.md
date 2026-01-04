@@ -35,7 +35,6 @@ futures = { workspace = true }
 reqwest = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
-tokio-stream = { workspace = true }
 tokio-util = { workspace = true }
 
 [dev-dependencies]
@@ -103,6 +102,20 @@ pub struct DispatchOptions {
     pub body: Option<Bytes>,
     pub headers_timeout_ms: u64,
     pub body_timeout_ms: u64,
+}
+
+impl Default for DispatchOptions {
+    fn default() -> Self {
+        Self {
+            origin: None,
+            path: "/".to_string(),
+            method: Method::Get,
+            headers: HashMap::new(),
+            body: None,
+            headers_timeout_ms: 300_000, // 5 minutes, matches undici
+            body_timeout_ms: 300_000,    // 5 minutes, matches undici
+        }
+    }
 }
 
 /// Response start metadata.

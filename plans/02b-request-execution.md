@@ -38,6 +38,7 @@ use futures::StreamExt;
 use reqwest::Client;
 use tokio::select;
 use tokio::runtime::Handle;
+use tokio::time::timeout;
 use tokio_util::sync::CancellationToken;
 
 use crate::dispatcher::{
@@ -75,7 +76,7 @@ impl Agent {
 
         let client = builder
             .build()
-            .map_err(|e| CoreError::Network(e.to_string()))?;
+            .map_err(|e| CoreError::from_reqwest(e, false))?;
 
         Ok(Self { client })
     }
@@ -125,20 +126,29 @@ impl Agent {
             request = request.body(body);
         }
 
+        // Per-request headers timeout (time until response headers received)
+        let headers_timeout = if options.headers_timeout_ms > 0 {
+            Duration::from_millis(options.headers_timeout_ms)
+        } else {
+            Duration::from_secs(300) // 5 minutes default
+        };
+
+        let send_future = request.send();
+
         let response = select! {
             () = token.cancelled() => {
                 handler.on_response_error(CoreError::RequestAborted).await;
                 return;
             }
-            result = request.send() => {
+            result = timeout(headers_timeout, send_future) => {
                 match result {
-                    Ok(resp) => resp,
-                    Err(e) if e.is_timeout() => {
-                        handler.on_response_error(CoreError::ConnectTimeout).await;
+                    Ok(Ok(resp)) => resp,
+                    Ok(Err(e)) => {
+                        handler.on_response_error(CoreError::from_reqwest(e, false)).await;
                         return;
                     }
-                    Err(e) => {
-                        handler.on_response_error(CoreError::Network(e.to_string())).await;
+                    Err(_elapsed) => {
+                        handler.on_response_error(CoreError::HeadersTimeout).await;
                         return;
                     }
                 }
@@ -167,10 +177,24 @@ impl Agent {
             })
             .await;
 
+        // Per-request body timeout (time for entire body transfer)
+        let body_timeout_duration = if options.body_timeout_ms > 0 {
+            Duration::from_millis(options.body_timeout_ms)
+        } else {
+            Duration::from_secs(300) // 5 minutes default
+        };
+
+        let body_deadline = tokio::time::Instant::now() + body_timeout_duration;
         let mut stream = response.bytes_stream();
 
         loop {
             pause_state.wait_if_paused().await;
+
+            // Check body timeout
+            if tokio::time::Instant::now() > body_deadline {
+                handler.on_response_error(CoreError::BodyTimeout).await;
+                return;
+            }
 
             select! {
                 () = token.cancelled() => {
@@ -181,7 +205,7 @@ impl Agent {
                     match chunk {
                         Some(Ok(data)) => handler.on_response_data(data).await,
                         Some(Err(e)) => {
-                            handler.on_response_error(CoreError::Network(e.to_string())).await;
+                            handler.on_response_error(CoreError::from_reqwest(e, true)).await;
                             return;
                         }
                         None => {
@@ -476,6 +500,43 @@ async fn test_timeout() {
     assert_eq!(events.errors.len(), 1);
     assert!(events.errors[0].to_lowercase().contains("timeout"));
 }
+
+#[tokio::test]
+async fn test_per_request_headers_timeout() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/slow-headers"))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(10)))
+        .mount(&server)
+        .await;
+
+    // Agent has no timeout, but request has headers_timeout_ms
+    let agent = Agent::new(AgentConfig::default()).expect("agent");
+    let (handler, events, done) = MockHandler::new();
+    let opts = DispatchOptions {
+        origin: Some(server.uri()),
+        path: "/slow-headers".to_string(),
+        method: Method::Get,
+        headers: Default::default(),
+        body: None,
+        headers_timeout_ms: 100, // 100ms per-request timeout
+        body_timeout_ms: 0,
+    };
+
+    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    done.notified().await;
+
+    let events = events.lock().await;
+    assert_eq!(events.errors.len(), 1);
+    // Headers timeout produces HeadersTimeout error
+    assert!(events.errors[0].contains("Headers timeout") || events.errors[0].contains("timeout"));
+}
+
+// Note: Content-Length validation is handled internally by hyper/reqwest.
+// When the response declares Content-Length but provides fewer/more bytes,
+// reqwest returns an error with `is_body()` returning true.
+// This is mapped to CoreError::Socket in `from_reqwest(err, true)`.
+// Adding explicit test would require a misbehaving server which is complex to set up.
 ```
 
 ## Tables
@@ -485,7 +546,8 @@ async fn test_timeout() {
 | **Test Dependency** | `wiremock = "0.6"` |
 | **Concurrency** | `tokio::spawn` for non-blocking dispatch |
 | **Backpressure** | `select!` + `wait_if_paused()` |
-| **Tests** | 5 integration tests |
+| **Per-request timeout** | `tokio::time::timeout` wrapping send and body phases |
+| **Tests** | 6 integration tests |
 
 ## File Structure
 

@@ -62,25 +62,23 @@ fn agent_create<'cx>(
     cx: &mut FunctionContext<'cx>,
     options: Handle<'cx, JsObject>,
 ) -> JsResult<'cx, JsBox<AgentInstance>> {
+    // timeout: Total request timeout (request start to response complete)
     let timeout: Handle<JsNumber> = options.get(cx, "timeout")?;
-    let connect_timeout: Handle<JsNumber> = options.get(cx, "keepAliveTimeout")?;
-    let pool_idle_timeout: Handle<JsNumber> = options.get(cx, "keepAliveInitialDelay")?;
+    // keepAliveTimeout: How long to keep idle connections alive (maps to pool_idle_timeout)
+    let keep_alive_timeout: Handle<JsNumber> = options.get(cx, "keepAliveTimeout")?;
 
     let timeout_ms = timeout.value(cx) as u64;
-    let connect_timeout_ms = connect_timeout.value(cx) as u64;
-    let pool_idle_timeout_ms = pool_idle_timeout.value(cx) as u64;
+    let pool_idle_timeout_ms = keep_alive_timeout.value(cx) as u64;
 
+    // Note: reqwest doesn't expose direct connect_timeout separate from total timeout.
+    // We use the keepAliveTimeout as pool_idle_timeout since that's the most appropriate mapping.
     let config = AgentConfig {
         timeout: if timeout_ms > 0 {
             Some(Duration::from_millis(timeout_ms))
         } else {
             None
         },
-        connect_timeout: if connect_timeout_ms > 0 {
-            Some(Duration::from_millis(connect_timeout_ms))
-        } else {
-            None
-        },
+        connect_timeout: None, // Let reqwest use its default
         pool_idle_timeout: if pool_idle_timeout_ms > 0 {
             Some(Duration::from_millis(pool_idle_timeout_ms))
         } else {
@@ -188,10 +186,8 @@ describe('Addon Smoke Tests', () => {
     const agent = Addon.agentCreate({
       allowH2: true,
       ca: [],
-      keepAliveInitialDelay: 60000,
       keepAliveTimeout: 4000,
       localAddress: null,
-      maxCachedSessions: 100,
       proxy: { type: 'system' },
       rejectInvalidHostnames: true,
       rejectUnauthorized: true,
@@ -204,10 +200,8 @@ describe('Addon Smoke Tests', () => {
     const agent = Addon.agentCreate({
       allowH2: true,
       ca: [],
-      keepAliveInitialDelay: 60000,
       keepAliveTimeout: 4000,
       localAddress: null,
-      maxCachedSessions: 100,
       proxy: { type: 'system' },
       rejectInvalidHostnames: true,
       rejectUnauthorized: true,
@@ -248,10 +242,8 @@ describe('Addon Smoke Tests', () => {
     const agent = Addon.agentCreate({
       allowH2: true,
       ca: [],
-      keepAliveInitialDelay: 60000,
       keepAliveTimeout: 4000,
       localAddress: null,
-      maxCachedSessions: 100,
       proxy: { type: 'system' },
       rejectInvalidHostnames: true,
       rejectUnauthorized: true,

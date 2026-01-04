@@ -34,6 +34,7 @@ name = "core"
 edition.workspace = true
 
 [dependencies]
+reqwest = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
@@ -50,6 +51,16 @@ pretty_assertions = { workspace = true }
 use thiserror::Error;
 
 /// Core error type with undici-compatible metadata.
+///
+/// Maps to undici error types as closely as possible. Reqwest error categories are mapped:
+/// - `is_timeout()` → `ConnectTimeout` or `BodyTimeout` depending on phase
+/// - `is_connect()` → `Socket` with connect-specific message
+/// - `is_body()` → `BodyTimeout` or `Socket` depending on cause
+/// - `is_decode()` → `Socket` (body parsing failure)
+/// - `is_redirect()` → `Socket` (redirect loop/failure)
+/// - `is_status()` → `ResponseError`
+/// - `is_builder()` → `InvalidArgument`
+/// - `is_upgrade()` → `NotSupported` (upgrades deferred)
 #[derive(Debug, Clone, Error)]
 pub enum CoreError {
     #[error("Request aborted")]
@@ -63,6 +74,9 @@ pub enum CoreError {
 
     #[error("Body timeout")]
     BodyTimeout,
+
+    #[error("Headers overflow")]
+    HeadersOverflow,
 
     #[error("Socket error: {0}")]
     Socket(String),
@@ -90,9 +104,6 @@ pub enum CoreError {
 
     #[error("{message}")]
     ResponseError { status_code: u16, message: String },
-
-    #[error("Network error: {0}")]
-    Network(String),
 }
 
 impl CoreError {
@@ -103,7 +114,8 @@ impl CoreError {
             Self::ConnectTimeout => "UND_ERR_CONNECT_TIMEOUT",
             Self::HeadersTimeout => "UND_ERR_HEADERS_TIMEOUT",
             Self::BodyTimeout => "UND_ERR_BODY_TIMEOUT",
-            Self::Socket(_) | Self::Network(_) => "UND_ERR_SOCKET",
+            Self::HeadersOverflow => "UND_ERR_HEADERS_OVERFLOW",
+            Self::Socket(_) => "UND_ERR_SOCKET",
             Self::InvalidArgument(_) => "UND_ERR_INVALID_ARG",
             Self::ClientDestroyed => "UND_ERR_DESTROYED",
             Self::ClientClosed => "UND_ERR_CLOSED",
@@ -122,7 +134,8 @@ impl CoreError {
             Self::ConnectTimeout => "ConnectTimeoutError",
             Self::HeadersTimeout => "HeadersTimeoutError",
             Self::BodyTimeout => "BodyTimeoutError",
-            Self::Socket(_) | Self::Network(_) => "SocketError",
+            Self::HeadersOverflow => "HeadersOverflowError",
+            Self::Socket(_) => "SocketError",
             Self::InvalidArgument(_) => "InvalidArgumentError",
             Self::ClientDestroyed => "ClientDestroyedError",
             Self::ClientClosed => "ClientClosedError",
@@ -141,6 +154,71 @@ impl CoreError {
             _ => None,
         }
     }
+
+    /// Create CoreError from a reqwest::Error, mapping to the closest undici error type.
+    ///
+    /// Mapping logic:
+    /// - Timeout errors → ConnectTimeout (connect phase) or BodyTimeout (body phase)
+    /// - Connect errors → Socket with "connect" in message
+    /// - Body errors → BodyTimeout or Socket
+    /// - Decode errors → Socket (parsing failure)
+    /// - Redirect errors → Socket (redirect policy violation)
+    /// - Status errors → ResponseError
+    /// - Builder errors → InvalidArgument
+    /// - Upgrade errors → NotSupported
+    pub fn from_reqwest(err: reqwest::Error, in_body_phase: bool) -> Self {
+        // Check for timeout first (can be nested)
+        if err.is_timeout() {
+            return if in_body_phase {
+                Self::BodyTimeout
+            } else {
+                Self::ConnectTimeout
+            };
+        }
+
+        // Connect-specific errors
+        if err.is_connect() {
+            return Self::Socket(format!("Connect error: {err}"));
+        }
+
+        // Status code errors
+        if err.is_status() {
+            if let Some(status) = err.status() {
+                return Self::ResponseError {
+                    status_code: status.as_u16(),
+                    message: err.to_string(),
+                };
+            }
+        }
+
+        // Body errors
+        if err.is_body() {
+            return Self::Socket(format!("Body error: {err}"));
+        }
+
+        // Decode errors
+        if err.is_decode() {
+            return Self::Socket(format!("Decode error: {err}"));
+        }
+
+        // Redirect errors
+        if err.is_redirect() {
+            return Self::Socket(format!("Redirect error: {err}"));
+        }
+
+        // Builder errors (configuration)
+        if err.is_builder() {
+            return Self::InvalidArgument(err.to_string());
+        }
+
+        // Upgrade errors (connection upgrade failed)
+        if err.is_upgrade() {
+            return Self::NotSupported(format!("Upgrade: {err}"));
+        }
+
+        // Fallback: general socket error
+        Self::Socket(err.to_string())
+    }
 }
 
 #[cfg(test)]
@@ -152,7 +230,8 @@ mod tests {
     fn error_codes_match_undici() {
         assert_eq!(CoreError::RequestAborted.error_code(), "UND_ERR_ABORTED");
         assert_eq!(CoreError::ConnectTimeout.error_code(), "UND_ERR_CONNECT_TIMEOUT");
-        assert_eq!(CoreError::Network("test".into()).error_code(), "UND_ERR_SOCKET");
+        assert_eq!(CoreError::Socket("test".into()).error_code(), "UND_ERR_SOCKET");
+        assert_eq!(CoreError::HeadersOverflow.error_code(), "UND_ERR_HEADERS_OVERFLOW");
     }
 
     #[test]
@@ -281,6 +360,23 @@ export class BodyTimeoutError extends UndiciError {
   }
 
   get [kBodyTimeoutError](): boolean {
+    return true;
+  }
+}
+
+const kHeadersOverflowError = Symbol.for('undici.error.UND_ERR_HEADERS_OVERFLOW');
+
+export class HeadersOverflowError extends UndiciError {
+  constructor(message = 'Headers overflow') {
+    super(message, 'UND_ERR_HEADERS_OVERFLOW');
+    this.name = 'HeadersOverflowError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kHeadersOverflowError] === true;
+  }
+
+  get [kHeadersOverflowError](): boolean {
     return true;
   }
 }
@@ -467,6 +563,8 @@ export function createUndiciError(errorInfo: CoreErrorInfo): Error {
       return new HeadersTimeoutError(message);
     case 'UND_ERR_BODY_TIMEOUT':
       return new BodyTimeoutError(message);
+    case 'UND_ERR_HEADERS_OVERFLOW':
+      return new HeadersOverflowError(message);
     case 'UND_ERR_SOCKET':
       return new SocketError(message);
     case 'UND_ERR_DESTROYED':
@@ -500,6 +598,7 @@ import {
   UndiciError,
   RequestAbortedError,
   ConnectTimeoutError,
+  HeadersOverflowError,
   SocketError,
   ResponseError,
   createUndiciError,
@@ -573,10 +672,10 @@ describe('Undici Error Classes', () => {
 
 | Metric | Value |
 | :--- | :--- |
-| **Rust Dependency** | `thiserror = "2.0"` |
-| **Error Classes** | 14 (13 specific + 1 base) |
+| **Rust Dependency** | `thiserror = "2.0"`, `reqwest` (for `from_reqwest`) |
+| **Error Classes** | 15 (14 specific + 1 base) |
 | **Instance Check** | `Symbol.for('undici.error.*')` |
-| **Tests** | 3 Rust + 6 TypeScript |
+| **Tests** | 4 Rust + 6 TypeScript |
 
 ## File Structure
 

@@ -29,12 +29,15 @@ Rust Core (reqwest / tokio)
 | Handler API | New API only (`controller.pause()`) | Undici wraps legacy handlers |
 | WebSocket/Upgrade | Deferred (not in MVP) | Will be added later |
 | Tokio runtime | Neon's global shared runtime | Single runtime for all Agents |
-| Error types | Unified `CoreError` | No duplication |
+| Error types | Unified `CoreError` with `from_reqwest()` | Maps all reqwest errors to undici |
 | Header processing | Pass-through, no logging | Security (no leaking) |
 | Buffer copying | One copy per chunk | Electron compatibility |
 | Context parameter | Empty `{}` in `onRequestStart` | No retries (stream bodies) |
 | Response headers | `Record<string, string \| string[]>` | Match undici format exactly |
 | Request ordering | No pipelining, no retries | All bodies are streams |
+| Content-Length | Hyper validates internally | Reqwest/hyper detect mismatches |
+| Dispatcher events | `connect`/`disconnect` from JS | Emitted on first success/error |
+| Unsupported options | `connections`, `pipelining` omitted | Reqwest manages internally |
 
 ## Implementation Sequence
 

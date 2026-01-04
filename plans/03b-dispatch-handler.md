@@ -182,32 +182,43 @@ impl DispatchHandler for JsDispatchHandler {
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Request body streaming from JS ReadableStreamBYOBReader.
+//!
+//! Backpressure handling:
+//! - Uses mpsc::channel with bounded capacity (4 chunks = ~256KB max buffer)
+//! - When channel is full, the reader pauses until Rust consumes chunks
+//! - This prevents unbounded memory growth during slow uploads
+//!
+//! Note: blocking_send() is used in JS callback context which is synchronous.
+//! The bounded channel provides backpressure by blocking when full.
 
 use bytes::Bytes;
 use neon::prelude::*;
-use std::sync::Arc;
 use tokio::sync::mpsc;
 
-/// Reads body chunks from JS via channel.
+/// Reads body chunks from JS via bounded channel (backpressure via channel capacity).
 pub struct JsBodyReader {
     receiver: mpsc::Receiver<Option<Bytes>>,
 }
 
 impl JsBodyReader {
     /// Create a new body reader that pulls from a JS ReadableStreamBYOBReader.
+    ///
+    /// The bounded channel (capacity 4) provides backpressure:
+    /// - Each chunk is up to 64KB, so max 256KB buffered
+    /// - When Rust is slower than JS, blocking_send blocks the JS read loop
     pub fn new(
         cx: &mut FunctionContext,
         reader: Handle<JsObject>,
     ) -> NeonResult<(Self, mpsc::Sender<Option<Bytes>>)> {
+        // Bounded channel for backpressure (4 chunks * 64KB = 256KB max buffer)
         let (tx, rx) = mpsc::channel(4);
         let channel = cx.channel();
         let reader_root = reader.root(cx);
 
-        // Start reading loop in JS context
+        // Start the read loop in JS context
         let tx_clone = tx.clone();
         channel.send(move |mut cx| {
-            start_read_loop(&mut cx, reader_root, tx_clone)?;
-            Ok(())
+            continue_reading(&mut cx, reader_root, tx_clone)
         });
 
         Ok((Self { receiver: rx }, tx))
@@ -219,65 +230,63 @@ impl JsBodyReader {
     }
 }
 
-fn start_read_loop(
+/// Iteratively read from JS reader (avoids deep recursion).
+/// Called from JS context (not async Rust).
+fn continue_reading(
     cx: &mut Cx,
     reader_root: Root<JsObject>,
     tx: mpsc::Sender<Option<Bytes>>,
 ) -> NeonResult<()> {
     let reader = reader_root.to_inner(cx);
+    let buffer = JsArrayBuffer::new(cx, 64 * 1024)?; // 64KB chunks
+    let uint8 = JsTypedArray::<u8>::from_buffer(cx, buffer)?;
+
+    let read_promise: Handle<JsPromise> = reader
+        .call_method_with(cx, "read")?
+        .arg(uint8)
+        .apply(cx)?;
+
     let channel = cx.channel();
+    let reader_root_clone = reader_root.clone(cx);
 
-    // Create recursive read function
-    let read_next = JsFunction::new(cx, {
-        let tx = tx.clone();
-        let reader_root = reader_root.clone(cx);
-        move |mut cx| {
-            let reader = reader_root.to_inner(&mut cx);
-            let buffer = JsArrayBuffer::new(&mut cx, 64 * 1024)?; // 64KB chunks
-            let uint8 = JsTypedArray::<u8>::from_buffer(&mut cx, buffer)?;
+    read_promise.to_future(cx, move |mut cx, result| {
+        match result {
+            Ok(value) => {
+                let obj = value.downcast_or_throw::<JsObject, _>(&mut cx)?;
+                let done: Handle<JsBoolean> = obj.get(&mut cx, "done")?;
 
-            let read_promise: Handle<JsPromise> = reader
-                .call_method_with(&mut cx, "read")?
-                .arg(uint8)
-                .apply(&mut cx)?;
+                if done.value(&mut cx) {
+                    // EOF - signal end to Rust
+                    // Note: blocking_send may block if buffer is full, providing backpressure
+                    let _ = tx.blocking_send(None);
+                } else {
+                    let view: Handle<JsTypedArray<u8>> = obj.get(&mut cx, "value")?;
+                    let data = view.as_slice(&cx).to_vec();
 
-            let tx = tx.clone();
-            let channel = cx.channel();
-            let reader_root = reader_root.clone(&mut cx);
-
-            read_promise.to_future(&mut cx, move |mut cx, result| {
-                match result {
-                    Ok(value) => {
-                        let obj = value.downcast_or_throw::<JsObject, _>(&mut cx)?;
-                        let done: Handle<JsBoolean> = obj.get(&mut cx, "done")?;
-
-                        if done.value(&mut cx) {
-                            // EOF
-                            let _ = tx.blocking_send(None);
-                        } else {
-                            let view: Handle<JsTypedArray<u8>> = obj.get(&mut cx, "value")?;
-                            let data = view.as_slice(&cx).to_vec();
-                            let _ = tx.blocking_send(Some(Bytes::from(data)));
-
-                            // Continue reading
+                    // blocking_send blocks if channel is full - this is the backpressure!
+                    // When Rust is slow to consume, this naturally slows JS reading.
+                    match tx.blocking_send(Some(Bytes::from(data))) {
+                        Ok(()) => {
+                            // Continue reading - schedule next iteration
                             channel.send(move |mut cx| {
-                                start_read_loop(&mut cx, reader_root, tx)?;
-                                Ok(())
+                                continue_reading(&mut cx, reader_root_clone, tx)
                             });
                         }
-                        Ok(())
-                    }
-                    Err(e) => {
-                        let _ = tx.blocking_send(None);
-                        Err(e)
+                        Err(_) => {
+                            // Channel closed - Rust side cancelled the request
+                            // Do not continue reading
+                        }
                     }
                 }
-            })
+                Ok(())
+            }
+            Err(e) => {
+                // JS read error - signal EOF to Rust
+                let _ = tx.blocking_send(None);
+                Err(e)
+            }
         }
-    })?;
-
-    read_next.call_with(cx).exec(cx)?;
-    Ok(())
+    })
 }
 
 /// Convert JsBodyReader to bytes::Bytes stream for reqwest.

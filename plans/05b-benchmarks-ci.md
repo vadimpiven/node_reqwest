@@ -29,7 +29,8 @@ GitHub Action
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 import { Pool as UndiciPool } from 'undici';
-import { Agent as NodeReqwestAgent } from '../export/agent.js';
+// Note: This imports from the built output. Ensure `pnpm build` is run first.
+import { Agent as NodeReqwestAgent } from '../dist/export/agent.js';
 import { cronometro } from 'cronometro';
 import { makeParallelRequests, printResults } from './_util/index.js';
 import { config } from './config.js';
@@ -136,7 +137,8 @@ cronometro(
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 import { Client as UndiciClient } from 'undici';
-import { Agent as NodeReqwestAgent } from '../export/agent.js';
+// Note: This imports from the built output. Ensure `pnpm build` is run first.
+import { Agent as NodeReqwestAgent } from '../dist/export/agent.js';
 import { cronometro } from 'cronometro';
 import { makeParallelRequests, printResults } from './_util/index.js';
 import { config } from './config.js';

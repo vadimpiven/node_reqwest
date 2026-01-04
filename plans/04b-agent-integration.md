@@ -26,7 +26,7 @@ User
 
 ### packages/node/export/agent-def.ts (Update)
 
-Add `connections` and `pipelining` to `ConnectionOptions`:
+Remove unsupported fields (reqwest doesn't support direct connection/pipelining configuration):
 
 ```typescript
 // SPDX-License-Identifier: Apache-2.0 OR MIT
@@ -36,17 +36,19 @@ import type * as undici from 'undici';
 
 /**
  * Network connection and TLS settings.
+ *
+ * Note: Some undici options are not supported by reqwest:
+ * - 'connections' - reqwest manages pool size internally
+ * - 'pipelining' - reqwest uses HTTP/2 multiplexing instead
+ * - 'maxCachedSessions' - reqwest manages TLS sessions internally
+ * - 'keepAliveInitialDelay' - not configurable in reqwest
  */
 export type ConnectionOptions = Pick<
-  undici.buildConnector.BuildOptions & undici.Client.Options & undici.Pool.Options & TlsConnectionOptions,
+  undici.buildConnector.BuildOptions & undici.Client.Options & TlsConnectionOptions,
   | 'allowH2'
   | 'ca'
-  | 'connections'
-  | 'keepAliveInitialDelay'
   | 'keepAliveTimeout'
   | 'localAddress'
-  | 'maxCachedSessions'
-  | 'pipelining'
   | 'rejectUnauthorized'
   | 'timeout'
 > & {
@@ -178,19 +180,17 @@ class AgentImpl extends Dispatcher {
   #needDrain = false;
   readonly #maxConcurrent: number;
   #lastOrigin: URL | null = null;
+  #hasConnected = false;
 
   constructor(options?: AgentOptions) {
     super();
-    this.#maxConcurrent = options?.connection?.connections ?? 100;
+    // Note: 'connections' is not supported by reqwest, using reasonable default for drain logic
+    this.#maxConcurrent = 100;
     const creationOptions: AgentCreationOptions = {
       allowH2: options?.connection?.allowH2 ?? true,
       ca: normalizePem(options?.connection?.ca),
-      connections: options?.connection?.connections ?? 100,
-      keepAliveInitialDelay: options?.connection?.keepAliveInitialDelay ?? 60000,
       keepAliveTimeout: options?.connection?.keepAliveTimeout ?? 4000,
       localAddress: options?.connection?.localAddress ?? null,
-      maxCachedSessions: options?.connection?.maxCachedSessions ?? 100,
-      pipelining: options?.connection?.pipelining ?? 1,
       proxy: options?.proxy
         ? typeof options.proxy === 'string'
           ? { type: options.proxy }
@@ -246,7 +246,12 @@ class AgentImpl extends Dispatcher {
       method: options.method,
       origin: String(options.origin ?? ''),
       path: options.path,
-      query: new URLSearchParams(options.query ?? '').toString(),
+      // Fix: options.query is Record<string, any>, not string
+      query: options.query
+        ? new URLSearchParams(
+            Object.entries(options.query).map(([k, v]) => [k, String(v)])
+          ).toString()
+        : '',
       reset: options.reset ?? false,
       throwOnError: options.throwOnError ?? false,
       upgrade: null, // Upgrade deferred - not in MVP
@@ -259,6 +264,11 @@ class AgentImpl extends Dispatcher {
         statusMessage: string
       ) => {
         if (controller.aborted) return;
+        // Emit 'connect' event on first successful connection
+        if (!this.#hasConnected && this.#lastOrigin) {
+          this.#hasConnected = true;
+          queueMicrotask(() => this.emit('connect', this.#lastOrigin, [this]));
+        }
         handler.onResponseStart?.(controller, statusCode, headers, statusMessage);
       },
       onResponseData: (chunk: Buffer) => {
@@ -273,6 +283,10 @@ class AgentImpl extends Dispatcher {
       onResponseError: (errorInfo: CoreErrorInfo) => {
         this.#onRequestComplete();
         const undiciError = createUndiciError(errorInfo);
+        // Emit 'disconnect' event on connection errors
+        if (this.#lastOrigin && (errorInfo.code === 'UND_ERR_SOCKET' || errorInfo.code === 'UND_ERR_CONNECT_TIMEOUT')) {
+          queueMicrotask(() => this.emit('disconnect', this.#lastOrigin, [this], undiciError));
+        }
         handler.onResponseError?.(controller, controller.reason ?? undiciError);
       },
     };
