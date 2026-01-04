@@ -113,6 +113,19 @@ import http from 'node:http';
 const responseBody = Buffer.from('Hello, World!');
 
 const server = http.createServer((req, res) => {
+  if (req.method === 'POST') {
+    // Consume request body and respond
+    req.on('data', () => {});
+    req.on('end', () => {
+      res.writeHead(200, {
+        'Content-Type': 'text/plain',
+        'Content-Length': 2,
+      });
+      res.end('OK');
+    });
+    return;
+  }
+
   res.writeHead(200, {
     'Content-Type': 'text/plain',
     'Content-Length': responseBody.length,
@@ -157,6 +170,19 @@ if (existsSync(join(fixturesDir, 'key.pem'))) {
 const responseBody = Buffer.from('Hello, World!');
 
 const server = http2.createSecureServer({ key, cert }, (req, res) => {
+  if (req.method === 'POST') {
+    // Consume request body and respond
+    req.on('data', () => {});
+    req.on('end', () => {
+      res.writeHead(200, {
+        'content-type': 'text/plain',
+        'content-length': 2,
+      });
+      res.end('OK');
+    });
+    return;
+  }
+
   res.writeHead(200, {
     'content-type': 'text/plain',
     'content-length': responseBody.length,
@@ -210,8 +236,10 @@ fi
     "bench:server:http2": "node benchmarks/servers/http2-server.js",
     "bench:servers": "concurrently \"pnpm run bench:server:http1\" \"pnpm run bench:server:http2\"",
     "bench:http1": "node benchmarks/http1.js",
+    "bench:http1:post": "node benchmarks/http1-post.js",
     "bench:http2": "node benchmarks/http2.js",
-    "bench:all": "pnpm run bench:http1 && pnpm run bench:http2"
+    "bench:http2:post": "node benchmarks/http2-post.js",
+    "bench:all": "pnpm run bench:http1 && pnpm run bench:http1:post && pnpm run bench:http2 && pnpm run bench:http2:post"
   }
 }
 ```
