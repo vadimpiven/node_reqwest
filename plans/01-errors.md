@@ -1,0 +1,594 @@
+# Error Types (Chunk 01)
+
+## Problem/Purpose
+
+Establish error types that maintain parity with undici's error structure, usable across
+Rust core, FFI boundary, and TypeScript layers.
+
+## Solution
+
+Implement `CoreError` enum in Rust with undici metadata, and corresponding TypeScript
+error classes using `Symbol.for` for cross-library `instanceof` checks.
+
+## Architecture
+
+```text
+Rust CoreError ─┬─► error_code()   ─► "UND_ERR_*"
+                ├─► error_name()   ─► "*Error"
+                └─► status_code()  ─► Option<u16>
+                         │
+                         ▼
+              FFI (CoreErrorInfo struct)
+                         │
+                         ▼
+              createUndiciError(info) ─► JavaScript Error subclass
+```
+
+## Implementation
+
+### packages/core/Cargo.toml
+
+```toml
+[package]
+name = "core"
+edition.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+```
+
+### packages/core/src/error.rs
+
+```rust
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+//! Error types with undici compatibility metadata.
+
+use thiserror::Error;
+
+/// Core error type with undici-compatible metadata.
+#[derive(Debug, Clone, Error)]
+pub enum CoreError {
+    #[error("Request aborted")]
+    RequestAborted,
+
+    #[error("Connect timeout")]
+    ConnectTimeout,
+
+    #[error("Headers timeout")]
+    HeadersTimeout,
+
+    #[error("Body timeout")]
+    BodyTimeout,
+
+    #[error("Socket error: {0}")]
+    Socket(String),
+
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
+
+    #[error("The client is destroyed")]
+    ClientDestroyed,
+
+    #[error("The client is closed")]
+    ClientClosed,
+
+    #[error("Request body length does not match content-length header")]
+    RequestContentLengthMismatch,
+
+    #[error("Response body length does not match content-length header")]
+    ResponseContentLengthMismatch,
+
+    #[error("Response content exceeded max size")]
+    ResponseExceededMaxSize,
+
+    #[error("Not supported: {0}")]
+    NotSupported(String),
+
+    #[error("{message}")]
+    ResponseError { status_code: u16, message: String },
+
+    #[error("Network error: {0}")]
+    Network(String),
+}
+
+impl CoreError {
+    /// Returns the undici error code (e.g., "UND_ERR_ABORTED").
+    pub fn error_code(&self) -> &'static str {
+        match self {
+            Self::RequestAborted => "UND_ERR_ABORTED",
+            Self::ConnectTimeout => "UND_ERR_CONNECT_TIMEOUT",
+            Self::HeadersTimeout => "UND_ERR_HEADERS_TIMEOUT",
+            Self::BodyTimeout => "UND_ERR_BODY_TIMEOUT",
+            Self::Socket(_) | Self::Network(_) => "UND_ERR_SOCKET",
+            Self::InvalidArgument(_) => "UND_ERR_INVALID_ARG",
+            Self::ClientDestroyed => "UND_ERR_DESTROYED",
+            Self::ClientClosed => "UND_ERR_CLOSED",
+            Self::RequestContentLengthMismatch => "UND_ERR_REQ_CONTENT_LENGTH_MISMATCH",
+            Self::ResponseContentLengthMismatch => "UND_ERR_RES_CONTENT_LENGTH_MISMATCH",
+            Self::ResponseExceededMaxSize => "UND_ERR_RES_EXCEEDED_MAX_SIZE",
+            Self::NotSupported(_) => "UND_ERR_NOT_SUPPORTED",
+            Self::ResponseError { .. } => "UND_ERR_RESPONSE",
+        }
+    }
+
+    /// Returns the undici error class name (e.g., "AbortError").
+    pub fn error_name(&self) -> &'static str {
+        match self {
+            Self::RequestAborted => "AbortError",
+            Self::ConnectTimeout => "ConnectTimeoutError",
+            Self::HeadersTimeout => "HeadersTimeoutError",
+            Self::BodyTimeout => "BodyTimeoutError",
+            Self::Socket(_) | Self::Network(_) => "SocketError",
+            Self::InvalidArgument(_) => "InvalidArgumentError",
+            Self::ClientDestroyed => "ClientDestroyedError",
+            Self::ClientClosed => "ClientClosedError",
+            Self::RequestContentLengthMismatch => "RequestContentLengthMismatchError",
+            Self::ResponseContentLengthMismatch => "ResponseContentLengthMismatchError",
+            Self::ResponseExceededMaxSize => "ResponseExceededMaxSizeError",
+            Self::NotSupported(_) => "NotSupportedError",
+            Self::ResponseError { .. } => "ResponseError",
+        }
+    }
+
+    /// Returns the HTTP status code if applicable.
+    pub fn status_code(&self) -> Option<u16> {
+        match self {
+            Self::ResponseError { status_code, .. } => Some(*status_code),
+            _ => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn error_codes_match_undici() {
+        assert_eq!(CoreError::RequestAborted.error_code(), "UND_ERR_ABORTED");
+        assert_eq!(CoreError::ConnectTimeout.error_code(), "UND_ERR_CONNECT_TIMEOUT");
+        assert_eq!(CoreError::Network("test".into()).error_code(), "UND_ERR_SOCKET");
+    }
+
+    #[test]
+    fn error_names_match_undici() {
+        assert_eq!(CoreError::RequestAborted.error_name(), "AbortError");
+        assert_eq!(CoreError::ConnectTimeout.error_name(), "ConnectTimeoutError");
+    }
+
+    #[test]
+    fn response_error_has_status_code() {
+        let err = CoreError::ResponseError {
+            status_code: 404,
+            message: "Not Found".into(),
+        };
+        assert_eq!(err.status_code(), Some(404));
+        assert_eq!(CoreError::RequestAborted.status_code(), None);
+    }
+}
+```
+
+### packages/core/src/lib.rs
+
+```rust
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+//! Core library for node_reqwest - Rust HTTP client with undici compatibility.
+
+pub mod error;
+
+pub use error::CoreError;
+```
+
+### packages/node/export/errors.ts
+
+```typescript
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+const kUndiciError = Symbol.for('undici.error.UND_ERR');
+
+export interface CoreErrorInfo {
+  code: string;
+  name: string;
+  message: string;
+  statusCode?: number;
+}
+
+export class UndiciError extends Error {
+  code: string;
+
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'UndiciError';
+    this.code = code;
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kUndiciError] === true;
+  }
+
+  get [kUndiciError](): boolean {
+    return true;
+  }
+}
+
+const kRequestAbortedError = Symbol.for('undici.error.UND_ERR_ABORTED');
+
+export class RequestAbortedError extends UndiciError {
+  constructor(message = 'Request aborted') {
+    super(message, 'UND_ERR_ABORTED');
+    this.name = 'AbortError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kRequestAbortedError] === true;
+  }
+
+  get [kRequestAbortedError](): boolean {
+    return true;
+  }
+}
+
+const kConnectTimeoutError = Symbol.for('undici.error.UND_ERR_CONNECT_TIMEOUT');
+
+export class ConnectTimeoutError extends UndiciError {
+  constructor(message = 'Connect timeout') {
+    super(message, 'UND_ERR_CONNECT_TIMEOUT');
+    this.name = 'ConnectTimeoutError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kConnectTimeoutError] === true;
+  }
+
+  get [kConnectTimeoutError](): boolean {
+    return true;
+  }
+}
+
+const kHeadersTimeoutError = Symbol.for('undici.error.UND_ERR_HEADERS_TIMEOUT');
+
+export class HeadersTimeoutError extends UndiciError {
+  constructor(message = 'Headers timeout') {
+    super(message, 'UND_ERR_HEADERS_TIMEOUT');
+    this.name = 'HeadersTimeoutError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kHeadersTimeoutError] === true;
+  }
+
+  get [kHeadersTimeoutError](): boolean {
+    return true;
+  }
+}
+
+const kBodyTimeoutError = Symbol.for('undici.error.UND_ERR_BODY_TIMEOUT');
+
+export class BodyTimeoutError extends UndiciError {
+  constructor(message = 'Body timeout') {
+    super(message, 'UND_ERR_BODY_TIMEOUT');
+    this.name = 'BodyTimeoutError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kBodyTimeoutError] === true;
+  }
+
+  get [kBodyTimeoutError](): boolean {
+    return true;
+  }
+}
+
+const kSocketError = Symbol.for('undici.error.UND_ERR_SOCKET');
+
+export class SocketError extends UndiciError {
+  socket: unknown;
+
+  constructor(message = 'Socket error', socket?: unknown) {
+    super(message, 'UND_ERR_SOCKET');
+    this.name = 'SocketError';
+    this.socket = socket ?? null;
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kSocketError] === true;
+  }
+
+  get [kSocketError](): boolean {
+    return true;
+  }
+}
+
+const kInvalidArgumentError = Symbol.for('undici.error.UND_ERR_INVALID_ARG');
+
+export class InvalidArgumentError extends UndiciError {
+  constructor(message = 'Invalid argument') {
+    super(message, 'UND_ERR_INVALID_ARG');
+    this.name = 'InvalidArgumentError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kInvalidArgumentError] === true;
+  }
+
+  get [kInvalidArgumentError](): boolean {
+    return true;
+  }
+}
+
+const kClientDestroyedError = Symbol.for('undici.error.UND_ERR_DESTROYED');
+
+export class ClientDestroyedError extends UndiciError {
+  constructor(message = 'The client is destroyed') {
+    super(message, 'UND_ERR_DESTROYED');
+    this.name = 'ClientDestroyedError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kClientDestroyedError] === true;
+  }
+
+  get [kClientDestroyedError](): boolean {
+    return true;
+  }
+}
+
+const kClientClosedError = Symbol.for('undici.error.UND_ERR_CLOSED');
+
+export class ClientClosedError extends UndiciError {
+  constructor(message = 'The client is closed') {
+    super(message, 'UND_ERR_CLOSED');
+    this.name = 'ClientClosedError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kClientClosedError] === true;
+  }
+
+  get [kClientClosedError](): boolean {
+    return true;
+  }
+}
+
+const kRequestContentLengthMismatchError = Symbol.for(
+  'undici.error.UND_ERR_REQ_CONTENT_LENGTH_MISMATCH'
+);
+
+export class RequestContentLengthMismatchError extends UndiciError {
+  constructor(message = 'Request body length does not match content-length header') {
+    super(message, 'UND_ERR_REQ_CONTENT_LENGTH_MISMATCH');
+    this.name = 'RequestContentLengthMismatchError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kRequestContentLengthMismatchError] === true;
+  }
+
+  get [kRequestContentLengthMismatchError](): boolean {
+    return true;
+  }
+}
+
+const kResponseContentLengthMismatchError = Symbol.for(
+  'undici.error.UND_ERR_RES_CONTENT_LENGTH_MISMATCH'
+);
+
+export class ResponseContentLengthMismatchError extends UndiciError {
+  constructor(message = 'Response body length does not match content-length header') {
+    super(message, 'UND_ERR_RES_CONTENT_LENGTH_MISMATCH');
+    this.name = 'ResponseContentLengthMismatchError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kResponseContentLengthMismatchError] === true;
+  }
+
+  get [kResponseContentLengthMismatchError](): boolean {
+    return true;
+  }
+}
+
+const kResponseExceededMaxSizeError = Symbol.for('undici.error.UND_ERR_RES_EXCEEDED_MAX_SIZE');
+
+export class ResponseExceededMaxSizeError extends UndiciError {
+  constructor(message = 'Response content exceeded max size') {
+    super(message, 'UND_ERR_RES_EXCEEDED_MAX_SIZE');
+    this.name = 'ResponseExceededMaxSizeError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kResponseExceededMaxSizeError] === true;
+  }
+
+  get [kResponseExceededMaxSizeError](): boolean {
+    return true;
+  }
+}
+
+const kNotSupportedError = Symbol.for('undici.error.UND_ERR_NOT_SUPPORTED');
+
+export class NotSupportedError extends UndiciError {
+  constructor(message = 'Not supported') {
+    super(message, 'UND_ERR_NOT_SUPPORTED');
+    this.name = 'NotSupportedError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kNotSupportedError] === true;
+  }
+
+  get [kNotSupportedError](): boolean {
+    return true;
+  }
+}
+
+const kResponseError = Symbol.for('undici.error.UND_ERR_RESPONSE');
+
+export class ResponseError extends UndiciError {
+  statusCode: number;
+  body: unknown;
+  headers: unknown;
+
+  constructor(
+    message: string,
+    statusCode: number,
+    options: { headers?: unknown; body?: unknown } = {}
+  ) {
+    super(message, 'UND_ERR_RESPONSE');
+    this.name = 'ResponseError';
+    this.statusCode = statusCode;
+    this.body = options.body ?? null;
+    this.headers = options.headers ?? null;
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kResponseError] === true;
+  }
+
+  get [kResponseError](): boolean {
+    return true;
+  }
+}
+
+export function createUndiciError(errorInfo: CoreErrorInfo): Error {
+  const { code, message, statusCode } = errorInfo;
+  switch (code) {
+    case 'UND_ERR_ABORTED':
+      return new RequestAbortedError(message);
+    case 'UND_ERR_CONNECT_TIMEOUT':
+      return new ConnectTimeoutError(message);
+    case 'UND_ERR_HEADERS_TIMEOUT':
+      return new HeadersTimeoutError(message);
+    case 'UND_ERR_BODY_TIMEOUT':
+      return new BodyTimeoutError(message);
+    case 'UND_ERR_SOCKET':
+      return new SocketError(message);
+    case 'UND_ERR_DESTROYED':
+      return new ClientDestroyedError(message);
+    case 'UND_ERR_CLOSED':
+      return new ClientClosedError(message);
+    case 'UND_ERR_INVALID_ARG':
+      return new InvalidArgumentError(message);
+    case 'UND_ERR_REQ_CONTENT_LENGTH_MISMATCH':
+      return new RequestContentLengthMismatchError(message);
+    case 'UND_ERR_RES_CONTENT_LENGTH_MISMATCH':
+      return new ResponseContentLengthMismatchError(message);
+    case 'UND_ERR_RES_EXCEEDED_MAX_SIZE':
+      return new ResponseExceededMaxSizeError(message);
+    case 'UND_ERR_NOT_SUPPORTED':
+      return new NotSupportedError(message);
+    case 'UND_ERR_RESPONSE':
+      return new ResponseError(message, statusCode ?? 500);
+    default:
+      return new UndiciError(message, code);
+  }
+}
+```
+
+### packages/node/tests/vitest/errors.test.ts
+
+```typescript
+import { describe, it, expect } from 'vitest';
+
+import {
+  UndiciError,
+  RequestAbortedError,
+  ConnectTimeoutError,
+  SocketError,
+  ResponseError,
+  createUndiciError,
+  type CoreErrorInfo,
+} from '../../export/errors.ts';
+
+describe('Undici Error Classes', () => {
+  it('should create correct error instances', () => {
+    const abortError = new RequestAbortedError();
+    expect(abortError.code).toBe('UND_ERR_ABORTED');
+    expect(abortError.name).toBe('AbortError');
+    expect(abortError.message).toBe('Request aborted');
+
+    const timeoutError = new ConnectTimeoutError('Custom timeout');
+    expect(timeoutError.code).toBe('UND_ERR_CONNECT_TIMEOUT');
+    expect(timeoutError.message).toBe('Custom timeout');
+  });
+
+  it('should support instanceof checks', () => {
+    const abortError = new RequestAbortedError();
+    expect(abortError instanceof RequestAbortedError).toBe(true);
+    expect(abortError instanceof UndiciError).toBe(true);
+    expect(abortError instanceof Error).toBe(true);
+  });
+
+  it('should support cross-library instanceof via Symbol.for', () => {
+    const error = new RequestAbortedError();
+    const kAbort = Symbol.for('undici.error.UND_ERR_ABORTED');
+    const kUndici = Symbol.for('undici.error.UND_ERR');
+    expect((error as Record<symbol, boolean>)[kAbort]).toBe(true);
+    expect((error as Record<symbol, boolean>)[kUndici]).toBe(true);
+  });
+
+  it('should create errors from CoreErrorInfo', () => {
+    const errorInfo: CoreErrorInfo = {
+      code: 'UND_ERR_ABORTED',
+      name: 'AbortError',
+      message: 'Request was aborted',
+    };
+    const error = createUndiciError(errorInfo);
+    expect(error instanceof RequestAbortedError).toBe(true);
+    expect(error.message).toBe('Request was aborted');
+  });
+
+  it('should handle ResponseError with status code', () => {
+    const errorInfo: CoreErrorInfo = {
+      code: 'UND_ERR_RESPONSE',
+      name: 'ResponseError',
+      message: 'Bad request',
+      statusCode: 400,
+    };
+    const error = createUndiciError(errorInfo) as ResponseError;
+    expect(error instanceof ResponseError).toBe(true);
+    expect(error.statusCode).toBe(400);
+  });
+
+  it('should fallback to UndiciError for unknown codes', () => {
+    const errorInfo: CoreErrorInfo = {
+      code: 'UND_ERR_UNKNOWN',
+      name: 'UnknownError',
+      message: 'Unknown error occurred',
+    };
+    const error = createUndiciError(errorInfo);
+    expect(error instanceof UndiciError).toBe(true);
+    expect((error as UndiciError).code).toBe('UND_ERR_UNKNOWN');
+  });
+});
+```
+
+## Tables
+
+| Metric | Value |
+| :--- | :--- |
+| **Rust Dependency** | `thiserror = "2.0"` |
+| **Error Classes** | 14 (13 specific + 1 base) |
+| **Instance Check** | `Symbol.for('undici.error.*')` |
+| **Tests** | 3 Rust + 6 TypeScript |
+
+## File Structure
+
+```text
+packages/core/
+├── Cargo.toml
+└── src/
+    ├── lib.rs
+    └── error.rs
+packages/node/
+├── export/
+│   └── errors.ts
+└── tests/vitest/
+    └── errors.test.ts
+```

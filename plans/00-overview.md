@@ -21,42 +21,46 @@ FFI Boundary (Neon / Channel)
 Rust Core (reqwest / tokio)
 ```
 
+## Design Decisions
+
+| Decision | Choice | Rationale |
+| :--- | :--- | :--- |
+| Request body | `ReadableStreamBYOBReader` → Rust stream | Undici backpressure compliance |
+| Handler API | New API only (`controller.pause()`) | Undici wraps legacy handlers |
+| WebSocket/Upgrade | Deferred (not in MVP) | Will be added later |
+| Tokio runtime | Neon's global shared runtime | Single runtime for all Agents |
+| Error types | Unified `CoreError` | No duplication |
+| Header processing | Pass-through, no logging | Security (no leaking) |
+| Buffer copying | One copy per chunk | Electron compatibility |
+
 ## Implementation Sequence
 
-All implementation is split into **13 chunks** of 1-2 hours each. Each chunk is fully
-copy-paste ready with complete code and tests. Dependencies are already configured in
-workspace `Cargo.toml`.
+Implementation reordered to address critical/fragile parts first while maintaining testability:
 
-### Part 1: Core Foundation (3.0h)
+### Part 1: Error Foundation (2.5h)
 
-- [ ] **01a-core-types.md** (1.5h) - Core types and basic Agent structure
-- [ ] **01b-request-execution.md** (1.5h) - Request execution + 1 test
+- [ ] **01-errors.md** (2.5h) - CoreError + TypeScript error classes + tests
 
-### Part 2: Core Backpressure (3.0h)
+### Part 2: Core Types (3.0h)
 
-- [ ] **02a-pause-cancellation.md** (1.5h) - PauseState and RequestController types
-- [ ] **02b-backpressure-integration.md** (1.5h) - Integration + 4 tests
+- [ ] **02a-core-types.md** (1.5h) - DispatchHandler trait, backpressure primitives
+- [ ] **02b-request-execution.md** (1.5h) - Request execution + tests
 
-### Part 3: Error Handling (2.5h)
+### Part 3: FFI Boundary (5.0h)
 
-- [ ] **03a-core-errors.md** (1.0h) - CoreError enum with Undici mapping
-- [ ] **03b-typescript-errors.md** (1.5h) - 14 error classes + 6 tests
+- [ ] **03a-ffi-types.md** (2.0h) - TypeScript interfaces + Neon setup + tests
+- [ ] **03b-dispatch-handler.md** (1.5h) - JsDispatchHandler + request body streaming
+- [ ] **03c-request-handles.md** (1.5h) - Request control bindings + tests
 
-### Part 4: FFI Boundary (5.0h)
+### Part 4: TypeScript Integration (4.0h)
 
-- [ ] **04a-ffi-types.md** (2.0h) - TypeScript interfaces + basic Neon + 3 tests
-- [ ] **04b-dispatch-handler.md** (1.5h) - JsDispatchHandler marshaling
-- [ ] **04c-request-handles.md** (1.5h) - Request control bindings + 4 tests
+- [ ] **04a-dispatch-controller.md** (2.0h) - DispatchController + tests
+- [ ] **04b-agent-integration.md** (2.0h) - Agent class + E2E tests
 
-### Part 5: TypeScript Integration (4.0h)
+### Part 5: Performance Benchmarking (3.0h)
 
-- [ ] **05a-dispatch-controller.md** (2.0h) - DispatchController + 5 tests
-- [ ] **05b-agent-integration.md** (2.0h) - Agent class + 3 E2E tests
-
-### Part 6: Performance Benchmarking (3.0h)
-
-- [ ] **06a-benchmark-infrastructure.md** (1.5h) - Servers + utilities
-- [ ] **06b-benchmarks-ci.md** (1.5h) - Benchmarks + CI workflow
+- [ ] **05a-benchmark-infrastructure.md** (1.5h) - Servers + utilities
+- [ ] **05b-benchmarks-ci.md** (1.5h) - Benchmarks + CI workflow
 
 ## Tables
 
@@ -64,25 +68,28 @@ workspace `Cargo.toml`.
 | :--- | :--- |
 | **Target Runtime** | Node.js 18+ |
 | **Rust Version** | 1.75+ |
-| **Total Est. Time** | 20.5 hours |
-| **Total Tests** | 27+ |
+| **Total Est. Time** | 20 hours |
+| **Total Tests** | 25+ |
 
 ## File Structure
 
 ```text
 plans/
 ├── 00-overview.md
-├── 01a-core-types.md
-├── 01b-request-execution.md
-├── 02a-pause-cancellation.md
-├── 02b-backpressure-integration.md
-├── 03a-core-errors.md
-├── 03b-typescript-errors.md
-├── 04a-ffi-types.md
-├── 04b-dispatch-handler.md
-├── 04c-request-handles.md
-├── 05a-dispatch-controller.md
-├── 05b-agent-integration.md
-├── 06a-benchmark-infrastructure.md
-└── 06b-benchmarks-ci.md
+├── 01-errors.md
+├── 02a-core-types.md
+├── 02b-request-execution.md
+├── 03a-ffi-types.md
+├── 03b-dispatch-handler.md
+├── 03c-request-handles.md
+├── 04a-dispatch-controller.md
+├── 04b-agent-integration.md
+├── 05a-benchmark-infrastructure.md
+└── 05b-benchmarks-ci.md
 ```
+
+## Security Considerations
+
+- Headers passed through without logging or filtering
+- Sensitive headers (Authorization, Cookie) not explicitly handled - application layer
+- No credentials stored or cached beyond TLS session cache
