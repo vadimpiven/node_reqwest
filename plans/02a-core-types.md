@@ -337,7 +337,7 @@ impl Agent {
 
         let client = builder
             .build()
-            .map_err(|e| CoreError::Network(e.to_string()))?;
+            .map_err(|e| CoreError::from_reqwest(e, false))?;
 
         Ok(Self { client })
     }

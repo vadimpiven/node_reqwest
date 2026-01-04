@@ -456,28 +456,6 @@ describe('E2E Dispatch Integration', () => {
     }
   });
 
-  it('should return false when busy', async () => {
-    const agent = new Agent();
-
-    // Dispatch many requests without waiting
-    const results: boolean[] = [];
-    for (let i = 0; i < 150; i++) {
-      const result = agent.dispatch(
-        { origin: 'http://localhost:1', path: '/', method: 'GET' },
-        {
-          onResponseError: () => {
-            // Expected - no server
-          },
-        }
-      );
-      results.push(result);
-    }
-
-    // At some point should return false (busy)
-    expect(results.some((r) => r === false)).toBe(true);
-
-    await agent.destroy();
-  });
 });
 ```
 
@@ -486,9 +464,9 @@ describe('E2E Dispatch Integration', () => {
 | Metric | Value |
 | :--- | :--- |
 | **Exports** | `Agent`, `DispatchControllerImpl`, `hello` |
-| **Events** | `drain` (undici standard) |
-| **Concurrency Limit** | 100 pending requests |
-| **Tests** | 3 E2E integration tests |
+| **Events** | `connect`, `disconnect`, `connectionError` |
+| **dispatch() return** | Always `true` (reqwest manages pooling) |
+| **Tests** | 2 E2E integration tests |
 
 ## File Structure
 

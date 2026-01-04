@@ -2,101 +2,164 @@
 
 ## Problem/Purpose
 
-Provide a high-performance, undici-compatible HTTP dispatcher for Node.js implemented in
-Rust, supporting backpressure, comprehensive error handling, and optimized FFI.
+Provide an undici-compatible HTTP dispatcher for Node.js implemented in Rust using
+`reqwest`. Full Dispatcher API compliance with performance matching undici.
 
 ## Solution
 
-Implement a multi-layered architecture: a core Rust engine using `reqwest`, a Neon-based
-FFI boundary, and a TypeScript integration layer that conforms to the `undici.Dispatcher`
-interface.
+Multi-layered architecture: Rust core engine → Neon FFI → TypeScript integration.
+Ordered implementation ensures each chunk builds on previous ones with testable results.
 
 ## Architecture
 
 ```text
-TypeScript Layer (undici API)
+TypeScript Layer (undici Dispatcher API)
+       │
+       ├── Agent extends Dispatcher
+       ├── DispatchController (pause/resume/abort)
+       └── Error classes (Symbol.for instanceof)
        │
 FFI Boundary (Neon / Channel)
        │
+       ├── JsDispatchHandler (callback marshaling)
+       ├── JsBodyReader (request body streaming)
+       └── RequestHandleInstance (control)
+       │
 Rust Core (reqwest / tokio)
+       │
+       ├── Agent (reqwest::Client wrapper)
+       ├── DispatchHandler trait
+       ├── RequestController (cancel + backpressure)
+       └── CoreError (undici-compatible codes)
 ```
+
+## Implementation Sequence
+
+Each chunk is self-contained with testable output. Later chunks depend on earlier ones.
+
+### Phase 1: Core Rust (01 → 02a → 02b)
+
+| Chunk | Purpose | Depends On | Testable Result |
+| :--- | :--- | :--- | :--- |
+| **01-errors.md** | Error types with undici codes | - | Rust unit tests pass |
+| **02a-core-types.md** | Types, traits, backpressure primitives | 01 | Unit tests for PauseState, RequestController |
+| **02b-request-execution.md** | Agent::dispatch with timeout/abort | 02a | Integration tests with wiremock |
+
+### Phase 2: FFI Bridge (03a → 03b → 03c)
+
+| Chunk | Purpose | Depends On | Testable Result |
+| :--- | :--- | :--- | :--- |
+| **03a-ffi-types.md** | Neon setup, addon-def.ts | 02b | `pnpm build` succeeds, hello() works |
+| **03b-dispatch-handler.md** | JsDispatchHandler + body streaming | 03a | Callbacks receive events |
+| **03c-request-handles.md** | agentDispatch + control bindings | 03b | Smoke tests for dispatch/abort/pause |
+
+### Phase 3: TypeScript Integration (04a → 04b)
+
+| Chunk | Purpose | Depends On | Testable Result |
+| :--- | :--- | :--- | :--- |
+| **04a-dispatch-controller.md** | DispatchControllerImpl | 03c | Controller state tests |
+| **04b-agent-integration.md** | Agent class + E2E tests | 04a | Real HTTP requests complete |
+
+### Phase 4: Performance Verification (05a → 05b)
+
+| Chunk | Purpose | Depends On | Testable Result |
+| :--- | :--- | :--- | :--- |
+| **05a-benchmark-infrastructure.md** | Test servers + utilities | 04b | Servers start, respond |
+| **05b-benchmarks-ci.md** | Comparison + CI workflow | 05a | ≥95% of undici performance |
 
 ## Design Decisions
 
 | Decision | Choice | Rationale |
 | :--- | :--- | :--- |
-| Request body | `ReadableStreamBYOBReader` → Rust stream | Undici backpressure compliance |
-| Handler API | New API only (`controller.pause()`) | Undici wraps legacy handlers |
-| WebSocket/Upgrade | Deferred (not in MVP) | Will be added later |
-| Tokio runtime | Neon's global shared runtime | Single runtime for all Agents |
-| Error types | Unified `CoreError` with `from_reqwest()` | Maps all reqwest errors to undici |
-| Header processing | Pass-through, no logging | Security (no leaking) |
-| Buffer copying | One copy per chunk | Electron compatibility |
-| Context parameter | Empty `{}` in `onRequestStart` | No retries (stream bodies) |
-| Response headers | `Record<string, string \| string[]>` | Match undici format exactly |
-| Request ordering | No pipelining, no retries | All bodies are streams |
-| Content-Length | Hyper validates internally | Reqwest/hyper detect mismatches |
-| Dispatcher events | `connect`/`disconnect` from JS | Emitted on first success/error |
-| Unsupported options | `connections`, `pipelining` omitted | Reqwest manages internally |
+| Request body | ReadableStreamBYOBReader → bounded channel | Backpressure via blocking_send |
+| Handler API | New controller API only | Undici wraps legacy handlers |
+| WebSocket/Upgrade | NotSupportedError | Post-undici-compliance |
+| Tokio runtime | Neon's global shared runtime | Single runtime, no custom init |
+| Error types | CoreError + from_reqwest() | Unified mapping to undici codes |
+| Backpressure | PauseState + watch channel | Race-condition-free signaling |
+| dispatch() return | Always true | No internal queue limit |
+| Events | connect, disconnect, connectionError | Per undici Dispatcher spec |
 
-## Implementation Sequence
+## Undici Dispatcher Compliance Checklist
 
-Implementation reordered to address critical/fragile parts first while maintaining testability:
-
-### Part 1: Error Foundation (2.5h)
-
-- [ ] **01-errors.md** (2.5h) - CoreError + TypeScript error classes + tests
-
-### Part 2: Core Types (3.0h)
-
-- [ ] **02a-core-types.md** (1.5h) - DispatchHandler trait, backpressure primitives
-- [ ] **02b-request-execution.md** (1.5h) - Request execution + tests
-
-### Part 3: FFI Boundary (5.0h)
-
-- [ ] **03a-ffi-types.md** (2.0h) - TypeScript interfaces + Neon setup + tests
-- [ ] **03b-dispatch-handler.md** (1.5h) - JsDispatchHandler + request body streaming
-- [ ] **03c-request-handles.md** (1.5h) - Request control bindings + tests
-
-### Part 4: TypeScript Integration (4.0h)
-
-- [ ] **04a-dispatch-controller.md** (2.0h) - DispatchController + tests
-- [ ] **04b-agent-integration.md** (2.0h) - Agent class + E2E tests
-
-### Part 5: Performance Benchmarking (3.0h)
-
-- [ ] **05a-benchmark-infrastructure.md** (1.5h) - Servers + utilities
-- [ ] **05b-benchmarks-ci.md** (1.5h) - Benchmarks + CI workflow
+| Feature | Status | Notes |
+| :--- | :--- | :--- |
+| dispatch() method | ✅ | Core functionality |
+| DispatchOptions | ✅ | All fields mapped |
+| DispatchHandler callbacks | ✅ | onRequestStart, onResponseStart, etc. |
+| DispatchController | ✅ | abort(), pause(), resume() |
+| Error codes (UND_ERR_*) | ✅ | Symbol.for instanceof |
+| close() / destroy() | ✅ | Placeholder (reqwest manages) |
+| connect event | ✅ | On first successful response |
+| disconnect event | ✅ | On connection loss after established |
+| connectionError event | ✅ | On initial connection failure |
+| drain event | ⚠️ | Not emitted (dispatch always returns true) |
+| CONNECT method | ❌ | NotSupportedError |
+| Upgrade requests | ❌ | NotSupportedError |
+| HTTP trailers | ❌ | reqwest doesn't expose |
 
 ## Tables
 
 | Configuration | Value |
 | :--- | :--- |
-| **Target Runtime** | Node.js 18+ |
+| **Target Runtime** | Node.js 20+ |
 | **Rust Version** | 1.75+ |
-| **Total Est. Time** | 20 hours |
-| **Total Tests** | 25+ |
+| **Total Est. Time** | ~16-20 hours |
+| **Total Tests** | ~30 |
 
-## File Structure
+## File Structure (Final)
 
 ```text
-plans/
-├── 00-overview.md
-├── 01-errors.md
-├── 02a-core-types.md
-├── 02b-request-execution.md
-├── 03a-ffi-types.md
-├── 03b-dispatch-handler.md
-├── 03c-request-handles.md
-├── 04a-dispatch-controller.md
-├── 04b-agent-integration.md
-├── 05a-benchmark-infrastructure.md
-├── 05b-benchmarks-ci.md
-└── 99-unsupported-features.md
+packages/core/
+├── Cargo.toml
+├── src/
+│   ├── lib.rs
+│   ├── error.rs
+│   ├── agent.rs
+│   └── dispatcher.rs
+└── tests/
+    ├── support/
+    │   ├── mod.rs
+    │   └── mock_handler.rs
+    ├── agent_dispatch.rs
+    └── backpressure.rs
+
+packages/node/
+├── Cargo.toml
+├── src/
+│   ├── lib.rs
+│   ├── agent.rs
+│   ├── body.rs
+│   ├── dispatch.rs
+│   └── handler.rs
+├── export/
+│   ├── addon.ts
+│   ├── addon-def.ts
+│   ├── agent.ts
+│   ├── agent-def.ts
+│   ├── dispatch-controller.ts
+│   └── errors.ts
+├── tests/vitest/
+│   ├── addon-smoke.test.ts
+│   ├── controller.test.ts
+│   ├── dispatch-integration.test.ts
+│   └── errors.test.ts
+└── benchmarks/
+    ├── config.js
+    ├── http1.js
+    ├── http2.js
+    ├── _util/index.js
+    └── servers/
+        ├── http1-server.js
+        ├── http2-server.js
+        └── setup-certs.sh
+
+.github/workflows/
+└── benchmark.yml
 ```
 
 ## Security Considerations
 
-- Headers passed through without logging or filtering
-- Sensitive headers (Authorization, Cookie) not explicitly handled - application layer
-- No credentials stored or cached beyond TLS session cache
+- Headers passed through without filtering or logging (security-sensitive)
+- No credentials stored beyond reqwest's internal TLS session cache
+- Sensitive headers (Authorization, Cookie) handled at application layer
