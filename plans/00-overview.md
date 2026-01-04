@@ -105,7 +105,7 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | **Target Runtime** | Node.js 20+ |
 | **Rust Version** | 1.75+ |
 | **Total Est. Time** | ~16-20 hours |
-| **Total Tests** | ~30 |
+| **Total Tests** | ~31 |
 
 ## File Structure (Final)
 

@@ -104,12 +104,21 @@ impl CoreError {
     }
 
     /// Map reqwest::Error to CoreError.
+    ///
+    /// # Timeout Semantics
+    /// - `is_connect() && is_timeout()` → TCP/TLS connection establishment failed → `ConnectTimeout`
+    /// - `is_timeout()` alone (pre-body) → Response headers not received in time → `HeadersTimeout`
+    /// - `is_timeout()` in body phase → Idle timeout between chunks → `BodyTimeout`
     pub fn from_reqwest(err: reqwest::Error, in_body_phase: bool) -> Self {
         if err.is_timeout() {
+            // Distinguish connection timeout from headers/body timeout
+            if err.is_connect() {
+                return Self::ConnectTimeout;
+            }
             return if in_body_phase {
                 Self::BodyTimeout
             } else {
-                Self::ConnectTimeout
+                Self::HeadersTimeout
             };
         }
 

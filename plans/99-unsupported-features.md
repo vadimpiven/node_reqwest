@@ -31,12 +31,14 @@ limitations or scope decisions.
 
 | reqwest error | undici error | Notes |
 | :--- | :--- | :--- |
-| `is_timeout()` (connect phase) | `ConnectTimeoutError` | Pre-headers |
+| `is_timeout() && is_connect()` | `ConnectTimeoutError` | TCP/TLS establishment |
+| `is_timeout()` (pre-body) | `HeadersTimeoutError` | Waiting for headers |
 | `is_timeout()` (body phase) | `BodyTimeoutError` | During streaming |
 | `is_connect()` | `SocketError` | Connection failure |
 | `is_status()` | `ResponseError` | HTTP error status |
 | `is_body()` | `SocketError` | Body read failure |
 | `is_builder()` | `InvalidArgumentError` | Bad request config |
+| Proxy TLS error | `SocketError` | `SecureProxyConnectionError` not implemented |
 
 ## Runtime Behavior
 

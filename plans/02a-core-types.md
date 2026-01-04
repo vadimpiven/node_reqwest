@@ -95,13 +95,21 @@ impl Method {
 /// Options for dispatching a request.
 #[derive(Debug, Clone)]
 pub struct DispatchOptions {
+    /// Origin URL (scheme + host + port), e.g., "https://example.com:8080"
     pub origin: Option<String>,
+    /// Request path, e.g., "/api/users"
     pub path: String,
+    /// Pre-encoded query string (without leading '?'), e.g., "key=value&key2=value2"
+    /// Keys and values should already be URL-encoded.
     pub query: String,
     pub method: Method,
     pub headers: HashMap<String, Vec<String>>,
+    /// Request body (None for bodyless requests like GET/HEAD).
+    /// For streaming bodies, this is populated by JsBodyReader in the FFI layer.
     pub body: Option<Bytes>,
+    /// Time (ms) to wait for response headers. 0 = use default (300000ms).
     pub headers_timeout_ms: u64,
+    /// Idle time (ms) between body chunks. 0 = use default (300000ms).
     pub body_timeout_ms: u64,
 }
 

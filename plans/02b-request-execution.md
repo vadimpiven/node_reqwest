@@ -351,6 +351,7 @@ async fn test_get_200_ok() {
     let opts = DispatchOptions {
         origin: Some(server.uri()),
         path: "/test".to_string(),
+        query: String::new(),
         method: Method::Get,
         headers: Default::default(),
         body: None,
@@ -398,6 +399,7 @@ async fn test_abort_before_response() {
     let opts = DispatchOptions {
         origin: Some(server.uri()),
         path: "/slow".to_string(),
+        query: String::new(),
         method: Method::Get,
         headers: Default::default(),
         body: None,
@@ -430,6 +432,7 @@ async fn test_abort_during_streaming() {
     let opts = DispatchOptions {
         origin: Some(server.uri()),
         path: "/large".to_string(),
+        query: String::new(),
         method: Method::Get,
         headers: Default::default(),
         body: None,
@@ -462,6 +465,7 @@ async fn test_pause_resume_backpressure() {
     let opts = DispatchOptions {
         origin: Some(server.uri()),
         path: "/data".to_string(),
+        query: String::new(),
         method: Method::Get,
         headers: Default::default(),
         body: None,
@@ -501,6 +505,7 @@ async fn test_timeout() {
     let opts = DispatchOptions {
         origin: Some(server.uri()),
         path: "/timeout".to_string(),
+        query: String::new(),
         method: Method::Get,
         headers: Default::default(),
         body: None,
@@ -514,6 +519,41 @@ async fn test_timeout() {
     let events = events.lock().await;
     assert_eq!(events.errors.len(), 1);
     assert!(events.errors[0].to_lowercase().contains("timeout"));
+}
+
+#[tokio::test]
+async fn test_query_parameters() {
+    use wiremock::matchers::query_param;
+
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/search"))
+        .and(query_param("q", "hello world"))
+        .and(query_param("page", "1"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("found"))
+        .mount(&server)
+        .await;
+
+    let agent = Agent::new(AgentConfig::default()).expect("agent");
+    let (handler, events, done) = MockHandler::new();
+    let opts = DispatchOptions {
+        origin: Some(server.uri()),
+        path: "/search".to_string(),
+        query: "q=hello%20world&page=1".to_string(),
+        method: Method::Get,
+        headers: Default::default(),
+        body: None,
+        headers_timeout_ms: 0,
+        body_timeout_ms: 0,
+    };
+
+    agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
+    done.notified().await;
+
+    let events = events.lock().await;
+    assert_eq!(events.response_starts.len(), 1);
+    assert_eq!(events.response_starts[0].status_code, 200);
+    assert_eq!(&events.data_chunks[0][..], b"found");
 }
 
 #[tokio::test]
@@ -531,6 +571,7 @@ async fn test_per_request_headers_timeout() {
     let opts = DispatchOptions {
         origin: Some(server.uri()),
         path: "/slow-headers".to_string(),
+        query: String::new(),
         method: Method::Get,
         headers: Default::default(),
         body: None,
