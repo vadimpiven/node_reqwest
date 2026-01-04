@@ -25,6 +25,8 @@ User
 ### packages/node/export/agent.ts
 
 ```typescript
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 import type { Dispatcher } from 'undici';
 import type { RequestHandle } from './addon-def';
 
@@ -77,12 +79,65 @@ import { describe, it, expect, vi } from 'vitest';
 import { DispatchControllerImpl } from '../../export/agent';
 
 describe('DispatchController', () => {
-  it('should buffer abort state', () => {
+  it('should buffer abort state when no handle', () => {
     const ctrl = new DispatchControllerImpl();
-    ctrl.abort(new Error('reason'));
-    const handle = { abort: vi.fn(), pause: vi.fn(), resume: vi.fn() };
-    ctrl.setRequestHandle(handle as any);
-    expect(handle.abort).toHaveBeenCalled();
+    const error = new Error('User abort');
+    ctrl.abort(error);
+    
+    expect(ctrl.aborted).toBe(true);
+    expect(ctrl.reason).toBe(error);
+
+    const mockHandle = { abort: vi.fn(), pause: vi.fn(), resume: vi.fn() };
+    ctrl.setRequestHandle(mockHandle as any);
+    
+    expect(mockHandle.abort).toHaveBeenCalled();
+  });
+
+  it('should buffer pause state when no handle', () => {
+    const ctrl = new DispatchControllerImpl();
+    ctrl.pause();
+    
+    expect(ctrl.paused).toBe(true);
+
+    const mockHandle = { abort: vi.fn(), pause: vi.fn(), resume: vi.fn() };
+    ctrl.setRequestHandle(mockHandle as any);
+    
+    expect(mockHandle.pause).toHaveBeenCalled();
+  });
+
+  it('should call abort on handle if already set', () => {
+    const ctrl = new DispatchControllerImpl();
+    const mockHandle = { abort: vi.fn(), pause: vi.fn(), resume: vi.fn() };
+    ctrl.setRequestHandle(mockHandle as any);
+
+    ctrl.abort(new Error('test'));
+    expect(mockHandle.abort).toHaveBeenCalled();
+  });
+
+  it('should handle pause and resume', () => {
+    const ctrl = new DispatchControllerImpl();
+    const mockHandle = { abort: vi.fn(), pause: vi.fn(), resume: vi.fn() };
+    ctrl.setRequestHandle(mockHandle as any);
+
+    ctrl.pause();
+    expect(ctrl.paused).toBe(true);
+    expect(mockHandle.pause).toHaveBeenCalled();
+
+    ctrl.resume();
+    expect(ctrl.paused).toBe(false);
+    expect(mockHandle.resume).toHaveBeenCalled();
+  });
+
+  it('should ignore duplicate abort calls', () => {
+    const ctrl = new DispatchControllerImpl();
+    const mockHandle = { abort: vi.fn(), pause: vi.fn(), resume: vi.fn() };
+    ctrl.setRequestHandle(mockHandle as any);
+
+    ctrl.abort(new Error('first'));
+    ctrl.abort(new Error('second'));
+    
+    expect(mockHandle.abort).toHaveBeenCalledTimes(1);
+    expect(ctrl.reason?.message).toBe('first');
   });
 });
 ```
@@ -93,12 +148,14 @@ describe('DispatchController', () => {
 | :--- | :--- |
 | **Interface** | `Dispatcher.DispatchController` |
 | **Encapsulation** | Private class fields (`#`) |
-| **Parity** | Matches Undici 6.x behavior |
+| **Tests** | 5 controller state tests |
 
 ## File Structure
 
 ```text
 packages/node/
-└── export/
-    └── agent.ts
+├── export/
+│   └── agent.ts
+└── tests/vitest/
+    └── controller.test.ts
 ```
