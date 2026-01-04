@@ -57,6 +57,7 @@ unnecessary_wraps = "allow"
 [workspace.dependencies]
 # Always update nightly version in `rust-toolchain` file when updating dependencies
 anyhow = { version = "1.0.100" }
+async-stream = { version = "0.3.6" }
 async-trait = { version = "0.1.89" }
 bytes = { version = "1.10.1" }
 chrono = { version = "0.4.42", features = ["serde"] }
@@ -66,7 +67,7 @@ futures-util = { version = "0.3.31" }
 indoc = { version = "2.0.7" }
 meta = { path = "packages/meta" }
 mimalloc = { version = "0.1.48", features = ["v3"] }
-neon = { version = "1.1.1", features = ["napi-8", "serde", "tokio"] }
+neon = { version = "1.1.1", features = ["napi-8", "serde", "tokio", "tokio-rt-multi-thread"] }
 pretty_assertions = { version = "1.4.1", features = ["unstable"] }
 reqwest = { version = "0.13.1", features = [
     "brotli",

@@ -53,12 +53,11 @@ wiremock = { workspace = true }
 //! Core dispatcher types and traits.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use tokio::sync::Notify;
+use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 
 use crate::error::CoreError;
@@ -130,10 +129,12 @@ pub trait DispatchHandler: Send + Sync {
     async fn on_response_error(&self, error: CoreError);
 }
 
-/// Atomic pause state for backpressure signaling.
+/// Pause state for backpressure signaling using watch channel.
+///
+/// Uses `tokio::sync::watch` for race-condition-free state synchronization.
 pub struct PauseState {
-    paused: AtomicBool,
-    notify: Notify,
+    sender: watch::Sender<bool>,
+    receiver: watch::Receiver<bool>,
 }
 
 impl Default for PauseState {
@@ -144,30 +145,33 @@ impl Default for PauseState {
 
 impl PauseState {
     pub fn new() -> Self {
-        Self {
-            paused: AtomicBool::new(false),
-            notify: Notify::new(),
-        }
+        let (sender, receiver) = watch::channel(false);
+        Self { sender, receiver }
     }
 
     /// Block until not paused. Returns immediately if not paused.
     pub async fn wait_if_paused(&self) {
-        while self.paused.load(Ordering::SeqCst) {
-            self.notify.notified().await;
+        let mut rx = self.receiver.clone();
+        // Wait until not paused - watch guarantees no missed state changes
+        while *rx.borrow() {
+            // changed() waits for the next state change
+            if rx.changed().await.is_err() {
+                // Sender dropped, return
+                return;
+            }
         }
     }
 
     pub fn pause(&self) {
-        self.paused.store(true, Ordering::SeqCst);
+        let _ = self.sender.send(true);
     }
 
     pub fn resume(&self) {
-        self.paused.store(false, Ordering::SeqCst);
-        self.notify.notify_one();
+        let _ = self.sender.send(false);
     }
 
     pub fn is_paused(&self) -> bool {
-        self.paused.load(Ordering::SeqCst)
+        *self.receiver.borrow()
     }
 }
 
@@ -375,7 +379,7 @@ pub use error::CoreError;
 | Metric | Value |
 | :--- | :--- |
 | **Dependencies** | `reqwest`, `tokio`, `tokio-util`, `async-trait`, `bytes` |
-| **Atomic Ordering** | `Ordering::SeqCst` for pause state |
+| **Pause State** | `tokio::sync::watch` (race-condition-free) |
 | **Thread Safety** | All types are `Send + Sync` |
 | **Tests** | 5 unit tests |
 

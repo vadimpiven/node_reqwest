@@ -32,6 +32,9 @@ Rust Core (reqwest / tokio)
 | Error types | Unified `CoreError` | No duplication |
 | Header processing | Pass-through, no logging | Security (no leaking) |
 | Buffer copying | One copy per chunk | Electron compatibility |
+| Context parameter | Empty `{}` in `onRequestStart` | No retries (stream bodies) |
+| Response headers | `Record<string, string \| string[]>` | Match undici format exactly |
+| Request ordering | No pipelining, no retries | All bodies are streams |
 
 ## Implementation Sequence
 

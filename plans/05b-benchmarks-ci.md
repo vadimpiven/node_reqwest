@@ -57,15 +57,13 @@ const experiments = {
         undiciPool.dispatch(
           { origin: serverUrl, ...requestOptions },
           {
-            onConnect() {},
-            onHeaders() {},
-            onData() {
-              return true;
-            },
-            onComplete() {
+            onRequestStart() {},
+            onResponseStart() {},
+            onResponseData() {},
+            onResponseEnd() {
               resolve();
             },
-            onError(err) {
+            onResponseError(_controller, err) {
               reject(err);
             },
           }
@@ -81,6 +79,7 @@ const experiments = {
         nodeReqwestAgent.dispatch(
           { origin: serverUrl, ...requestOptions },
           {
+            onRequestStart() {},
             onResponseStart() {},
             onResponseData() {},
             onResponseEnd() {
@@ -177,15 +176,13 @@ const experiments = {
         undiciClient.dispatch(
           { origin: serverUrl, ...requestOptions },
           {
-            onConnect() {},
-            onHeaders() {},
-            onData() {
-              return true;
-            },
-            onComplete() {
+            onRequestStart() {},
+            onResponseStart() {},
+            onResponseData() {},
+            onResponseEnd() {
               resolve();
             },
-            onError(err) {
+            onResponseError(_controller, err) {
               reject(err);
             },
           }
@@ -201,6 +198,7 @@ const experiments = {
         nodeReqwestAgent.dispatch(
           { origin: serverUrl, ...requestOptions },
           {
+            onRequestStart() {},
             onResponseStart() {},
             onResponseData() {},
             onResponseEnd() {

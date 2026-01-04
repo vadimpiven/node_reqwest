@@ -33,6 +33,7 @@ edition.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+async-stream = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 core = { path = "../core" }
@@ -155,10 +156,12 @@ import type { CoreErrorInfo } from './errors.ts';
 export type AgentCreationOptions = {
   allowH2: boolean;
   ca: string[];
+  connections: number;
   keepAliveInitialDelay: number;
   keepAliveTimeout: number;
   localAddress: string | null;
   maxCachedSessions: number;
+  pipelining: number;
   proxy:
     | { type: 'no-proxy' | 'system' }
     | {

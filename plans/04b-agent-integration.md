@@ -24,6 +24,71 @@ User
 
 ## Implementation
 
+### packages/node/export/agent-def.ts (Update)
+
+Add `connections` and `pipelining` to `ConnectionOptions`:
+
+```typescript
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+import type { ConnectionOptions as TlsConnectionOptions } from 'node:tls';
+import type * as undici from 'undici';
+
+/**
+ * Network connection and TLS settings.
+ */
+export type ConnectionOptions = Pick<
+  undici.buildConnector.BuildOptions & undici.Client.Options & undici.Pool.Options & TlsConnectionOptions,
+  | 'allowH2'
+  | 'ca'
+  | 'connections'
+  | 'keepAliveInitialDelay'
+  | 'keepAliveTimeout'
+  | 'localAddress'
+  | 'maxCachedSessions'
+  | 'pipelining'
+  | 'rejectUnauthorized'
+  | 'timeout'
+> & {
+  /**
+   * Whether to verify that the server's certificate identity matches the requested hostname.
+   * This is a specialized check that can be disabled independently of CA chain verification.
+   * @default true
+   */
+  rejectInvalidHostnames?: boolean;
+};
+
+/**
+ * Configuration for an upstream proxy.
+ */
+export type ProxyOptions = Pick<undici.ProxyAgent.Options, 'headers' | 'token' | 'uri'>;
+
+/**
+ * Configuration options for the Agent.
+ */
+export type AgentOptions = {
+  /**
+   * Network connection and TLS settings for direct or proxy tunnel connections.
+   */
+  connection?: ConnectionOptions | null;
+  /**
+   * Proxy configuration.
+   * @default 'system'
+   */
+  proxy?: 'no-proxy' | 'system' | ProxyOptions | null;
+};
+
+/**
+ * Factory for creating agents with specific configurations.
+ */
+export interface Agent {
+  /**
+   * Creates an Agent fully compatible with the Node.js global fetch dispatcher.
+   */
+  new (options?: AgentOptions): undici.Dispatcher;
+}
+```
+
 ### packages/node/export/agent.ts
 
 ```typescript
@@ -111,17 +176,21 @@ class AgentImpl extends Dispatcher {
   #destroyed = false;
   #pendingRequests = 0;
   #needDrain = false;
-  readonly #maxConcurrent = 100;
+  readonly #maxConcurrent: number;
+  #lastOrigin: URL | null = null;
 
   constructor(options?: AgentOptions) {
     super();
+    this.#maxConcurrent = options?.connection?.connections ?? 100;
     const creationOptions: AgentCreationOptions = {
       allowH2: options?.connection?.allowH2 ?? true,
       ca: normalizePem(options?.connection?.ca),
+      connections: options?.connection?.connections ?? 100,
       keepAliveInitialDelay: options?.connection?.keepAliveInitialDelay ?? 60000,
       keepAliveTimeout: options?.connection?.keepAliveTimeout ?? 4000,
       localAddress: options?.connection?.localAddress ?? null,
       maxCachedSessions: options?.connection?.maxCachedSessions ?? 100,
+      pipelining: options?.connection?.pipelining ?? 1,
       proxy: options?.proxy
         ? typeof options.proxy === 'string'
           ? { type: options.proxy }
@@ -209,6 +278,7 @@ class AgentImpl extends Dispatcher {
     };
 
     this.#pendingRequests++;
+    this.#lastOrigin = options.origin ? new URL(String(options.origin)) : null;
     const busy = this.#pendingRequests >= this.#maxConcurrent;
     if (busy) this.#needDrain = true;
 
@@ -222,7 +292,8 @@ class AgentImpl extends Dispatcher {
     this.#pendingRequests--;
     if (this.#needDrain && this.#pendingRequests < this.#maxConcurrent) {
       this.#needDrain = false;
-      queueMicrotask(() => this.emit('drain', new URL('http://localhost')));
+      const origin = this.#lastOrigin ?? new URL('http://localhost');
+      queueMicrotask(() => this.emit('drain', origin));
     }
   }
 
