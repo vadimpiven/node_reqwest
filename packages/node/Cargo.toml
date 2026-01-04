@@ -16,3 +16,4 @@ neon = { workspace = true }
 [build-dependencies]
 anyhow.workspace = true
 meta = { workspace = true }
+neon-build = { workspace = true }
