@@ -321,6 +321,7 @@ pub fn parse_dispatch_options(
     let path: Handle<JsString> = obj.get(cx, "path")?;
     let method_str: Handle<JsString> = obj.get(cx, "method")?;
     let origin: Handle<JsValue> = obj.get(cx, "origin")?;
+    let query: Handle<JsString> = obj.get(cx, "query")?;
 
     let method = match method_str.value(cx).to_uppercase().as_str() {
         "GET" => Method::Get,
@@ -358,6 +359,7 @@ pub fn parse_dispatch_options(
     Ok(DispatchOptions {
         origin: origin_str,
         path: path.value(cx),
+        query: query.value(cx),
         method,
         headers,
         body: None, // Body handling in 03c

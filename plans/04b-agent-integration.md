@@ -109,7 +109,7 @@ import type {
 } from './addon-def.ts';
 import type { Agent as AgentDef, AgentOptions } from './agent-def.ts';
 import { DispatchControllerImpl } from './dispatch-controller.ts';
-import { createUndiciError, type CoreErrorInfo } from './errors.ts';
+import { createUndiciError, ClientClosedError, ClientDestroyedError, NotSupportedError, RequestAbortedError, type CoreErrorInfo } from './errors.ts';
 
 // Import the actual addon - this will be the native binary
 import AddonImpl from '../index.node';
@@ -176,16 +176,11 @@ class AgentImpl extends Dispatcher {
   readonly #agent: AgentInstance;
   #closed = false;
   #destroyed = false;
-  #pendingRequests = 0;
-  #needDrain = false;
-  readonly #maxConcurrent: number;
   #lastOrigin: URL | null = null;
-  #hasConnected = false;
+  #connectionEstablished = false;
 
   constructor(options?: AgentOptions) {
     super();
-    // Note: 'connections' is not supported by reqwest, using reasonable default for drain logic
-    this.#maxConcurrent = 100;
     const creationOptions: AgentCreationOptions = {
       allowH2: options?.connection?.allowH2 ?? true,
       ca: normalizePem(options?.connection?.ca),
@@ -215,23 +210,32 @@ class AgentImpl extends Dispatcher {
     options: Dispatcher.DispatchOptions,
     handler: Dispatcher.DispatchHandler
   ): boolean {
+    const controller = new DispatchControllerImpl(Addon);
+
+    // Reject unsupported CONNECT method and upgrade requests
+    if (options.method === 'CONNECT' || options.upgrade) {
+      const error = new NotSupportedError(
+        'CONNECT method and upgrade requests are not supported'
+      );
+      handler.onResponseError?.(controller, error);
+      return true;
+    }
+
     if (this.#closed) {
-      const controller = new DispatchControllerImpl(Addon);
-      handler.onResponseError?.(controller, new Error('Dispatcher is closed'));
-      return false;
+      handler.onResponseError?.(controller, new ClientClosedError());
+      return true;
     }
 
     if (this.#destroyed) {
-      const controller = new DispatchControllerImpl(Addon);
-      handler.onResponseError?.(controller, new Error('Dispatcher is destroyed'));
-      return false;
+      handler.onResponseError?.(controller, new ClientDestroyedError());
+      return true;
     }
 
-    const controller = new DispatchControllerImpl(Addon);
+    // Call onRequestStart with empty context (no retries supported - all bodies are streams)
     handler.onRequestStart?.(controller, {});
 
     if (controller.aborted) {
-      handler.onResponseError?.(controller, controller.reason ?? new Error('Aborted'));
+      handler.onResponseError?.(controller, controller.reason ?? new RequestAbortedError());
       return true;
     }
 
@@ -246,7 +250,6 @@ class AgentImpl extends Dispatcher {
       method: options.method,
       origin: String(options.origin ?? ''),
       path: options.path,
-      // Fix: options.query is Record<string, any>, not string
       query: options.query
         ? new URLSearchParams(
             Object.entries(options.query).map(([k, v]) => [k, String(v)])
@@ -254,8 +257,12 @@ class AgentImpl extends Dispatcher {
         : '',
       reset: options.reset ?? false,
       throwOnError: options.throwOnError ?? false,
-      upgrade: null, // Upgrade deferred - not in MVP
+      upgrade: null,
     };
+
+    this.#lastOrigin = options.origin ? new URL(String(options.origin)) : null;
+    // Track whether this request established a connection (for event emission)
+    let requestConnected = false;
 
     const callbacks: DispatchCallbacks = {
       onResponseStart: (
@@ -264,9 +271,11 @@ class AgentImpl extends Dispatcher {
         statusMessage: string
       ) => {
         if (controller.aborted) return;
+        // Mark that connection was established for this request
+        requestConnected = true;
         // Emit 'connect' event on first successful connection
-        if (!this.#hasConnected && this.#lastOrigin) {
-          this.#hasConnected = true;
+        if (!this.#connectionEstablished && this.#lastOrigin) {
+          this.#connectionEstablished = true;
           queueMicrotask(() => this.emit('connect', this.#lastOrigin, [this]));
         }
         handler.onResponseStart?.(controller, statusCode, headers, statusMessage);
@@ -277,38 +286,35 @@ class AgentImpl extends Dispatcher {
       },
       onResponseEnd: (trailers: Record<string, string | string[]>) => {
         if (controller.aborted) return;
-        this.#onRequestComplete();
+        // Note: trailers always empty - reqwest doesn't expose HTTP trailers
         handler.onResponseEnd?.(controller, trailers);
       },
       onResponseError: (errorInfo: CoreErrorInfo) => {
-        this.#onRequestComplete();
         const undiciError = createUndiciError(errorInfo);
-        // Emit 'disconnect' event on connection errors
-        if (this.#lastOrigin && (errorInfo.code === 'UND_ERR_SOCKET' || errorInfo.code === 'UND_ERR_CONNECT_TIMEOUT')) {
-          queueMicrotask(() => this.emit('disconnect', this.#lastOrigin, [this], undiciError));
+        const isConnectionError =
+          errorInfo.code === 'UND_ERR_SOCKET' ||
+          errorInfo.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+          errorInfo.code === 'UND_ERR_SECURE_PROXY_CONNECTION';
+
+        if (this.#lastOrigin && isConnectionError) {
+          if (requestConnected) {
+            // Connection was established then lost -> 'disconnect'
+            queueMicrotask(() => this.emit('disconnect', this.#lastOrigin, [this], undiciError));
+          } else {
+            // Connection never established -> 'connectionError'
+            queueMicrotask(() => this.emit('connectionError', this.#lastOrigin, [this], undiciError));
+          }
         }
         handler.onResponseError?.(controller, controller.reason ?? undiciError);
       },
     };
 
-    this.#pendingRequests++;
-    this.#lastOrigin = options.origin ? new URL(String(options.origin)) : null;
-    const busy = this.#pendingRequests >= this.#maxConcurrent;
-    if (busy) this.#needDrain = true;
-
     const nativeHandle = Addon.agentDispatch(this.#agent, dispatchOptions, callbacks);
     controller.setRequestHandle(nativeHandle);
 
-    return !busy;
-  }
-
-  #onRequestComplete(): void {
-    this.#pendingRequests--;
-    if (this.#needDrain && this.#pendingRequests < this.#maxConcurrent) {
-      this.#needDrain = false;
-      const origin = this.#lastOrigin ?? new URL('http://localhost');
-      queueMicrotask(() => this.emit('drain', origin));
-    }
+    // Always return true - no internal queuing/backpressure limit
+    // reqwest manages connection pooling internally
+    return true;
   }
 
   close(): Promise<void> {
@@ -326,23 +332,23 @@ class AgentImpl extends Dispatcher {
 
   // Stubs for unimplemented methods
   connect(_options: unknown, _callback?: unknown): never {
-    throw new Error('connect() not implemented');
+    throw new NotSupportedError('connect() not implemented');
   }
 
   pipeline(_options: unknown, _handler: unknown): never {
-    throw new Error('pipeline() not implemented');
+    throw new NotSupportedError('pipeline() not implemented');
   }
 
   request(_options: unknown, _callback?: unknown): Promise<never> {
-    return Promise.reject(new Error('request() not implemented'));
+    return Promise.reject(new NotSupportedError('request() not implemented'));
   }
 
   stream(_options: unknown, _factory: unknown, _callback?: unknown): Promise<never> {
-    return Promise.reject(new Error('stream() not implemented'));
+    return Promise.reject(new NotSupportedError('stream() not implemented'));
   }
 
   upgrade(_options: unknown, _callback?: unknown): Promise<never> {
-    return Promise.reject(new Error('upgrade() not implemented'));
+    return Promise.reject(new NotSupportedError('upgrade() not implemented'));
   }
 }
 

@@ -47,106 +47,95 @@ pretty_assertions = { workspace = true }
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Error types with undici compatibility metadata.
+//!
+//! Uses a macro to reduce boilerplate for error code/name mapping.
 
 use thiserror::Error;
 
-/// Core error type with undici-compatible metadata.
+/// Macro to define CoreError variants with automatic code/name mapping.
 ///
-/// Maps to undici error types as closely as possible. Reqwest error categories are mapped:
-/// - `is_timeout()` → `ConnectTimeout` or `BodyTimeout` depending on phase
-/// - `is_connect()` → `Socket` with connect-specific message
-/// - `is_body()` → `BodyTimeout` or `Socket` depending on cause
-/// - `is_decode()` → `Socket` (body parsing failure)
-/// - `is_redirect()` → `Socket` (redirect loop/failure)
-/// - `is_status()` → `ResponseError`
-/// - `is_builder()` → `InvalidArgument`
-/// - `is_upgrade()` → `NotSupported` (upgrades deferred)
-#[derive(Debug, Clone, Error)]
-pub enum CoreError {
+/// Usage: `define_errors! { VariantName(fields) => ("UND_ERR_CODE", "ClassName"), ... }`
+macro_rules! define_errors {
+    ($(
+        $(#[$meta:meta])*
+        $variant:ident $( ( $($field:ty),* ) )? => ($code:literal, $name:literal)
+    ),* $(,)?) => {
+        #[derive(Debug, Clone, Error)]
+        pub enum CoreError {
+            $(
+                $(#[$meta])*
+                $variant $( ( $($field),* ) )?,
+            )*
+
+            #[error("{message}")]
+            ResponseError { status_code: u16, message: String },
+        }
+
+        impl CoreError {
+            /// Returns the undici error code (e.g., "UND_ERR_ABORTED").
+            pub fn error_code(&self) -> &'static str {
+                match self {
+                    $( Self::$variant { .. } => $code, )*
+                    Self::ResponseError { .. } => "UND_ERR_RESPONSE",
+                }
+            }
+
+            /// Returns the undici error class name (e.g., "AbortError").
+            pub fn error_name(&self) -> &'static str {
+                match self {
+                    $( Self::$variant { .. } => $name, )*
+                    Self::ResponseError { .. } => "ResponseError",
+                }
+            }
+        }
+    };
+}
+
+define_errors! {
     #[error("Request aborted")]
-    RequestAborted,
+    RequestAborted => ("UND_ERR_ABORTED", "AbortError"),
 
     #[error("Connect timeout")]
-    ConnectTimeout,
+    ConnectTimeout => ("UND_ERR_CONNECT_TIMEOUT", "ConnectTimeoutError"),
 
     #[error("Headers timeout")]
-    HeadersTimeout,
+    HeadersTimeout => ("UND_ERR_HEADERS_TIMEOUT", "HeadersTimeoutError"),
 
     #[error("Body timeout")]
-    BodyTimeout,
+    BodyTimeout => ("UND_ERR_BODY_TIMEOUT", "BodyTimeoutError"),
 
     #[error("Headers overflow")]
-    HeadersOverflow,
+    HeadersOverflow => ("UND_ERR_HEADERS_OVERFLOW", "HeadersOverflowError"),
 
     #[error("Socket error: {0}")]
-    Socket(String),
+    Socket(String) => ("UND_ERR_SOCKET", "SocketError"),
 
     #[error("Invalid argument: {0}")]
-    InvalidArgument(String),
+    InvalidArgument(String) => ("UND_ERR_INVALID_ARG", "InvalidArgumentError"),
 
     #[error("The client is destroyed")]
-    ClientDestroyed,
+    ClientDestroyed => ("UND_ERR_DESTROYED", "ClientDestroyedError"),
 
     #[error("The client is closed")]
-    ClientClosed,
+    ClientClosed => ("UND_ERR_CLOSED", "ClientClosedError"),
 
     #[error("Request body length does not match content-length header")]
-    RequestContentLengthMismatch,
+    RequestContentLengthMismatch => ("UND_ERR_REQ_CONTENT_LENGTH_MISMATCH", "RequestContentLengthMismatchError"),
 
     #[error("Response body length does not match content-length header")]
-    ResponseContentLengthMismatch,
+    ResponseContentLengthMismatch => ("UND_ERR_RES_CONTENT_LENGTH_MISMATCH", "ResponseContentLengthMismatchError"),
 
     #[error("Response content exceeded max size")]
-    ResponseExceededMaxSize,
+    ResponseExceededMaxSize => ("UND_ERR_RES_EXCEEDED_MAX_SIZE", "ResponseExceededMaxSizeError"),
 
     #[error("Not supported: {0}")]
-    NotSupported(String),
+    NotSupported(String) => ("UND_ERR_NOT_SUPPORTED", "NotSupportedError"),
 
-    #[error("{message}")]
-    ResponseError { status_code: u16, message: String },
+    #[error("Secure proxy connection error: {0}")]
+    SecureProxyConnectionError(String) => ("UND_ERR_SECURE_PROXY_CONNECTION", "SecureProxyConnectionError"),
 }
 
 impl CoreError {
-    /// Returns the undici error code (e.g., "UND_ERR_ABORTED").
-    pub fn error_code(&self) -> &'static str {
-        match self {
-            Self::RequestAborted => "UND_ERR_ABORTED",
-            Self::ConnectTimeout => "UND_ERR_CONNECT_TIMEOUT",
-            Self::HeadersTimeout => "UND_ERR_HEADERS_TIMEOUT",
-            Self::BodyTimeout => "UND_ERR_BODY_TIMEOUT",
-            Self::HeadersOverflow => "UND_ERR_HEADERS_OVERFLOW",
-            Self::Socket(_) => "UND_ERR_SOCKET",
-            Self::InvalidArgument(_) => "UND_ERR_INVALID_ARG",
-            Self::ClientDestroyed => "UND_ERR_DESTROYED",
-            Self::ClientClosed => "UND_ERR_CLOSED",
-            Self::RequestContentLengthMismatch => "UND_ERR_REQ_CONTENT_LENGTH_MISMATCH",
-            Self::ResponseContentLengthMismatch => "UND_ERR_RES_CONTENT_LENGTH_MISMATCH",
-            Self::ResponseExceededMaxSize => "UND_ERR_RES_EXCEEDED_MAX_SIZE",
-            Self::NotSupported(_) => "UND_ERR_NOT_SUPPORTED",
-            Self::ResponseError { .. } => "UND_ERR_RESPONSE",
-        }
-    }
-
-    /// Returns the undici error class name (e.g., "AbortError").
-    pub fn error_name(&self) -> &'static str {
-        match self {
-            Self::RequestAborted => "AbortError",
-            Self::ConnectTimeout => "ConnectTimeoutError",
-            Self::HeadersTimeout => "HeadersTimeoutError",
-            Self::BodyTimeout => "BodyTimeoutError",
-            Self::HeadersOverflow => "HeadersOverflowError",
-            Self::Socket(_) => "SocketError",
-            Self::InvalidArgument(_) => "InvalidArgumentError",
-            Self::ClientDestroyed => "ClientDestroyedError",
-            Self::ClientClosed => "ClientClosedError",
-            Self::RequestContentLengthMismatch => "RequestContentLengthMismatchError",
-            Self::ResponseContentLengthMismatch => "ResponseContentLengthMismatchError",
-            Self::ResponseExceededMaxSize => "ResponseExceededMaxSizeError",
-            Self::NotSupported(_) => "NotSupportedError",
-            Self::ResponseError { .. } => "ResponseError",
-        }
-    }
-
     /// Returns the HTTP status code if applicable.
     pub fn status_code(&self) -> Option<u16> {
         match self {
@@ -160,14 +149,13 @@ impl CoreError {
     /// Mapping logic:
     /// - Timeout errors → ConnectTimeout (connect phase) or BodyTimeout (body phase)
     /// - Connect errors → Socket with "connect" in message
-    /// - Body errors → BodyTimeout or Socket
+    /// - Body errors → Socket
     /// - Decode errors → Socket (parsing failure)
     /// - Redirect errors → Socket (redirect policy violation)
     /// - Status errors → ResponseError
     /// - Builder errors → InvalidArgument
     /// - Upgrade errors → NotSupported
     pub fn from_reqwest(err: reqwest::Error, in_body_phase: bool) -> Self {
-        // Check for timeout first (can be nested)
         if err.is_timeout() {
             return if in_body_phase {
                 Self::BodyTimeout
@@ -176,12 +164,10 @@ impl CoreError {
             };
         }
 
-        // Connect-specific errors
         if err.is_connect() {
             return Self::Socket(format!("Connect error: {err}"));
         }
 
-        // Status code errors
         if err.is_status() {
             if let Some(status) = err.status() {
                 return Self::ResponseError {
@@ -191,32 +177,26 @@ impl CoreError {
             }
         }
 
-        // Body errors
         if err.is_body() {
             return Self::Socket(format!("Body error: {err}"));
         }
 
-        // Decode errors
         if err.is_decode() {
             return Self::Socket(format!("Decode error: {err}"));
         }
 
-        // Redirect errors
         if err.is_redirect() {
             return Self::Socket(format!("Redirect error: {err}"));
         }
 
-        // Builder errors (configuration)
         if err.is_builder() {
             return Self::InvalidArgument(err.to_string());
         }
 
-        // Upgrade errors (connection upgrade failed)
         if err.is_upgrade() {
             return Self::NotSupported(format!("Upgrade: {err}"));
         }
 
-        // Fallback: general socket error
         Self::Socket(err.to_string())
     }
 }
@@ -232,12 +212,20 @@ mod tests {
         assert_eq!(CoreError::ConnectTimeout.error_code(), "UND_ERR_CONNECT_TIMEOUT");
         assert_eq!(CoreError::Socket("test".into()).error_code(), "UND_ERR_SOCKET");
         assert_eq!(CoreError::HeadersOverflow.error_code(), "UND_ERR_HEADERS_OVERFLOW");
+        assert_eq!(
+            CoreError::SecureProxyConnectionError("tls".into()).error_code(),
+            "UND_ERR_SECURE_PROXY_CONNECTION"
+        );
     }
 
     #[test]
     fn error_names_match_undici() {
         assert_eq!(CoreError::RequestAborted.error_name(), "AbortError");
         assert_eq!(CoreError::ConnectTimeout.error_name(), "ConnectTimeoutError");
+        assert_eq!(
+            CoreError::SecureProxyConnectionError("tls".into()).error_name(),
+            "SecureProxyConnectionError"
+        );
     }
 
     #[test]
@@ -552,6 +540,23 @@ export class ResponseError extends UndiciError {
   }
 }
 
+const kSecureProxyConnectionError = Symbol.for('undici.error.UND_ERR_SECURE_PROXY_CONNECTION');
+
+export class SecureProxyConnectionError extends UndiciError {
+  constructor(message = 'Secure proxy connection error') {
+    super(message, 'UND_ERR_SECURE_PROXY_CONNECTION');
+    this.name = 'SecureProxyConnectionError';
+  }
+
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (instance as Record<symbol, boolean>)?.[kSecureProxyConnectionError] === true;
+  }
+
+  get [kSecureProxyConnectionError](): boolean {
+    return true;
+  }
+}
+
 export function createUndiciError(errorInfo: CoreErrorInfo): Error {
   const { code, message, statusCode } = errorInfo;
   switch (code) {
@@ -581,6 +586,8 @@ export function createUndiciError(errorInfo: CoreErrorInfo): Error {
       return new ResponseExceededMaxSizeError(message);
     case 'UND_ERR_NOT_SUPPORTED':
       return new NotSupportedError(message);
+    case 'UND_ERR_SECURE_PROXY_CONNECTION':
+      return new SecureProxyConnectionError(message);
     case 'UND_ERR_RESPONSE':
       return new ResponseError(message, statusCode ?? 500);
     default:

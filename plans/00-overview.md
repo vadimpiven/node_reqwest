@@ -91,7 +91,8 @@ plans/
 ├── 04a-dispatch-controller.md
 ├── 04b-agent-integration.md
 ├── 05a-benchmark-infrastructure.md
-└── 05b-benchmarks-ci.md
+├── 05b-benchmarks-ci.md
+└── 99-unsupported-features.md
 ```
 
 ## Security Considerations

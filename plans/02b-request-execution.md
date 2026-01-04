@@ -108,11 +108,22 @@ impl Agent {
         pause_state: Arc<PauseState>,
     ) {
         let method = options.method.to_reqwest();
-        let url = format!(
-            "{}{}",
-            options.origin.as_deref().unwrap_or(""),
-            options.path
-        );
+
+        // Build URL with query string if provided
+        let url = if options.query.is_empty() {
+            format!(
+                "{}{}",
+                options.origin.as_deref().unwrap_or(""),
+                options.path
+            )
+        } else {
+            format!(
+                "{}{}?{}",
+                options.origin.as_deref().unwrap_or(""),
+                options.path,
+                options.query
+            )
+        };
 
         let mut request = client.request(method, &url);
 
@@ -177,39 +188,43 @@ impl Agent {
             })
             .await;
 
-        // Per-request body timeout (time for entire body transfer)
+        // Per-request body timeout: IDLE timeout (time between chunk arrivals)
+        // Per undici docs: "Monitors time between receiving body data"
         let body_timeout_duration = if options.body_timeout_ms > 0 {
             Duration::from_millis(options.body_timeout_ms)
         } else {
             Duration::from_secs(300) // 5 minutes default
         };
 
-        let body_deadline = tokio::time::Instant::now() + body_timeout_duration;
         let mut stream = response.bytes_stream();
 
         loop {
             pause_state.wait_if_paused().await;
 
-            // Check body timeout
-            if tokio::time::Instant::now() > body_deadline {
-                handler.on_response_error(CoreError::BodyTimeout).await;
-                return;
-            }
-
             select! {
                 () = token.cancelled() => {
+                    // Drop stream to ensure response is properly cleaned up
+                    drop(stream);
                     handler.on_response_error(CoreError::RequestAborted).await;
                     return;
                 }
-                chunk = stream.next() => {
-                    match chunk {
-                        Some(Ok(data)) => handler.on_response_data(data).await,
-                        Some(Err(e)) => {
+                // Idle timeout: resets on each successful chunk read
+                result = timeout(body_timeout_duration, stream.next()) => {
+                    match result {
+                        Ok(Some(Ok(data))) => handler.on_response_data(data).await,
+                        Ok(Some(Err(e))) => {
+                            drop(stream);
                             handler.on_response_error(CoreError::from_reqwest(e, true)).await;
                             return;
                         }
-                        None => {
+                        Ok(None) => {
+                            // Response complete - trailers not available in reqwest
                             handler.on_response_end(HashMap::new()).await;
+                            return;
+                        }
+                        Err(_elapsed) => {
+                            drop(stream);
+                            handler.on_response_error(CoreError::BodyTimeout).await;
                             return;
                         }
                     }

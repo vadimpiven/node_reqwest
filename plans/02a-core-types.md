@@ -97,6 +97,7 @@ impl Method {
 pub struct DispatchOptions {
     pub origin: Option<String>,
     pub path: String,
+    pub query: String,
     pub method: Method,
     pub headers: HashMap<String, Vec<String>>,
     pub body: Option<Bytes>,
@@ -109,6 +110,7 @@ impl Default for DispatchOptions {
         Self {
             origin: None,
             path: "/".to_string(),
+            query: String::new(),
             method: Method::Get,
             headers: HashMap::new(),
             body: None,
