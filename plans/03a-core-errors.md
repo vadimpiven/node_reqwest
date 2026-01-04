@@ -1,66 +1,56 @@
 # Core Error Types (Chunk 3A)
 
-**Part**: 3 of 6 (Error Handling)  
-**Chunk**: 3A of 2  
-**Time**: 1 hour  
-**Prerequisites**: Part 2 complete (Chunks 2A-2B, 7 tests passing)
+## Problem/Purpose
 
-## Goal
+Establish a robust error handling system in Rust that maintains parity with Undici's
+error structure.
 
-Define comprehensive `CoreError` enum with all Undici error variants and mapping methods.
-Focus only on Rust types - JS/TS comes in 3B.
+## Solution
 
-## Add Dependency
+Implement a `CoreError` enum using `thiserror` to handle various HTTP and network failure
+modes, providing metadata for the FFI layer.
 
-```toml
-# packages/core/Cargo.toml
-[dependencies]
-thiserror = { workspace = true }
+## Architecture
 
-# Root Cargo.toml
-[workspace.dependencies]
-thiserror = "2.0.12"
+```text
+CoreError (enum)
+  ├─ Message (Display)
+  ├─ error_code() -> "UND_ERR_*"
+  ├─ error_name() -> "*Error"
+  └─ status_code() -> Option<u16>
 ```
 
-## Core Error Types (packages/core/src/error.rs)
+## Implementation
 
-Create new file with complete error type:
+### packages/core/Cargo.toml
+
+```toml
+[dependencies]
+thiserror = { workspace = true }
+```
+
+### packages/core/src/error.rs
 
 ```rust
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-
 use thiserror::Error;
 
 #[derive(Debug, Clone, Error)]
 pub enum CoreError {
-    #[error("Request aborted")]
-    RequestAborted,
-    #[error("Connect timeout")]
-    ConnectTimeout,
-    #[error("Headers timeout")]
-    HeadersTimeout,
-    #[error("Body timeout")]
-    BodyTimeout,
-    #[error("Socket error: {0}")]
-    Socket(String),
-    #[error("Invalid argument: {0}")]
-    InvalidArgument(String),
-    #[error("The client is destroyed")]
-    ClientDestroyed,
-    #[error("The client is closed")]
-    ClientClosed,
-    #[error("Request body length does not match content-length header")]
-    RequestContentLengthMismatch,
-    #[error("Response body length does not match content-length header")]
-    ResponseContentLengthMismatch,
-    #[error("Response content exceeded max size")]
-    ResponseExceededMaxSize,
-    #[error("Not supported: {0}")]
-    NotSupported(String),
-    #[error("Response error")]
-    ResponseError { status_code: u16, message: String },
-    #[error("Network error: {0}")]
-    Network(String),
+    #[error("Request aborted")] RequestAborted,
+    #[error("Connect timeout")] ConnectTimeout,
+    #[error("Headers timeout")] HeadersTimeout,
+    #[error("Body timeout")] BodyTimeout,
+    #[error("Socket error: {0}")] Socket(String),
+    #[error("Invalid argument: {0}")] InvalidArgument(String),
+    #[error("The client is destroyed")] ClientDestroyed,
+    #[error("The client is closed")] ClientClosed,
+    #[error("Request body length does not match content-length header")] RequestContentLengthMismatch,
+    #[error("Response body length does not match content-length header")] ResponseContentLengthMismatch,
+    #[error("Response content exceeded max size")] ResponseExceededMaxSize,
+    #[error("Not supported: {0}")] NotSupported(String),
+    #[error("Response error")] ResponseError { status_code: u16, message: String },
+    #[error("Network error: {0}")] Network(String),
 }
 
 impl CoreError {
@@ -70,8 +60,7 @@ impl CoreError {
             Self::ConnectTimeout => "UND_ERR_CONNECT_TIMEOUT",
             Self::HeadersTimeout => "UND_ERR_HEADERS_TIMEOUT",
             Self::BodyTimeout => "UND_ERR_BODY_TIMEOUT",
-            Self::Socket(_) => "UND_ERR_SOCKET",
-            Self::Network(_) => "UND_ERR_SOCKET",
+            Self::Socket(_) | Self::Network(_) => "UND_ERR_SOCKET",
             Self::InvalidArgument(_) => "UND_ERR_INVALID_ARG",
             Self::ClientDestroyed => "UND_ERR_DESTROYED",
             Self::ClientClosed => "UND_ERR_CLOSED",
@@ -89,8 +78,7 @@ impl CoreError {
             Self::ConnectTimeout => "ConnectTimeoutError",
             Self::HeadersTimeout => "HeadersTimeoutError",
             Self::BodyTimeout => "BodyTimeoutError",
-            Self::Socket(_) => "SocketError",
-            Self::Network(_) => "SocketError",
+            Self::Socket(_) | Self::Network(_) => "SocketError",
             Self::InvalidArgument(_) => "InvalidArgumentError",
             Self::ClientDestroyed => "ClientDestroyedError",
             Self::ClientClosed => "ClientClosedError",
@@ -111,55 +99,26 @@ impl CoreError {
 }
 ```
 
-## Update Exports (packages/core/src/lib.rs)
+### packages/core/src/lib.rs
 
 ```rust
-// ADD module and re-export
 pub mod error;
-
 pub use error::CoreError;
 ```
+
+## Tables
+
+| Metric | Value |
+| :--- | :--- |
+| **Dependency** | `thiserror = "2.0.12"` |
+| **Coverage** | 14 Undici error codes mapped |
+| **Metadata** | Code, Name, HTTP Status |
 
 ## File Structure
 
 ```text
 packages/core/
-├── Cargo.toml              # UPDATED: Add thiserror
-├── src/
-│   ├── error.rs           # NEW: CoreError enum
-│   └── lib.rs             # UPDATED: Export error module
-└── tests/                 # No changes yet
+└── src/
+    ├── lib.rs
+    └── error.rs
 ```
-
-## Verification
-
-```bash
-cd packages/core
-cargo build
-cargo test
-```
-
-All 7 previous tests should still pass. New error types just need to compile.
-
-## Milestone Checklist
-
-- [ ] `CoreError` enum compiles with thiserror
-- [ ] `error_code()` returns Undici error codes
-- [ ] `error_name()` returns error class names
-- [ ] `status_code()` extracts HTTP status for ResponseError
-- [ ] Display/Error traits work correctly
-- [ ] All 7 tests still pass
-- [ ] Ready for Chunk 3B (TypeScript errors)
-
-## Next Steps
-
-1. Move to **Chunk 3B** (`03b-typescript-errors.md`)
-2. Create TypeScript error classes with Symbol.for
-3. Implement createUndiciError() factory
-
-## Design Notes
-
-- **thiserror**: Derives Display and Error traits automatically
-- **Undici compatibility**: Error codes match undici exactly
-- **No JS integration yet**: Pure Rust types for now
-- **14 error variants**: Covers all common HTTP client error cases

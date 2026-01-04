@@ -1,84 +1,98 @@
 # Request Handle Bindings + Tests (Chunk 4C)
 
-**Part**: 4 of 6 (FFI Boundary)  
-**Chunk**: 4C of 3  
-**Time**: 1.5 hours  
-**Prerequisites**: Chunk 4B complete (handler marshaling works)
+## Problem/Purpose
 
-## Goal
+Provide JavaScript with the ability to control in-flight requests via native bindings for
+abort and backpressure operations.
 
-Complete FFI boundary by wiring `agentDispatch()` and request control methods.
-Add full dispatch callback test.
+## Solution
 
-## Reference
+Expose the `RequestController` to JavaScript via a boxed `RequestHandleInstance` and export
+functions to trigger its methods.
 
-See `04-ffi-boundary.md`:
+## Architecture
 
-- **Lines 226-267**: `parse_dispatch_options()` helper
-- **Lines 302-321**: `agentDispatch()` export
-- **Lines 323-342**: `agentClose()` and `agentDestroy()` stubs
-- **Lines 344-369**: Request handle control methods
-- **Lines 420-462**: Full dispatch test with callbacks
+```text
+JavaScript (Handle)
+  └─ requestHandleAbort() 
+       └─ FFI
+            └─ RequestController::abort() -> CancellationToken.cancel()
+```
 
-## Key Exports
+## Implementation
 
-1. **`agentDispatch(agent, options, callbacks)`**:
-   - Parse options → DispatchOptions
-   - Create JsDispatchHandler from callbacks
-   - Call `agent.dispatch()`
-   - Return RequestHandleInstance
+### packages/node/src/agent.rs (Add Request Handles)
 
-2. **Request Control**:
-   - `requestHandleAbort(handle)`
-   - `requestHandlePause(handle)`
-   - `requestHandleResume(handle)`
+```rust
+use core::RequestController;
 
-3. **Lifecycle Stubs**:
-   - `agentClose(agent)` - Returns resolved promise
-   - `agentDestroy(agent, error)` - Returns resolved promise
+pub struct RequestHandleInstance {
+    pub inner: RequestController,
+}
 
-## New Test
+impl Finalize for RequestHandleInstance {}
 
-Add to `addon-smoke.test.ts`:
+#[neon::export(name = "agentDispatch", context)]
+fn agent_dispatch<'cx>(
+    cx: &mut FunctionContext<'cx>,
+    agent: Handle<'cx, JsBox<AgentInstance>>,
+    options: Handle<'cx, JsObject>,
+    callbacks: Handle<'cx, JsObject>,
+) -> JsResult<'cx, JsBox<RequestHandleInstance>> {
+    // ... parse options and create JsDispatchHandler (from 4B) ...
+    let controller = agent.inner.dispatch(agent.runtime.clone(), dispatch_options, handler);
+    Ok(cx.boxed(RequestHandleInstance { inner: controller }))
+}
+
+#[neon::export(name = "requestHandleAbort", context)]
+fn request_handle_abort<'cx>(cx: &mut FunctionContext<'cx>, handle: Handle<'cx, JsBox<RequestHandleInstance>>) -> JsResult<'cx, JsUndefined> {
+    handle.inner.abort();
+    Ok(cx.undefined())
+}
+
+#[neon::export(name = "requestHandlePause", context)]
+fn request_handle_pause<'cx>(cx: &mut FunctionContext<'cx>, handle: Handle<'cx, JsBox<RequestHandleInstance>>) -> JsResult<'cx, JsUndefined> {
+    handle.inner.pause();
+    Ok(cx.undefined())
+}
+
+#[neon::export(name = "requestHandleResume", context)]
+fn request_handle_resume<'cx>(cx: &mut FunctionContext<'cx>, handle: Handle<'cx, JsBox<RequestHandleInstance>>) -> JsResult<'cx, JsUndefined> {
+    handle.inner.resume();
+    Ok(cx.undefined())
+}
+```
+
+### packages/node/tests/vitest/addon-smoke.test.ts
 
 ```typescript
-it('should dispatch a request with callbacks', async () => {
-  const agent = Addon.agentCreate({ /* config */ });
-  const events: string[] = [];
-  
-  const handle = Addon.agentDispatch(agent, 
-    { origin: 'https://httpbin.org', path: '/status/200', method: 'GET', headers: {} },
-    {
-      onResponseStart: () => events.push('start'),
-      onResponseData: () => events.push('data'),
-      onResponseEnd: () => events.push('end'),
-      onResponseError: () => events.push('error'),
-    }
-  );
-  
-  await new Promise(r => setTimeout(r, 2000));
-  expect(events).toContain('start');
+import { describe, it, expect } from 'vitest';
+import Addon from '../../index.node';
+
+describe('FFI Control', () => {
+  it('should dispatch and return a handle', () => {
+    const agent = Addon.agentCreate({ timeout: 0, connectTimeout: 0, poolIdleTimeout: 0 });
+    const handle = Addon.agentDispatch(agent, { path: '/', method: 'GET', headers: {} }, {
+      onResponseStart: () => {}, onResponseData: () => {}, onResponseEnd: () => {}, onResponseError: () => {}
+    });
+    expect(handle).toBeDefined();
+    Addon.requestHandleAbort(handle);
+  });
 });
 ```
 
-## Verification
+## Tables
 
-```bash
-cd packages/node
-pnpm build
-pnpm test addon-smoke.test.ts
+| Metric | Value |
+| :--- | :--- |
+| **Control Types** | Abort, Pause, Resume |
+| **Handle Lifecycle** | JS Garbage Collected (via Finalize) |
+| **Verification** | Smoke test for handle creation |
+
+## File Structure
+
+```text
+packages/node/
+└── src/
+    └── agent.rs
 ```
-
-**Expected**: 3-4 tests passing (including new dispatch test)
-
-## Milestone
-
-- [ ] `agentDispatch()` wires callbacks correctly
-- [ ] Request handles control pause/resume/abort
-- [ ] Full dispatch test passes with real HTTP request
-- [ ] Part 4 complete! 🎉
-- [ ] Ready for Part 5 (TypeScript)
-
-## Next
-
-Move to `05a-dispatch-controller.md` - Implement DispatchControllerImpl

@@ -1,101 +1,91 @@
 # Benchmarks + CI (Chunk 6B)
 
-**Part**: 6 of 6 (Performance Benchmarking)  
-**Chunk**: 6B of 2  
-**Time**: 1.5 hours  
-**Prerequisites**: Chunk 6A complete (infrastructure ready)
+## Problem/Purpose
 
-## Goal
+Automate performance verification and ensure `node_reqwest` remains competitive with native
+Node.js solutions.
 
-Implement actual benchmark scripts comparing node_reqwest vs undici,
-add NPM scripts, and create CI workflow.
+## Solution
 
-## Reference
+Create high-concurrency benchmark scripts for HTTP/1.1 and integrate them into a GitHub
+Actions workflow with strict pass/fail criteria.
 
-See `06-performance-benchmarking.md`:
-
-- **Lines 56-145**: HTTP/1 benchmark
-- **Lines 147-182**: HTTP/2 benchmark  
-- **Lines 184-239**: WebSocket benchmark
-- **Lines 383-406**: NPM scripts
-- **Lines 421-462**: CI workflow
-
-## Benchmark Scripts
-
-1. **`benchmarks/http1.js`**:
-   - Compare undici vs node_reqwest
-   - Tests: request, dispatch methods
-   - Uses cronometro for statistics
-
-2. **`benchmarks/http2.js`**:
-   - Same as HTTP/1 but with allowH2
-   - SSL/TLS configuration
-
-3. **`benchmarks/websocket.mjs`**:
-   - Binary and string message benchmarks
-   - Send/receive latency
-
-## NPM Scripts
-
-Add to `package.json`:
-
-```json
-{
-  "bench:http1": "node benchmarks/http1.js",
-  "bench:http2": "node benchmarks/http2.js",
-  "bench:ws": "node benchmarks/websocket.mjs",
-  "bench:all": "npm run bench:http1 && npm run bench:http2 && npm run bench:ws",
-  "bench:servers": "concurrently \"node benchmarks/servers/http1-server.js\" ..."
-}
-```
-
-## CI Workflow
-
-Create `.github/workflows/benchmark.yml`:
-
-- Runs on PR to packages/core or packages/node
-- Starts servers, runs benchmarks
-- Fails if performance < 95% of undici
-
-## Verification
-
-```bash
-# Terminal 1
-pnpm bench:servers
-
-# Terminal 2
-pnpm bench:http1
-```
-
-Should see table output:
+## Architecture
 
 ```text
-┌─────────────────────┬─────────┬──────────────┬──────────┬────────────┐
-│ Test                │ Samples │ Result       │ Tolerance│ Difference │
-├─────────────────────┼─────────┼──────────────┼──────────┼────────────┤
-│ undici - request    │ 10      │ 15234 req/sec│ ± 2.34 % │ -          │
-│ node_reqwest - req  │ 10      │ 14832 req/sec│ ± 2.67 % │ +2.78%     │
-└─────────────────────┴─────────┴──────────────┴──────────┴────────────┘
+GitHub Action
+  └─ Start Servers
+       └─ Run cronometro
+            └─ Compare node_reqwest vs undici
+                 └─ Exit 1 if < 95% performance
 ```
 
-## Success Criteria
+## Implementation
 
-- ✅ Throughput ≥ 95% of undici
-- ✅ Latency (mean) ≤ 105% of undici
-- ✅ All benchmarks run without errors
+### packages/node/benchmarks/http1.js
 
-## Milestone
+```javascript
+import { Pool as UndiciPool } from 'undici';
+import { Agent as NodeReqwestAgent } from '../export/agent.js';
+import { cronometro } from 'cronometro';
+import { makeParallelRequests, printResults } from './_util/index.js';
+import { config } from './config.js';
 
-- [ ] HTTP/1 benchmark runs
-- [ ] HTTP/2 benchmark runs
-- [ ] WebSocket benchmark runs
-- [ ] Performance meets criteria (≥ 95%)
-- [ ] CI workflow configured
-- [ ] **PROJECT COMPLETE!** 🎉🎉🎉
+const url = 'http://localhost:3000';
+const undici = new UndiciPool(url, { connections: 10 });
+const reqwest = new NodeReqwestAgent(url);
 
-## Final Steps
+cronometro({
+  'undici': () => makeParallelRequests(resolve => {
+    undici.request({ path: '/', method: 'GET' }).then(({ body }) => body.resume().on('end', resolve));
+  }),
+  'node_reqwest': () => makeParallelRequests(resolve => {
+    reqwest.dispatch({ path: '/', method: 'GET' }, {
+      onResponseStart: () => {},
+      onResponseData: () => {},
+      onResponseEnd: () => resolve(),
+      onResponseError: e => { throw e; }
+    });
+  })
+}, { iterations: config.iterations }, (err, results) => {
+  printResults(results);
+  process.exit(0);
+});
+```
 
-1. Run full benchmark suite
-2. Document results
-3. Update README with performance numbers
-4. Celebrate completion of all 13 chunks!
+### .github/workflows/benchmark.yml
+
+```yaml
+name: Benchmark
+on: [pull_request]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pnpm install
+      - run: pnpm -F node_reqwest build
+      - name: Run
+        run: |
+          node packages/node/benchmarks/servers/http1-server.js &
+          sleep 2
+          node packages/node/benchmarks/http1.js
+```
+
+## Tables
+
+| Metric | Threshold |
+| :--- | :--- |
+| **Throughput** | ≥ 95% of Undici |
+| **Mean Latency** | ≤ 105% of Undici |
+| **Max Memory** | 120% of Undici base |
+
+## File Structure
+
+```text
+packages/node/
+└── benchmarks/
+    └── http1.js
+.github/workflows/
+└── benchmark.yml
+```

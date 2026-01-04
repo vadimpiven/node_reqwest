@@ -1,65 +1,104 @@
 # DispatchController (Chunk 5A)
 
-**Part**: 5 of 6 (TypeScript Integration)  
-**Chunk**: 5A of 2  
-**Time**: 2 hours  
-**Prerequisites**: Part 4 complete (FFI boundary works)
+## Problem/Purpose
 
-## Goal
+Implement the `Dispatcher.DispatchController` interface to provide users with a standard way
+to control requests, even before the native handle is established.
 
-Implement `DispatchControllerImpl` class conforming to undici's
-`Dispatcher.DispatchController` interface with proper state management.
+## Solution
 
-## Reference
+Create `DispatchControllerImpl` to manage internal state (`#aborted`, `#paused`) and
+synchronize it with the native `RequestHandle` through a late-binding mechanism.
 
-See `05-typescript-integration.md`:
+## Architecture
 
-- **Lines 11-69**: `DispatchControllerImpl` class
-- **Lines 223-302**: Controller tests
-
-## Key Features
-
-1. **State Management**:
-   - `#aborted`, `#paused`, `#reason` private fields
-   - Getters expose state readonly
-
-2. **Pending State Handling**:
-   - `setRequestHandle()` applies abort/pause if called before handle set
-   - Handles race between `onRequestStart` and native dispatch
-
-3. **Methods**:
-   - `abort(reason)` - Sets aborted, stores reason
-   - `pause()` - Sets paused
-   - `resume()` - Clears paused
-
-## Tests
-
-Create `packages/node/tests/vitest/controller.test.ts`:
-
-1. Abort before request handle set
-2. Pause before request handle set  
-3. Track pending requests and emit drain
-4. Reject dispatch when closed
-5. Reject dispatch when destroyed
-
-## Verification
-
-```bash
-cd packages/node
-pnpm build
-pnpm test controller.test.ts
+```text
+User 
+  └─ DispatchController.abort() 
+       └─ Buffer State (if no handle) 
+            └─ setRequestHandle() 
+                 └─ Apply State to Native Handle
 ```
 
-**Expected**: 5 tests passing
+## Implementation
 
-## Milestone
+### packages/node/export/agent.ts
 
-- [ ] `DispatchControllerImpl` class complete
-- [ ] State transitions work correctly
-- [ ] Pending state applies when handle set
-- [ ] 5 controller tests pass
-- [ ] Ready for Chunk 5B (Agent integration)
+```typescript
+import type { Dispatcher } from 'undici';
+import type { RequestHandle } from './addon-def';
 
-## Next
+export class DispatchControllerImpl implements Dispatcher.DispatchController {
+  #aborted = false;
+  #paused = false;
+  #reason: Error | null = null;
+  #requestHandle: RequestHandle | null = null;
 
-Move to `05b-agent-integration.md` - Complete Agent.dispatch()
+  get aborted(): boolean { return this.#aborted; }
+  get paused(): boolean { return this.#paused; }
+  get reason(): Error | null { return this.#reason; }
+
+  setRequestHandle(handle: RequestHandle): void {
+    this.#requestHandle = handle;
+    if (this.#aborted) {
+      (this.#requestHandle as any).abort();
+    } else if (this.#paused) {
+      (this.#requestHandle as any).pause();
+    }
+  }
+
+  abort(reason: Error): void {
+    if (this.#aborted) return;
+    this.#aborted = true;
+    this.#reason = reason;
+    (this.#requestHandle as any)?.abort();
+  }
+
+  pause(): void {
+    if (!this.#paused) {
+      this.#paused = true;
+      (this.#requestHandle as any)?.pause();
+    }
+  }
+
+  resume(): void {
+    if (this.#paused) {
+      this.#paused = false;
+      (this.#requestHandle as any)?.resume();
+    }
+  }
+}
+```
+
+### packages/node/tests/vitest/controller.test.ts
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { DispatchControllerImpl } from '../../export/agent';
+
+describe('DispatchController', () => {
+  it('should buffer abort state', () => {
+    const ctrl = new DispatchControllerImpl();
+    ctrl.abort(new Error('reason'));
+    const handle = { abort: vi.fn(), pause: vi.fn(), resume: vi.fn() };
+    ctrl.setRequestHandle(handle as any);
+    expect(handle.abort).toHaveBeenCalled();
+  });
+});
+```
+
+## Tables
+
+| Metric | Value |
+| :--- | :--- |
+| **Interface** | `Dispatcher.DispatchController` |
+| **Encapsulation** | Private class fields (`#`) |
+| **Parity** | Matches Undici 6.x behavior |
+
+## File Structure
+
+```text
+packages/node/
+└── export/
+    └── agent.ts
+```

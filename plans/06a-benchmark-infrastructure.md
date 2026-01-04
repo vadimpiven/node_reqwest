@@ -1,71 +1,80 @@
 # Benchmark Infrastructure (Chunk 6A)
 
-**Part**: 6 of 6 (Performance Benchmarking)  
-**Chunk**: 6A of 2  
-**Time**: 1.5 hours  
-**Prerequisites**: Part 5 complete (full dispatcher working)
+## Problem/Purpose
 
-## Goal
+Establish a controlled, reproducible environment for performance testing to ensure
+`node_reqwest` meets latency and throughput goals.
 
-Set up benchmark framework with test servers, utilities, and cronometro integration.
-No actual benchmarks yet.
+## Solution
 
-## Reference
+Deploy local test servers covering multiple protocols (HTTP/1, HTTP/2, WS) and implement
+a benchmarking harness using `cronometro`.
 
-See `06-performance-benchmarking.md`:
+## Architecture
 
-- **Lines 40-54**: Benchmark config
-- **Lines 242-287**: Utility functions
-- **Lines 290-380**: Test servers (HTTP/1, HTTP/2, WebSocket, Proxy)
-
-## Infrastructure
-
-1. **Config** (`benchmarks/config.js`):
-   - iterations, connections, pipelining settings
-   - Environment variable overrides
-
-2. **Utilities** (`benchmarks/_util/index.js`):
-   - `makeParallelRequests(cb, count)`
-   - `printResults(results, parallelRequests)`
-   - `formatBytes(num)`
-
-3. **Test Servers**:
-   - `servers/http1-server.js` - Simple HTTP/1.1 on port 3000
-   - `servers/http2-server.js` - HTTP/2 with TLS on port 3001
-   - `servers/websocket-server.mjs` - WebSocket echo on port 8080
-   - `servers/proxy-server.js` - HTTP/HTTPS/WS proxy on port 8888
-
-4. **Dependencies**:
-   - Add `cronometro`, `http-proxy`, `ws`, `concurrently`
-
-## Verification
-
-```bash
-cd packages/node
-
-# Add dependencies
-pnpm add -D cronometro http-proxy ws concurrently
-
-# Start servers
-pnpm bench:servers
+```text
+Test Suite
+  ├─ HTTP/1 Server (Port 3000)
+  ├─ HTTP/2 Server (Port 3001)
+  └─ Utils (makeParallelRequests)
 ```
 
-Should see:
+## Implementation
 
-```bash
-HTTP/1 server listening on http://localhost:3000
-HTTP/2 server listening on https://localhost:3001  
-WebSocket server listening on ws://localhost:8080
+### packages/node/benchmarks/_util/index.js
+
+```javascript
+export function makeParallelRequests(cb, count = 100) {
+  const promises = Array.from({ length: count }, () => new Promise(cb));
+  return Promise.all(promises);
+}
+
+export function printResults(results, parallelRequests = 100) {
+  const rows = Object.entries(results).map(([name, result]) => ({
+    Test: name,
+    'Req/Sec': `${((parallelRequests * 1e9) / result.mean).toFixed(2)}`,
+    Tolerance: `± ${((result.standardError / result.mean) * 100).toFixed(2)}%`
+  }));
+  console.table(rows);
+}
 ```
 
-## Milestone
+### packages/node/benchmarks/servers/http1-server.js
 
-- [ ] All 4 test servers start successfully
-- [ ] Utility functions compile
-- [ ] Config loads from environment
-- [ ] Dependencies installed
-- [ ] Ready for Chunk 6B (actual benchmarks)
+```javascript
+import http from 'node:http';
+const body = Buffer.from('Hello');
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain', 'Content-Length': body.length });
+  res.end(body);
+}).listen(3000);
+```
 
-## Next
+### packages/node/benchmarks/config.js
 
-Move to `06b-benchmarks-ci.md` - Implement benchmark scripts + CI
+```javascript
+export const config = {
+  iterations: 10,
+  parallelRequests: 100,
+};
+```
+
+## Tables
+
+| Resource | Version | Purpose |
+| :--- | :--- | :--- |
+| `cronometro` | `^3.0.2` | Stats Engine |
+| `ws` | `^8.18.0` | WS Reference |
+| `http-proxy` | `^1.18.1` | Proxy Reference |
+
+## File Structure
+
+```text
+packages/node/
+└── benchmarks/
+    ├── _util/
+    │   └── index.js
+    ├── servers/
+    │   └── http1-server.js
+    └── config.js
+```

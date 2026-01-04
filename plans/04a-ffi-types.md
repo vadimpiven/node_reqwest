@@ -1,60 +1,110 @@
 # FFI Types + Basic Bindings (Chunk 4A)
 
-**Part**: 4 of 6 (FFI Boundary)  
-**Chunk**: 4A of 3  
-**Time**: 2 hours  
-**Prerequisites**: Part 3 complete (error types & tests)
+## Problem/Purpose
 
-## Goal
+Initialize the Neon-based FFI boundary and establish the core TypeScript interfaces for
+the native addon.
 
-Set up Neon project with basic addon interface types and simple exports (`hello()`, `agentCreate()`).
+## Solution
 
-## Reference
+Define the `Addon` interface in TypeScript and implement the `agentCreate` binding in Rust
+to bridge configuration data.
 
-Full implementation details in `04-ffi-boundary.md`:
+## Architecture
 
-- **Lines 12-35**: Dependencies  
-- **Lines 37-85**: Addon interface types (TypeScript)
-- **Lines 87-119**: AgentInstance + RequestHandleInstance wrappers
-- **Lines 269-299**: `agentCreate()` export
-- **Lines 388-391**: `hello()` export
-
-## Key Deliverables
-
-1. **`packages/node/export/addon-def.ts`**:
-   - `RequestHandle`, `DispatchCallbacks`, `AgentCreationOptions` types
-   - `Addon` interface definition
-
-2. **`packages/node/src/agent.rs`**:
-   - `AgentInstance` struct wrapping `core::Agent`
-   - `RequestHandleInstance` struct (empty for now)
-
-3. **`packages/node/src/lib.rs`**:
-   - `hello()` export
-   - `agentCreate()` export
-
-4. **`packages/node/tests/vitest/addon-smoke.test.ts`**:
-   - Test: Addon loads
-   - Test: `hello()` returns "hello"
-   - Test: `agentCreate()` creates agent instance
-
-## Verification
-
-```bash
-cd packages/node
-pnpm build
-pnpm test addon-smoke.test.ts
+```text
+TypeScript (AgentOptions) 
+  └─ Neon Boundary 
+       └─ Rust (AgentConfig -> Agent::new())
 ```
 
-**Expected**: 3 tests passing (or 2 minimal: addon loads + creates agent)
+## Implementation
 
-## Milestone
+### packages/node/export/addon-def.ts
 
-- [ ] Neon builds successfully
-- [ ] TypeScript types compile
-- [ ] 2-3 addon smoke tests pass
-- [ ] Ready for Chunk 4B (dispatch handler)
+```typescript
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+import type { IncomingHttpHeaders } from 'undici';
+import type { CoreErrorInfo } from './errors';
 
-## Next
+export interface AgentInstance { readonly _: unique symbol; }
+export interface RequestHandle { readonly _: unique symbol; }
 
-Move to `04b-dispatch-handler.md` - Implement JsDispatchHandler
+export type DispatchCallbacks = {
+  onResponseStart: (statusCode: number, headers: IncomingHttpHeaders, statusMessage: string) => void;
+  onResponseData: (chunk: Buffer) => void;
+  onResponseEnd: (trailers: IncomingHttpHeaders) => void;
+  onResponseError: (error: CoreErrorInfo) => void;
+};
+
+export interface Addon {
+  hello(): string;
+  agentCreate(options: { timeout: number, connectTimeout: number, poolIdleTimeout: number }): AgentInstance;
+  agentDispatch(agent: AgentInstance, options: any, callbacks: DispatchCallbacks): RequestHandle;
+}
+```
+
+### packages/node/src/agent.rs
+
+```rust
+use core::{Agent, AgentConfig};
+use neon::prelude::*;
+use std::time::Duration;
+
+pub struct AgentInstance {
+    pub inner: Agent,
+    pub runtime: tokio::runtime::Handle,
+}
+
+impl Finalize for AgentInstance {}
+
+#[neon::export(name = "agentCreate", context)]
+fn agent_create<'cx>(cx: &mut FunctionContext<'cx>, options: Handle<'cx, JsObject>) -> JsResult<'cx, JsBox<AgentInstance>> {
+    let timeout: Handle<JsNumber> = options.get(cx, "timeout")?;
+    let config = AgentConfig {
+        timeout: Some(Duration::from_millis(timeout.value(cx) as u64)),
+        ..Default::default()
+    };
+    
+    let runtime = tokio::runtime::Handle::current();
+    let agent = Agent::new(config).map_err(|e| cx.throw_error::<_, ()>(e.to_string()).unwrap_err())?;
+
+    Ok(cx.boxed(AgentInstance { inner: agent, runtime }))
+}
+```
+
+### packages/node/src/lib.rs
+
+```rust
+mod agent;
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
+use neon::prelude::*;
+
+#[neon::export(name = "hello", context)]
+fn hello<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsString> {
+    Ok(cx.string("hello"))
+}
+```
+
+## Tables
+
+| Metric | Value |
+| :--- | :--- |
+| **FFI Framework** | `Neon` |
+| **Allocator** | `mimalloc` |
+| **Est. Build Time** | < 2 minutes |
+
+## File Structure
+
+```text
+packages/node/
+├── export/
+│   └── addon-def.ts
+└── src/
+    ├── lib.rs
+    └── agent.rs
+```

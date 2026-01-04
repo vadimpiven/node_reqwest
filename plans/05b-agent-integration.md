@@ -1,68 +1,122 @@
 # Agent Integration + E2E Tests (Chunk 5B)
 
-**Part**: 5 of 6 (TypeScript Integration)  
-**Chunk**: 5B of 2  
-**Time**: 2 hours  
-**Prerequisites**: Chunk 5A complete (DispatchController works)
+## Problem/Purpose
 
-## Goal
+Complete the library by integrating the FFI layer into a standard `Agent` class, enabling
+full Undici compatibility and high-level resource management.
 
-Complete `Agent` class with full `dispatch()` implementation, pending request tracking,
-and drain events. Add E2E integration tests.
+## Solution
 
-## Reference
+Implement the `Agent` class extending `EventEmitter`, managing the native instance
+lifecycle and coordinating request dispatching with backpressure.
 
-See `05-typescript-integration.md`:
+## Architecture
 
-- **Lines 74-220**: Full `Agent` class implementation
-- **Lines 335-448**: E2E integration tests
-
-## Key Features
-
-1. **Agent Class**:
-   - Extends `EventEmitter`
-   - Implements `Dispatcher` interface
-   - Tracks `#pendingRequests`, `#needDrain`
-   - Closed/destroyed state management
-
-2. **dispatch() Method**:
-   - Creates `DispatchControllerImpl`
-   - Wires callbacks with error handling
-   - Tracks pending requests
-   - Returns busy/available status
-
-3. **Drain Events**:
-   - Emits 'drain' when drops below maxConcurrent
-   - Uses `queueMicrotask` for async emission
-
-## E2E Tests
-
-Create `packages/node/tests/vitest/dispatch-integration.test.ts`:
-
-1. Full request/response cycle (httpbin.org)
-2. Abort mid-stream
-3. Pause and resume
-
-## Verification
-
-```bash
-cd packages/node
-pnpm build
-pnpm test dispatch-integration.test.ts
+```text
+User 
+  └─ Agent.dispatch()
+       ├─ Callback Marshaling (Native -> JS)
+       ├─ Concurrency tracking
+       └─ Native Handle synchronization
 ```
 
-**Expected**: 3 E2E tests passing
+## Implementation
 
-## Milestone
+### packages/node/export/agent.ts (Complete Agent)
 
-- [ ] Agent extends EventEmitter
-- [ ] dispatch() wires all callbacks
-- [ ] Pending request tracking works
-- [ ] Drain events emit correctly
-- [ ] 3 E2E tests pass
-- [ ] Part 5 complete! 🎉
-- [ ] Ready for Part 6 (benchmarks)
+```typescript
+import { EventEmitter } from 'node:events';
+import type { Dispatcher } from 'undici';
+import Addon from '../index.node';
 
-## Next
+export class Agent extends EventEmitter implements Dispatcher {
+  #agent: any;
+  #pendingRequests = 0;
+  #maxConcurrent = 100;
 
-Move to `06a-benchmark-infrastructure.md` - Set up benchmark framework
+  constructor(url: string | URL, options?: any) {
+    super();
+    this.#agent = Addon.agentCreate({
+      timeout: options?.bodyTimeout ?? 0,
+      connectTimeout: options?.connectTimeout ?? 0,
+      poolIdleTimeout: options?.keepAliveTimeout ?? 30000,
+    });
+  }
+
+  dispatch(options: Dispatcher.DispatchOptions, handler: Dispatcher.DispatchHandler): boolean {
+    const controller = new DispatchControllerImpl();
+    handler.onRequestStart?.(controller, {});
+
+    const callbacks = {
+      onResponseStart: (code: number, headers: any, msg: string) => handler.onResponseStart?.(controller, code, headers, msg),
+      onResponseData: (chunk: Buffer) => handler.onResponseData?.(controller, chunk),
+      onResponseEnd: (trailers: any) => {
+        this.#onRequestComplete();
+        handler.onResponseEnd?.(controller, trailers);
+      },
+      onResponseError: (err: any) => {
+        this.#onRequestComplete();
+        handler.onResponseError?.(controller, err);
+      },
+    };
+
+    this.#pendingRequests++;
+    const busy = this.#pendingRequests >= this.#maxConcurrent;
+    const nativeHandle = Addon.agentDispatch(this.#agent, options, callbacks);
+    
+    controller.setRequestHandle({
+      abort: () => Addon.requestHandleAbort(nativeHandle),
+      pause: () => Addon.requestHandlePause(nativeHandle),
+      resume: () => Addon.requestHandleResume(nativeHandle),
+    });
+
+    return !busy;
+  }
+
+  #onRequestComplete() {
+    this.#pendingRequests--;
+    if (this.#pendingRequests < this.#maxConcurrent) {
+      queueMicrotask(() => this.emit('drain'));
+    }
+  }
+
+  // ... close() and destroy() implementations calling native agentClose/agentDestroy ...
+}
+```
+
+### packages/node/tests/vitest/dispatch-integration.test.ts
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { Agent } from '../../export/agent';
+
+describe('E2E Dispatch', () => {
+  it('should complete a real request', async () => {
+    const agent = new Agent('https://httpbin.org');
+    await new Promise<void>((resolve, reject) => {
+      agent.dispatch({ path: '/get', method: 'GET' }, {
+        onResponseStart: () => {},
+        onResponseData: () => {},
+        onResponseEnd: () => resolve(),
+        onResponseError: (c, err) => reject(err),
+      });
+    });
+  });
+});
+```
+
+## Tables
+
+| Metric | Value |
+| :--- | :--- |
+| **Exports** | `Agent`, `DispatchController` |
+| **Events** | `drain` (standard Undici) |
+| **Max Concurrency** | Default 100 |
+
+## File Structure
+
+```text
+packages/node/
+└── export/
+    └── agent.ts
+```
