@@ -6,27 +6,26 @@ import process from 'node:process';
 import { runCommand } from './helpers/run-command.ts';
 import { ensureError, runScript } from './helpers/run-script.ts';
 
-const packageDir = process.cwd();
-const projectRoot = join(packageDir, '..', '..');
+const packageDir: string = process.cwd();
+const projectRoot: string = join(packageDir, '..', '..');
 
-const isLinux = process.platform === 'linux';
-const isWindowsArm = process.platform === 'win32' && process.arch === 'arm64';
+const isLinux: boolean = process.platform === 'linux';
+const isWindowsArm: boolean = process.platform === 'win32' && process.arch === 'arm64';
 
 // Skip coverage on Linux (cargo-llvm-cov requires glibc 2.29+) and Windows ARM
-const skipCoverage = isLinux || isWindowsArm;
+const skipCoverage: boolean = isLinux || isWindowsArm;
 
 runScript('Nextest execution', async () => {
   const args = process.argv.slice(2);
 
   if (skipCoverage) {
     // Run tests directly without coverage
-    await runCommand('cargo', ['bin', 'cargo-nextest', 'run', '--no-tests', 'pass', ...args]);
+    await runCommand('cargo', ['nextest', 'run', '--no-tests', 'pass', ...args]);
   } else {
     // Run tests and collect coverage data, but don't generate report yet
     // This preserves object files for subsequent report commands
     await runCommand('cargo', [
-      'bin',
-      'cargo-llvm-cov',
+      'llvm-cov',
       'nextest',
       '--no-report',
       '--no-tests',
@@ -49,8 +48,7 @@ runScript('Nextest execution', async () => {
   if (!skipCoverage) {
     // Generate lcov report for CI
     await runCommand('cargo', [
-      'bin',
-      'cargo-llvm-cov',
+      'llvm-cov',
       'report',
       '--lcov',
       '--output-path',
@@ -59,9 +57,9 @@ runScript('Nextest execution', async () => {
     ]);
 
     // Generate text report for developer review
-    await runCommand('cargo', ['bin', 'cargo-llvm-cov', 'report', ...args]);
+    await runCommand('cargo', ['llvm-cov', 'report', ...args]);
 
     // Clean up object files
-    await runCommand('cargo', ['bin', 'cargo-llvm-cov', 'clean', '--workspace']);
+    await runCommand('cargo', ['llvm-cov', 'clean', '--workspace']);
   }
 });

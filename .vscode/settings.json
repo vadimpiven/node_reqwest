@@ -1,7 +1,6 @@
 {
-  "biome.lsp.bin": "./.path/biome",
-  "biome.lspBin": "./.path/biome",
-  "biome.lsp.trace.server": "verbose",
+  "mise.configureExtensionsAutomatically": true,
+  "mise.configureExtensionsAutomaticallyIgnoreList": [],
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "biomejs.biome",
   "[rust]": { "editor.defaultFormatter": "rust-lang.rust-analyzer" },
@@ -37,10 +36,5 @@
   "rust-analyzer.imports.preferPrelude": true,
   "rust-analyzer.imports.prefix": "plain",
   "trivy.configPath": "trivy.yaml",
-  "trivy.ignoreFilesInGitIgnore": true,
-  "python.defaultInterpreterPath": "${workspaceFolder}/.path/python",
-  "python.autoComplete.extraPaths": [
-    "${workspaceFolder}/.venv/lib/python3.14/site-packages",
-    "${workspaceFolder}/.venv/Lib/site-packages"
-  ]
+  "trivy.ignoreFilesInGitIgnore": true
 }

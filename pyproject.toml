@@ -17,14 +17,32 @@ dev = [
 [tool.pyrefly]
 project-includes = ["packages/**/*.py"]
 use-ignore-files = true
-python-interpreter-path = ".path/python"
-search-path = [
-    ".venv/lib/python3.14/site-packages",
-    ".venv/Lib/site-packages",
-]
+
+[tool.ruff]
+cache-dir = ".cache/ruff"
+line-length = 100
 
 [tool.ruff.format]
 docstring-code-format = true
 
 [tool.ruff.lint]
-extend-select = ["I"]
+select = ["ALL"]
+ignore = [
+    "D",      # pydocstyle - documentation style (too noisy for scripts)
+    "COM812", # missing-trailing-comma (conflicts with formatter)
+    "INP001", # implicit-namespace-package (single-file scripts)
+    "ISC001", # single-line-implicit-string-concatenation (conflicts with formatter)
+    "T20",    # flake8-print - allow print in scripts
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.ruff.lint.pylint]
+max-args = 6
+max-branches = 12
+max-returns = 4
+max-statements = 50
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10

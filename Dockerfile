@@ -1,119 +1,88 @@
 # syntax=docker/dockerfile:1.4
 # <https://quay.io/repository/pypa/manylinux_2_28?tab=tags>
-FROM quay.io/pypa/manylinux_2_28@sha256:e930a1ce2b1b1b75e367cb7bdc9733276d92ce0c6bb6aee97dbd67e78722cbf5
-
-LABEL org.opencontainers.image.source="https://github.com/vadimpiven/node_reqwest"
-LABEL org.opencontainers.image.description="Dev Container for node_reqwest"
-LABEL org.opencontainers.image.licenses="Apache-2.0 OR MIT"
+FROM quay.io/pypa/manylinux_2_28@sha256:6555afbd0e57fb232c5b7e4409b12dfd8ed6172ff9176641b71d4a7ee6fd57d6
 
 ARG TARGETARCH
 ARG USERNAME=runner
 ARG USER_UID=1001
 ARG USER_GID=$USER_UID
 
-# Toolchain Homes (kept in image, NOT shadowed by volumes)
+# Toolchain Homes - now in workspace for persistence
+ENV MISE_DATA_DIR=/workspace/.cache/docker/mise
 ENV PNPM_HOME=/home/${USERNAME}/.pnpm
-ENV RUSTUP_HOME=/home/${USERNAME}/.rustup
-ENV CARGO_HOME=/home/${USERNAME}/.cargo
+ENV CARGO_HOME=/workspace/.cache/cargo
 
-# Cache Directions (shadowed by repo-local volumes for persistence)
-ENV CACHE_ROOT=/home/${USERNAME}/.cache
-ENV UV_CACHE_DIR=${CACHE_ROOT}/uv
-ENV PNPM_STORE_PATH=${CACHE_ROOT}/pnpm-store
-ENV CARGO_REGISTRY=${CARGO_HOME}/registry
-ENV CARGO_GIT=${CARGO_HOME}/git
-ENV SCCACHE_DIR=${CACHE_ROOT}/sccache
+# Cache Directories - all in workspace for persistence
+ENV UV_CACHE_DIR=/workspace/.cache/docker/uv
+ENV UV_PROJECT_ENVIRONMENT=/workspace/.cache/docker/venv
+ENV npm_config_store_dir=/workspace/.cache/docker/pnpm-store
+ENV SCCACHE_DIR=/workspace/.cache/docker/sccache
 
-ENV PATH=${PNPM_HOME}:${CARGO_HOME}/bin:/home/${USERNAME}/.local/bin:$PATH
+# Prioritize Mise shims, then other tool paths
+ENV PATH=${MISE_DATA_DIR}/shims:${PNPM_HOME}:${CARGO_HOME}/bin:/home/${USERNAME}/.local/bin:$PATH
 
+# Configure Python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+# Container environment variables
+ENV DEV_CONTAINER=1
+ENV READY_MARKER=/home/${USERNAME}/.container-ready
+
+# SSL environment variables
+ENV SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt
+ENV SSL_CERT_DIR=/etc/ssl/certs
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# 1. System Setup (root)
+HEALTHCHECK --interval=2s --timeout=5s --start-period=30s --retries=15 \
+    CMD [ -f "$READY_MARKER" ] || exit 1
+
+COPY .mise-version /tmp/.mise-version
 RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
+    MISE_VERSION=$(cat /tmp/.mise-version) \
+    && rm -f /tmp/.mise-version \
+    && ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") \
+    && curl -sSL "https://github.com/jdx/mise/releases/download/${MISE_VERSION}/mise-${MISE_VERSION}-linux-${ARCH}-musl" -o /usr/local/bin/mise \
+    && chmod +x /usr/local/bin/mise \
+    \
+    # Configure mise for glibc compatibility (forces correct Python binaries)
+    && mkdir -p /etc/mise \
+    && MISE_CPU=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64") \
+    && echo "[settings]" > /etc/mise/config.toml \
+    && echo "python.precompiled_arch = \"$MISE_CPU\"" >> /etc/mise/config.toml \
+    && echo "python.precompiled_os = \"unknown-linux-gnu\"" >> /etc/mise/config.toml \
+    \
     # Dependency Installation
-    printf '[trivy]\nname=Trivy repository\nbaseurl=https://aquasecurity.github.io/trivy-repo/rpm/releases/$basearch/\ngpgcheck=1\nenabled=1\ngpgkey=https://aquasecurity.github.io/trivy-repo/rpm/public.key\n' > /etc/yum.repos.d/trivy.repo \
     && rm -f /usr/local/bin/git-lfs \
-    && yum update -y \
-    && yum install -y sudo git git-lfs curl xz jq trivy \
+    && dnf update -y \
+    && dnf install -y sudo git git-lfs curl \
         xorg-x11-server-Xvfb alsa-lib atk at-spi2-atk cairo cups-libs dbus-libs \
         gdk-pixbuf2 gtk3 libX11 libXcomposite libXcursor libXdamage libXext libXfixes libXi \
         libXrandr libXrender libXtst mesa-libgbm libicu libxkbcommon nss pango \
-    && yum clean all \
+    && dnf clean all \
+    \
+    # Create SSL symlinks (for tools that expect /etc/ssl/certs or Python internal certs)
+    && mkdir -p ${SSL_CERT_DIR} \
+    && ln -sf ${SSL_CERT_FILE} ${SSL_CERT_DIR}/ca-certificates.crt \
+    && ln -sf ${SSL_CERT_FILE} /opt/_internal/certs.pem \
     \
     # User Setup
     && groupadd --gid ${USER_GID} --non-unique ${USERNAME} \
     && useradd --uid ${USER_UID} --gid ${USER_GID} --non-unique --shell /bin/bash --create-home ${USERNAME} \
     && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} \
     && chmod 0440 /etc/sudoers.d/${USERNAME} \
-    && mkdir -p ${PNPM_HOME} ${RUSTUP_HOME} ${CARGO_HOME}/bin ${CACHE_ROOT} \
-    \
-    # Tool Provisioning
-    && curl -sSL "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${TARGETARCH}" -o /usr/local/bin/yq \
-    && chmod +x /usr/local/bin/yq \
-    && curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none \
-    && curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash \
-    && cargo-binstall sccache -y --locked \
+    && mkdir -p ${MISE_DATA_DIR} ${PNPM_HOME} \
     && mkdir -p /mitmproxy-certs \
+    && printf '%s\n' \
+        '# Wait for container initialization before proceeding' \
+        'while [ ! -f "$READY_MARKER" ]; do sleep 0.1; done' \
+        'eval "$(mise activate bash)"' \
+        >> /home/${USERNAME}/.bashrc \
     && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
-
-# Rust caching activation
-ENV RUSTC_WRAPPER=sccache
 
 # Switch to non-root user
 USER ${USERNAME}
-WORKDIR /tmp/config
-COPY --chown=${USERNAME}:${USERNAME} \
-    pyproject.toml \
-    .python-version \
-    package.json \
-    rust-toolchain.toml \
-    docker-entrypoint.sh \
-    ./
-
-# 2. UV + Python runtime
-RUN --mount=type=cache,target=${UV_CACHE_DIR},uid=${USER_UID},gid=${USER_GID},sharing=locked \
-    UV_VERSION=$(yq -p toml -oy '.tool.uv."required-version"' pyproject.toml | sed 's/[^0-9.]*//g') \
-    && curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh \
-    && uv python install --default
-
-# 3. pnpm + Node.js
-RUN --mount=type=cache,target=${PNPM_STORE_PATH},uid=${USER_UID},gid=${USER_GID},sharing=locked \
-    PNPM_VERSION=$(jq -r '.engines.pnpm | ltrimstr("^")' package.json) \
-    && curl -fsSL "https://get.pnpm.io/install.sh" | ENV="$HOME/.bashrc" SHELL="$(which bash)" PNPM_VERSION="$PNPM_VERSION" bash - \
-    && pnpm config set store-dir "${PNPM_STORE_PATH}" \
-    && NODE_VERSION=$(jq -r '.engines.node | ltrimstr("^")' package.json) \
-    && pnpm env use --global "$NODE_VERSION" \
-    && npm install -g npm@latest
-
-# 4. Rust toolchain
-RUN --mount=type=cache,target=${CARGO_REGISTRY},uid=${USER_UID},gid=${USER_GID},sharing=locked \
-    --mount=type=cache,target=${CARGO_GIT},uid=${USER_UID},gid=${USER_GID},sharing=locked \
-    rustup show \
-    && rustup default "$(rustup show active-toolchain | cut -d' ' -f1)"
-
-# Install entrypoint and cleanup
-RUN chmod +x docker-entrypoint.sh \
-    && mv docker-entrypoint.sh /home/runner/.local/bin/entrypoint \
-    && rm -rf /tmp/config
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
 WORKDIR /workspace
-
-ENTRYPOINT ["/home/runner/.local/bin/entrypoint"]
-
-VOLUME ["${UV_CACHE_DIR}"]
-VOLUME ["${PNPM_STORE_PATH}"]
-VOLUME ["${CARGO_REGISTRY}"]
-VOLUME ["${CARGO_GIT}"]
-VOLUME ["${SCCACHE_DIR}"]
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD uv --version \
-        && python --version \
-        && pnpm --version \
-        && node --version \
-        && rustup --version \
-        && cargo --version \
-        && rustc --version \
-        || exit 1

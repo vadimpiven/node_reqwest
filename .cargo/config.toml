@@ -1,4 +1,5 @@
 [build]
+rustc-wrapper = "sccache"
 rustflags = ["-C", "force-frame-pointers=yes"]
 rustdocflags = ["-D", "warnings"]
 
@@ -7,12 +8,6 @@ rustflags = ["-C", "target-feature=+crt-static"]
 
 [target.'cfg(target_arch = "x86_64")']
 rustflags = ["-C", "target-feature=+sse3,+ssse3,+sse4.1,+sse4.2,+popcnt,+cmpxchg16b"]
-
-[alias]
-cache = ["bin", "cargo-cache"]
-deny = ["bin", "cargo-deny"]
-llvm-cov = ["bin", "cargo-llvm-cov"]
-nextest = ["bin", "cargo-nextest"]
 
 [env]
 MACOSX_DEPLOYMENT_TARGET = { value = "13.0" }

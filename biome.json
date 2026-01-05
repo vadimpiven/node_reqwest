@@ -21,13 +21,74 @@
   "linter": {
     "enabled": true,
     "rules": {
+      "recommended": true,
+      "a11y": {
+        "recommended": true
+      },
+      "complexity": {
+        "recommended": true,
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": { "maxAllowedComplexity": 20 }
+        },
+        "noVoid": "error"
+      },
       "correctness": {
+        "recommended": true,
+        "noNodejsModules": "off",
+        "noUndeclaredDependencies": "off",
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "noUnusedFunctionParameters": "error",
         "useImportExtensions": "error"
       },
+      "nursery": {
+        "useExplicitType": "error"
+      },
+      "performance": {
+        "recommended": true,
+        "noAccumulatingSpread": "error",
+        "noBarrelFile": "off",
+        "noReExportAll": "off"
+      },
+      "security": {
+        "recommended": true
+      },
       "style": {
-        "noNonNullAssertion": "off"
+        "recommended": true,
+        "noDefaultExport": "off",
+        "noNonNullAssertion": "off",
+        "useNamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": true,
+            "conventions": [
+              {
+                "selector": { "kind": "variable" },
+                "formats": ["camelCase", "CONSTANT_CASE", "PascalCase"]
+              },
+              {
+                "selector": { "kind": "function" },
+                "formats": ["camelCase"]
+              },
+              {
+                "selector": { "kind": "typeLike" },
+                "formats": ["PascalCase"]
+              },
+              {
+                "selector": { "kind": "objectLiteralProperty" },
+                "formats": ["camelCase", "snake_case"]
+              }
+            ]
+          }
+        },
+        "useBlockStatements": "error",
+        "useShorthandFunctionType": "error"
       },
       "suspicious": {
+        "recommended": true,
+        "noConsole": "off",
+        "noEvolvingTypes": "error",
         "noExplicitAny": "error"
       }
     }

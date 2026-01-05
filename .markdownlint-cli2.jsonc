@@ -6,10 +6,19 @@
       "code_blocks": false,
       "tables": false
     },
+    "MD024": {
+      "siblings_only": true
+    },
+    "MD029": {
+      "style": "ordered"
+    },
     "MD033": {
       "allowed_elements": ["br", "details", "summary"]
     },
-    "MD041": false
+    "MD041": false,
+    "MD048": {
+      "style": "backtick"
+    }
   },
   "globs": ["*.md", "packages/**/*.md", "plans/*.md"],
   "ignores": ["**/*_REFERENCE.md"],

@@ -4,6 +4,9 @@ set -euo pipefail
 MITMPROXY_CERT="/mitmproxy-certs/mitmproxy-ca-cert.pem"
 INSTALLED_CERT="/etc/pki/ca-trust/source/anchors/mitmproxy-ca.crt"
 
+# Remove ready marker at start (in case of container restart)
+rm -f "$READY_MARKER"
+
 # Use ${VAR:-} to handle unset variables when using set -u
 if [[ -n "${MITM_PROXY:-}" ]]; then
     if [[ -f "$MITMPROXY_CERT" ]]; then
@@ -12,7 +15,7 @@ if [[ -n "${MITM_PROXY:-}" ]]; then
             echo "Installing mitmproxy CA certificate in system store..."
             sudo cp "$MITMPROXY_CERT" "$INSTALLED_CERT"
             sudo update-ca-trust extract
-            sudo ln -sf /etc/pki/tls/certs/ca-bundle.crt /opt/_internal/certs.pem
+            # Symlinks in Dockerfile point to $SSL_CERT_FILE which is now updated
             echo "CA certificate installed successfully"
         fi
     else
@@ -21,9 +24,9 @@ if [[ -n "${MITM_PROXY:-}" ]]; then
     fi
 fi
 
-# Install dependencies (uses cache, fast on subsequent runs)
-echo "Running pnpm install..."
-CI=true HUSKY=1 pnpm install
+mise trust --all --yes
 
-# Execute the command (e.g., sleep infinity)
+# Signal that initialization is complete
+touch "$READY_MARKER"
+
 exec "$@"

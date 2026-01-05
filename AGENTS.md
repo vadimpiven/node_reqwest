@@ -47,14 +47,14 @@ However, if it doesn't or has wrong permissions:
 Without sudo:
 
 ```bash
-mkdir -p .cache/uv .cache/pnpm-store .cache/cargo/registry .cache/cargo/git .cache/sccache
+mkdir -p .cache/native/{uv,pnpm-store,sccache} .cache/docker/{mise,uv,pnpm-store,sccache} .cache/cargo/{registry,git}
 chown -R $(id -u):$(id -g) .cache
 ```
 
 With sudo:
 
 ```bash
-mkdir -p .cache/uv .cache/pnpm-store .cache/cargo/registry .cache/cargo/git .cache/sccache
+mkdir -p .cache/native/{uv,pnpm-store,sccache} .cache/docker/{mise,uv,pnpm-store,sccache} .cache/cargo/{registry,git}
 sudo chown -R $(id -u):$(id -g) .cache
 ```
 
@@ -101,13 +101,13 @@ Expected output should show `dev` container with `Up` status.
 Without sudo:
 
 ```bash
-docker compose exec -T dev bash -c "pnpm install && pnpm test"
+docker compose exec -T dev bash -c "mise run test"
 ```
 
 With sudo:
 
 ```bash
-sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
+sudo docker compose exec -T dev bash -c "mise run test"
 ```
 
 **Note on expected output:**
@@ -146,7 +146,7 @@ sudo docker rm -f <container_id>
 sudo docker compose down --remove-orphans && sudo docker compose up --build -d
 ```
 
-### Permission denied on .cache/pnpm-store
+### Permission denied on .cache/docker/pnpm-store
 
 This happens when Docker creates directories as root. Fix it:
 
@@ -154,14 +154,14 @@ Without sudo:
 
 ```bash
 chown -R $(id -u):$(id -g) .cache
-docker compose exec -T dev bash -c "pnpm install && pnpm test"
+docker compose exec -T dev bash -c "mise run test"
 ```
 
 With sudo:
 
 ```bash
 sudo chown -R $(id -u):$(id -g) .cache
-sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
+sudo docker compose exec -T dev bash -c "mise run test"
 ```
 
 ### Container not starting / stays in "Created" state
@@ -180,27 +180,35 @@ sudo docker compose logs dev
 
 ## Command Execution
 
-All build and test commands MUST run inside the container via `docker compose exec dev`.
+All commands MUST run inside the container via `docker compose exec dev bash -c "..."`.
+
+**IMPORTANT**: Always use `bash -c "..."` wrapper. This ensures:
+
+1. Container initialization is complete (waits for ready marker)
+2. mise is properly activated (shims/tasks are available)
+3. Tools are automatically installed on-demand by mise tasks
+4. Environment variables are correctly set
 
 Without sudo:
 
 ```bash
-docker compose exec -T dev bash -c "pnpm install && pnpm test"
+docker compose exec -T dev bash -c "mise run test"
 ```
 
 With sudo:
 
 ```bash
-sudo docker compose exec -T dev bash -c "pnpm install && pnpm test"
+sudo docker compose exec -T dev bash -c "mise run test"
 ```
+
+**DO NOT** run commands directly without bash wrapper (e.g., `docker compose exec dev mise run test`).
+This bypasses initialization and may fail.
 
 ## Rebuilding the Image
 
 Rebuild is required when modifying:
 
-- Python: `.python-version`, `pyproject.toml`
-- Node.js: `package.json` (`engines` or `packageManager` fields)
-- Rust: `rust-toolchain.toml`
+- Tool versions: `mise.toml`
 - Infrastructure: `Dockerfile`, `docker-compose.yml`, `docker-entrypoint.sh`, `.env`
 
 Without sudo:
@@ -221,20 +229,33 @@ sudo docker compose down && sudo docker compose up --build -d
 | --------- | ---------------------------------- |
 | Workspace | `/workspace` (mirrors repo root)   |
 | User      | `runner` (UID mapped via `.env`)   |
-| Python    | Managed by `uv`                    |
-| Node.js   | Managed by `pnpm env`              |
-| Rust      | Uses `sccache` via `RUSTC_WRAPPER` |
+| Python    | Managed by `uv` (via `mise`)       |
+| Node.js   | Managed by `mise`                  |
+| Rust      | Uses `sccache` via `config.toml`   |
 
 ### Persistent Cache Paths
 
-Cache directories are mounted to `./.cache/` on the host:
+Cache directories are stored in `.cache/` within the workspace. Docker and native
+environments use separate subdirectories to avoid platform conflicts.
 
-| Container Path                   | Host Path                 |
-| -------------------------------- | ------------------------- |
-| `/home/runner/.cache/uv`         | `./.cache/uv`             |
-| `/home/runner/.cache/pnpm-store` | `./.cache/pnpm-store`     |
-| `/home/runner/.cargo/registry`   | `./.cache/cargo/registry` |
-| `/home/runner/.cargo/git`        | `./.cache/cargo/git`      |
-| `/home/runner/.cache/sccache`    | `./.cache/sccache`        |
+**Docker caches** (via Dockerfile environment variables):
+
+| Environment Variable    | Path                                  |
+| ----------------------- | ------------------------------------- |
+| `MISE_DATA_DIR`         | `/workspace/.cache/docker/mise`       |
+| `UV_CACHE_DIR`          | `/workspace/.cache/docker/uv`         |
+| `npm_config_store_dir`  | `/workspace/.cache/docker/pnpm-store` |
+| `SCCACHE_DIR`           | `/workspace/.cache/docker/sccache`    |
+| `CARGO_HOME`            | `/workspace/.cache/cargo`             |
+
+**Native caches** (CI paths; local uses defaults unless configured):
+
+| Tool    | CI Path                      |
+| ------- | ---------------------------- |
+| uv      | `./.cache/native/uv`         |
+| pnpm    | `./.cache/native/pnpm-store` |
+| sccache | `./.cache/native/sccache`    |
+| cargo   | `./.cache/cargo`             |
+| mise    | `~/.local/share/mise`        |
 
 Avoid deleting `.cache/` unless a clean-slate build is required.

@@ -2,9 +2,8 @@
 
 //! Module with the relevant metadata and helper methods for build.rs files.
 
+use core::fmt;
 use std::env::var;
-use std::fmt;
-use std::path::Path;
 use std::process::Command;
 
 use anyhow::{Context, Result};
@@ -20,6 +19,7 @@ pub const SEMVER: Option<Version> = Version::parse(VERSION);
 
 /// Semantic version structure
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Version {
     /// Major version number
     pub major: u64,
@@ -36,6 +36,16 @@ impl fmt::Display for Version {
 }
 
 impl Version {
+    /// Create a new Version structure
+    #[must_use]
+    pub const fn new(major: u64, minor: u64, patch: u64) -> Self {
+        Self {
+            major,
+            minor,
+            patch,
+        }
+    }
+
     /// Parse version in "vX.Y.Z" format from string slice
     #[must_use]
     const fn parse(s: &str) -> Option<Self> {
@@ -82,8 +92,7 @@ pub fn npm_version(version: &Version) -> Result<()> {
     // npm must be executed on Windows using CMD and on Posix systems using Bash
     // https://github.com/jeronimosg/npm_rs/blob/80d7f99f82fea5bb53947c12575bb8a5834398ae/src/lib.rs#L48-L56
     // to not bother with this we let node properly execute the correct runner
-    let node_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.path/node");
-    Command::new(&node_path)
+    Command::new("node")
         .arg("-p")
         .arg(formatdoc! {"
             process.exit(
@@ -107,7 +116,7 @@ pub fn npm_version(version: &Version) -> Result<()> {
             version = version
         })
         .status()
-        .context(error.clone())? // use clonned error context
+        .context(error.clone())? // use cloned error context
         .success()
         .then_some(())
         .context(error)?; // use error context
@@ -182,11 +191,7 @@ mod tests {
 
     #[test]
     fn version_formatting_test() {
-        let version = Version {
-            major: 1,
-            minor: 0,
-            patch: 82,
-        };
+        let version = Version::new(1, 0, 82);
         assert_eq!("1.0.82", version.to_string());
     }
 
@@ -194,14 +199,7 @@ mod tests {
     fn version_parsing_test() {
         // Valid semantic version tag
         let result = Version::parse("v1.0.82");
-        assert_eq!(
-            Some(Version {
-                major: 1,
-                minor: 0,
-                patch: 82
-            }),
-            result
-        );
+        assert_eq!(Some(Version::new(1, 0, 82)), result);
 
         // Git describe output with additional info (should fail)
         let result = Version::parse("v1.0.81-2-ge6a4f89");
@@ -225,11 +223,7 @@ mod tests {
             set_var("OUT_DIR", temp_dir.path());
         }
 
-        let version = Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-        };
+        let version = Version::new(1, 2, 3);
         cdylib_win_rc("TestProduct", &version, "test.dll")?;
 
         Ok(())

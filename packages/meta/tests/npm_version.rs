@@ -22,11 +22,7 @@ fn npm_version_test() -> Result<()> {
     let dir = tempdir()?;
     let dir_path = dir.path();
     let package_json_path = dir_path.join("package.json");
-    let version = meta::Version {
-        major: 1,
-        minor: 2,
-        patch: 3,
-    };
+    let version = meta::Version::new(1, 2, 3);
 
     let initial_content = indoc! {r#"
         {

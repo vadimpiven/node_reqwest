@@ -6,11 +6,12 @@ import { fileURLToPath } from 'node:url';
 import gyp from '@mapbox/node-pre-gyp';
 import type { Addon as AddonDef } from './addon-def.ts';
 
-const nodeFileUrl = import.meta.url;
-const nodeDirname = dirname(fileURLToPath(nodeFileUrl));
-const nodeRequire = createRequire(nodeFileUrl);
+const nodeFileUrl: string = import.meta.url;
+const nodeDirname: string = dirname(fileURLToPath(nodeFileUrl));
+const nodeRequire: NodeRequire = createRequire(nodeFileUrl);
 
-const { find: findAddon } = gyp;
+type FindAddon = (path: string, options?: unknown) => string;
+const findAddon: FindAddon = gyp.find;
 
 // Pre-gyp reads binary section from package.json and constructs a path to addon
 // https://github.com/mapbox/node-pre-gyp/blob/a541932680034f5de9e7365ef8d9a0d7a11cc1a9/lib/package.js#L35

@@ -1,4 +1,4 @@
-export default async function globalSetup() {
+export default async function globalSetup(): Promise<void> {
   // When inside the container
   if (process.env.MITM_PROXY) {
     // Clear global-agent proxy settings

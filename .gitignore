@@ -9,15 +9,12 @@ profile.json.gz
 report-nextest.junit.xml
 report-vitest.junit.xml
 trivy-results.sarif
-.bin/
-.path/
+
 .venv/
 dist/
 node_modules/
 coverage-vitest/
 target/
-.trivycache/
-.ruff_cache/
 __pycache__/
 
 # .cache

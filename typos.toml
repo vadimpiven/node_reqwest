@@ -1,0 +1,12 @@
+# typos configuration
+# https://github.com/crate-ci/typos/blob/master/docs/reference.md
+
+[files]
+extend-exclude = [
+    ".cache/",
+    ".venv/",
+    "node_modules/",
+    "target/",
+    "*.lock",
+    "pnpm-lock.yaml",
+]
