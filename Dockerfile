@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # <https://quay.io/repository/pypa/manylinux_2_28?tab=tags>
-FROM quay.io/pypa/manylinux_2_28@sha256:e930a1ce2b1b1b75e367cb7bdc9733276d92ce0c6bb6aee97dbd67e78722cbf5
+FROM quay.io/pypa/manylinux_2_28@sha256:6555afbd0e57fb232c5b7e4409b12dfd8ed6172ff9176641b71d4a7ee6fd57d6
 
 LABEL org.opencontainers.image.source="https://github.com/vadimpiven/node_reqwest"
 LABEL org.opencontainers.image.description="Dev Container for node_reqwest"
