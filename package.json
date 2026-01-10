@@ -6,10 +6,12 @@
     "@playwright/test": "catalog:",
     "@taplo/cli": "catalog:",
     "@types/node": "catalog:",
+    "husky": "catalog:",
     "markdownlint-cli2": "catalog:",
     "vitest": "catalog:"
   },
   "scripts": {
+    "prepare": "husky",
     "docker": "docker compose up --build -d --wait && docker compose exec dev bash",
     "postdocker": "docker compose down --remove-orphans"
   }

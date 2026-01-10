@@ -47,14 +47,14 @@ However, if it doesn't or has wrong permissions:
 Without sudo:
 
 ```bash
-mkdir -p .cache/native/{uv,pnpm-store,sccache} .cache/docker/{mise,uv,pnpm-store,sccache} .cache/cargo/{registry,git}
+mkdir -p .cache/native/{uv,pnpm-store,sccache,cargo} .cache/docker/{mise,uv,pnpm-store,sccache,cargo}
 chown -R $(id -u):$(id -g) .cache
 ```
 
 With sudo:
 
 ```bash
-mkdir -p .cache/native/{uv,pnpm-store,sccache} .cache/docker/{mise,uv,pnpm-store,sccache} .cache/cargo/{registry,git}
+mkdir -p .cache/native/{uv,pnpm-store,sccache,cargo} .cache/docker/{mise,uv,pnpm-store,sccache,cargo}
 sudo chown -R $(id -u):$(id -g) .cache
 ```
 
@@ -246,7 +246,7 @@ environments use separate subdirectories to avoid platform conflicts.
 | `UV_CACHE_DIR`          | `/workspace/.cache/docker/uv`         |
 | `npm_config_store_dir`  | `/workspace/.cache/docker/pnpm-store` |
 | `SCCACHE_DIR`           | `/workspace/.cache/docker/sccache`    |
-| `CARGO_HOME`            | `/workspace/.cache/cargo`             |
+| `CARGO_HOME`            | `/workspace/.cache/docker/cargo`      |
 
 **Native caches** (CI paths; local uses defaults unless configured):
 
@@ -255,7 +255,7 @@ environments use separate subdirectories to avoid platform conflicts.
 | uv      | `./.cache/native/uv`         |
 | pnpm    | `./.cache/native/pnpm-store` |
 | sccache | `./.cache/native/sccache`    |
-| cargo   | `./.cache/cargo`             |
+| cargo   | `./.cache/native/cargo`      |
 | mise    | `~/.local/share/mise`        |
 
 Avoid deleting `.cache/` unless a clean-slate build is required.

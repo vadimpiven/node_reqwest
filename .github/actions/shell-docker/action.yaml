@@ -17,5 +17,4 @@ runs:
         DOCKER_SERVICE: "${{ inputs.docker-service }}"
         COMPOSE_FILE: "docker-compose.yml"
       run: |
-        printf "%s" "$INPUT_RUN" | \
-          docker compose exec -T "$DOCKER_SERVICE" bash
+        docker compose exec -T "$DOCKER_SERVICE" bash -c "$INPUT_RUN"

@@ -61,8 +61,8 @@ linux-arm64 = { asset_pattern = "*aarch64*linux-gnu*" }
 version = "2.3.11"
 version_prefix = "@biomejs/biome@"
 [tools."github:biomejs/biome".platforms]
-linux-x64 = { asset_pattern = "*linux-x64*", rename_exe = "biome" }
-linux-arm64 = { asset_pattern = "*linux-arm64*", rename_exe = "biome" }
+linux-x64 = { asset_pattern = "*linux-x64-musl*", rename_exe = "biome" }
+linux-arm64 = { asset_pattern = "*linux-arm64-musl*", rename_exe = "biome" }
 macos-x64 = { asset_pattern = "*darwin-x64*", rename_exe = "biome" }
 macos-arm64 = { asset_pattern = "*darwin-arm64*", rename_exe = "biome" }
 windows-x64 = { asset_pattern = "*win32-x64*", rename_exe = "biome" }
@@ -72,16 +72,16 @@ windows-arm64 = { asset_pattern = "*win32-arm64*", rename_exe = "biome" }
 [hooks]
 postinstall = """
 uv sync --no-install-workspace
-pnpm install --frozen-lockfile --prefer-offline
-node -e \"
+node -e "
+  const { execSync } = require('child_process');
+  execSync('pnpm install --frozen-lockfile --prefer-offline', {
+    stdio: 'inherit',
+    env: { ...process.env, CI: 'true', HUSKY: '0' },
+  });
   if (!process.env.DEV_CONTAINER) {
-    require('child_process')
-        .execSync(
-            'pnpm exec playwright install-deps',
-            { stdio: 'inherit' }
-        );
+    execSync('pnpm exec playwright install-deps', { stdio: 'inherit' });
   }
-\"
+"
 """
 
 # ============================================================================
@@ -240,6 +240,7 @@ sources = ["packages/**/*.rs", "Cargo.toml", "Cargo.lock", "clippy.toml"]
 
 [tasks."fix:rustfmt"]
 description = "Format Rust code"
+depends = ["fix:clippy"]
 run = "cargo fmt"
 sources = ["packages/**/*.rs", "rustfmt.toml"]
 

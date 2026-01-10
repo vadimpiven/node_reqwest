@@ -32,7 +32,7 @@ runs:
           . + {
             "UV_CACHE_DIR": ($workspace + "/.cache/native/uv"),
             "npm_config_store_dir": ($workspace + "/.cache/native/pnpm-store"),
-            "CARGO_HOME": ($workspace + "/.cache/cargo"),
+            "CARGO_HOME": ($workspace + "/.cache/native/cargo"),
             "SCCACHE_DIR": ($workspace + "/.cache/native/sccache")
           }
         ')
@@ -40,7 +40,7 @@ runs:
     - name: "Restore cargo cache"
       uses: "actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb" # v5.0.1
       with:
-        path: ".cache/cargo"
+        path: "${{ runner.os == 'Linux' && '.cache/docker/cargo' || '.cache/native/cargo' }}"
         key: "${{ inputs.cache-key }}-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.lock') }}"
         restore-keys: |
           ${{ inputs.cache-key }}-cargo-${{ runner.os }}-${{ runner.arch }}-

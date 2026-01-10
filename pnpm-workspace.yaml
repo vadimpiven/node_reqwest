@@ -16,6 +16,7 @@ catalog:
   "@types/node": ^22.19.3
   "@vitest/coverage-istanbul": ^4.0.16
   electron: ^39.2.7
+  husky: ^9.1.7
   markdownlint-cli2: ^0.20.0
   monocart-reporter: ^2.9.23
   rollup-plugin-node-externals: ^8.1.2

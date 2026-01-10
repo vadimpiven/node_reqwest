@@ -10,7 +10,7 @@ ARG USER_GID=$USER_UID
 # Toolchain Homes - now in workspace for persistence
 ENV MISE_DATA_DIR=/workspace/.cache/docker/mise
 ENV PNPM_HOME=/home/${USERNAME}/.pnpm
-ENV CARGO_HOME=/workspace/.cache/cargo
+ENV CARGO_HOME=/workspace/.cache/docker/cargo
 
 # Cache Directories - all in workspace for persistence
 ENV UV_CACHE_DIR=/workspace/.cache/docker/uv
@@ -77,6 +77,7 @@ RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
     && printf '%s\n' \
         '# Wait for container initialization before proceeding' \
         'while [ ! -f "$READY_MARKER" ]; do sleep 0.1; done' \
+        'source /etc/environment' \
         'eval "$(mise activate bash)"' \
         >> /home/${USERNAME}/.bashrc \
     && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
