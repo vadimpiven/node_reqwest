@@ -5,7 +5,9 @@ import type { AgentCreationOptions, AgentDispatchOptions, AgentInstance } from '
 import type { Agent as AgentDef, AgentOptions } from './agent-def.ts';
 
 function normalizePem(pem?: string | Buffer | (string | Buffer)[]): string[] {
-  if (!pem) return [];
+  if (!pem) {
+    return [];
+  }
 
   if (Array.isArray(pem)) {
     return pem.flatMap(normalizePem);
@@ -21,11 +23,15 @@ function normalizeHeaders(
     | string[]
     | null
 ): Record<string, string> {
-  if (!headers) return {};
+  if (!headers) {
+    return {};
+  }
 
   const result: Record<string, string> = {};
-  const add = (key: string, value?: string | string[]) => {
-    if (!value) return;
+  const add = (key: string, value?: string | string[]): void => {
+    if (!value) {
+      return;
+    }
     const k = key.toLowerCase();
     const v = Array.isArray(value) ? value.join(', ') : value;
     const existing = result[k];
@@ -34,7 +40,10 @@ function normalizeHeaders(
 
   if (Array.isArray(headers)) {
     for (let i = 0; i < headers.length; i += 2) {
-      add(headers[i], headers[i + 1]);
+      const key = headers[i];
+      if (key !== undefined) {
+        add(key, headers[i + 1]);
+      }
     }
   } else if (Symbol.iterator in headers) {
     for (const [key, value] of headers) {
@@ -52,10 +61,14 @@ function normalizeHeaders(
 function normalizeBody(
   body?: string | Buffer | Uint8Array | FormData | Stream.Readable | null
 ): ReadableStreamBYOBReader | null {
-  if (!body) return null;
+  if (!body) {
+    return null;
+  }
 
   const response = new Response(body);
-  if (!response.body) return null;
+  if (!response.body) {
+    return null;
+  }
 
   return response.body.getReader({ mode: 'byob' });
 }

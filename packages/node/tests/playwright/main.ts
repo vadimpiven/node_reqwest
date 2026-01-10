@@ -6,8 +6,8 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { request, Agent as UndiciAgent } from 'undici';
 import { hello } from '../../export/index.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const currentFilename: string = fileURLToPath(import.meta.url);
+const currentDirname: string = path.dirname(currentFilename);
 
 app.whenReady().then(() => {
   ipcMain.handle('hello', hello);
@@ -32,10 +32,10 @@ app.whenReady().then(() => {
   const window = new BrowserWindow({
     webPreferences: {
       sandbox: false, // <https://www.electronjs.org/docs/latest/tutorial/esm>
-      preload: path.join(__dirname, 'preload.mjs')
+      preload: path.join(currentDirname, 'preload.mjs')
     }
   });
-  window.loadFile(path.join(__dirname, 'index.html'));
+  window.loadFile(path.join(currentDirname, 'index.html'));
 });
 
 app.on('window-all-closed', () => app.quit());

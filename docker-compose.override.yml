@@ -17,7 +17,15 @@ services:
       # For Python tools (semgrep)
       REQUESTS_CA_BUNDLE: /etc/pki/tls/certs/ca-bundle.crt
       # For Node.js tools (VS Code)
-      NODE_EXTRA_CA_CERTS: /etc/pki/tls/certs/ca-bundle.crt
+      # Standard SSL variables for Rust/OpenSSL/Mise/curl
+      SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+      SSL_CERT_DIR: /etc/pki/tls/certs
+      CARGO_HTTP_CAINFO: /etc/ssl/certs/ca-certificates.crt
+      CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
+      # NPM configuration
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/ca-certificates.crt
+      NPM_CONFIG_CAFILE: /etc/ssl/certs/ca-certificates.crt
+      pnpm_config_cafile: /etc/ssl/certs/ca-certificates.crt
     volumes:
       # Mitmproxy CA certificate volume (read-only)
       - mitmproxy-certs:/mitmproxy-certs:ro

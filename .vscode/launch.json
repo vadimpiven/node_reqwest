@@ -18,7 +18,7 @@
       "type": "lldb",
       "request": "launch",
       "cwd": "${workspaceRoot}/packages/node",
-      "program": "${workspaceFolder}/.path/node",
+      "program": "node",
       "args": [
         "--inspect",
         "--trace-warnings",
@@ -35,7 +35,7 @@
       "type": "cppvsdbg",
       "request": "launch",
       "cwd": "${workspaceRoot}/packages/node",
-      "program": "${workspaceFolder}/.path/node.exe",
+      "program": "node",
       "args": [
         "--inspect",
         "--trace-warnings",
@@ -54,7 +54,7 @@
       "type": "cppdbg",
       "request": "launch",
       "cwd": "${workspaceRoot}/packages/node",
-      "program": "${workspaceFolder}/.path/node",
+      "program": "node",
       "args": [
         "--inspect",
         "--trace-warnings",

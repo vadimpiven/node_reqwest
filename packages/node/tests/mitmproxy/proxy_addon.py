@@ -5,7 +5,8 @@ Note: Mitmproxy automatically reloads scripts when they are modified.
 Any changes to this file will be picked up immediately by the running proxy.
 """
 
-from mitmproxy import ctx, http
+from mitmproxy import ctx
+from mitmproxy import http
 
 
 class ProxyAddon:

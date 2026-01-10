@@ -2,9 +2,9 @@
 
 ## Development Basics
 
-- **Package Manager**: Use **pnpm**. Do not use `npm` or `yarn`.
-- **Testing**: Use `pnpm test` to run all checks (unit tests, doctests, and
-  linter).
+- **Task Runner**: Use **mise** for all tasks. Use `mise run --list` to see available tasks.
+- **Testing**: Use `mise run test` to run all checks (unit tests, doctests, and linter).
+- **Package Manager**: Use **pnpm** for Node.js dependencies. Do not use `npm` or `yarn`.
 
 ## Dependency Management
 
@@ -23,11 +23,14 @@ Keep all dependencies in the workspace root.
   inside functions).
 - **Assertions**: Always place the expected value first:
   `assert_eq!(expected, actual)`.
+- **Type Declarations (TypeScript)**: Extract complex inline types into named
+  `type` aliases. Prefer `type Foo = (x: string) => void` over inline
+  `const fn: (x: string) => void = ...`.
 
 ## Linting
 
 Before submitting a pull request, ensure your code passes the project checks:
 
 ```bash
-pnpm test
+mise run check
 ```

@@ -6,7 +6,9 @@ import process from 'node:process';
  * Wraps an unknown error into a proper Error object.
  */
 export function ensureError(err: unknown): Error {
-  if (err instanceof Error) return err;
+  if (err instanceof Error) {
+    return err;
+  }
   return new Error(String(err));
 }
 

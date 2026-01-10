@@ -1,44 +1,44 @@
-name: 'Sign and Notarize Binary'
-description: 'Code sign and notarize binaries on macOS and Windows'
+name: "Sign and Notarize Binary"
+description: "Code sign and notarize binaries on macOS and Windows"
 inputs:
   binary-path:
-    description: 'Path to the binary file to sign'
+    description: "Path to the binary file to sign"
     required: true
   mac-cert-id:
     description: 'The Apple certificate ID (e.g., "A1B2C3D4E5")'
     required: false
   mac-cert-base64:
-    description: 'Base64-encoded p12 signing certificate'
+    description: "Base64-encoded p12 signing certificate"
     required: false
   mac-cert-passwd:
-    description: 'Password for the p12 certificate'
+    description: "Password for the p12 certificate"
     required: false
   mac-api-key-base64:
-    description: 'Base64-encoded content of the API key file for notarization'
+    description: "Base64-encoded content of the API key file for notarization"
     required: false
   mac-api-key-id:
-    description: 'Key ID from App Store Connect'
+    description: "Key ID from App Store Connect"
     required: false
   mac-api-key-issuer-id:
-    description: 'Issuer ID from App Store Connect'
+    description: "Issuer ID from App Store Connect"
     required: false
   windows-pfx-base64:
-    description: 'Base64 encoded Windows PFX certificate'
+    description: "Base64 encoded Windows PFX certificate"
     required: false
   windows-pfx-password:
-    description: 'Password for the Windows PFX certificate'
+    description: "Password for the Windows PFX certificate"
     required: false
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Import Code-Signing Certificates (macOS)
-      if: runner.os == 'macOS' && inputs.mac-cert-base64 != ''
+      if: runner.os == "macOS" && inputs.mac-cert-base64 != ""
       uses: apple-actions/import-codesign-certs@b610f78488812c1e56b20e6df63ec42d833f2d14 # v6.0.0
       with:
         p12-file-base64: ${{ inputs.mac-cert-base64 }}
         p12-password: ${{ inputs.mac-cert-passwd }}
     - name: Sign Binary (macOS)
-      if: runner.os == 'macOS' && inputs.mac-cert-base64 != ''
+      if: runner.os == "macOS" && inputs.mac-cert-base64 != ""
       shell: bash
       env:
         BINARY_PATH: ${{ inputs.binary-path }}
@@ -49,7 +49,7 @@ runs:
         codesign -s "${CERT_ID}" --timestamp --options runtime -v "${BINARY_PATH}"
         echo "Signed ${BINARY_PATH} with ${CERT_ID}"
     - name: Notarize Binary (macOS)
-      if: runner.os == 'macOS' && inputs.mac-api-key-base64 != ''
+      if: runner.os == "macOS" && inputs.mac-api-key-base64 != ""
       shell: bash
       env:
         BINARY_PATH: ${{ inputs.binary-path }}
@@ -94,7 +94,7 @@ runs:
         # Staple
         xcrun stapler staple "$BINARY_PATH"
     - name: Sign (Windows)
-      if: runner.os == 'Windows' && inputs.windows-pfx-base64 != ''
+      if: runner.os == "Windows" && inputs.windows-pfx-base64 != ""
       shell: pwsh
       env:
         BINARY_PATH: ${{ inputs.binary-path }}

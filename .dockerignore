@@ -2,10 +2,8 @@
 **
 
 # Allow only the files needed for the Dockerfile
-!pyproject.toml
-!.python-version
-!package.json
-!rust-toolchain.toml
+!.mise-version
+!mise.toml
 !docker-entrypoint.sh
 
 # Ignore common large directories
@@ -13,8 +11,6 @@ node_modules
 target
 .venv
 .cache
-.bin
-.path
 
 # Ignore .env file
 .env

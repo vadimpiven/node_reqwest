@@ -1,21 +1,21 @@
-name: 'Shell (Native)'
-description: 'Run shell commands in Bash or MSVC powershell'
+name: "Shell (Native)"
+description: "Run shell commands in Bash or MSVC powershell"
 inputs:
   run:
-    description: 'The command to run'
+    description: "The command to run"
     required: true
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-    - name: Run command (Unix)
-      if: runner.os != 'Windows'
-      shell: bash
+    - name: "Run command (Unix)"
+      if: "runner.os != 'Windows'"
+      shell: "bash"
       env:
-        INPUT_SCRIPT: ${{ inputs.run }}
-      run: eval "$INPUT_SCRIPT"
-    - name: Run command (Windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
+        INPUT_SCRIPT: "${{ inputs.run }}"
+      run: 'eval "$INPUT_SCRIPT"'
+    - name: "Run command (Windows)"
+      if: "runner.os == 'Windows'"
+      shell: "pwsh"
       env:
-        INPUT_SCRIPT: ${{ inputs.run }}
-      run: Invoke-Expression $env:INPUT_SCRIPT
+        INPUT_SCRIPT: "${{ inputs.run }}"
+      run: "Invoke-Expression $env:INPUT_SCRIPT"

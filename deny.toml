@@ -144,9 +144,9 @@ registries = [
 # https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html
 [bans]
 # Lint level for when multiple versions of the same crate are detected
-multiple-versions = "allow"
+multiple-versions = "deny"
 # Lint level for when a crate version requirement is `*`
-wildcards = "allow"
+wildcards = "deny"
 # The graph highlighting used when creating dotgraphs for crates
 # with multiple versions
 # * lowest-version - The path to the lowest versioned duplicate is highlighted
@@ -199,9 +199,27 @@ deny = [
 #exact = true
 
 # Certain crates/versions that will be skipped when doing duplicate detection.
+# These are all Windows-specific transitive dependencies where upstream crates
+# (reqwest, tokio, neon, hickory-resolver, tauri-winres) use different versions.
+# Cannot be resolved until upstream crates align their dependencies.
 skip = [
-    #"ansi_term@0.11.0",
-    #{ crate = "ansi_term@0.11.0", reason = "you can specify a reason why it can't be updated/removed" },
+    { crate = "winreg", reason = "transitive conflict between hickory-resolver and tauri-winres" },
+    { crate = "windows-sys", reason = "multiple versions across socket2, jni, ipconfig ecosystem" },
+    { crate = "windows-targets", reason = "follows windows-sys versioning" },
+    { crate = "windows_aarch64_gnullvm", reason = "Windows platform crate version fragmentation" },
+    { crate = "windows_aarch64_msvc", reason = "Windows platform crate version fragmentation" },
+    { crate = "windows_i686_gnu", reason = "Windows platform crate version fragmentation" },
+    { crate = "windows_i686_gnullvm", reason = "Windows platform crate version fragmentation" },
+    { crate = "windows_i686_msvc", reason = "Windows platform crate version fragmentation" },
+    { crate = "windows_x86_64_gnu", reason = "Windows platform crate version fragmentation" },
+    { crate = "windows_x86_64_gnullvm", reason = "Windows platform crate version fragmentation" },
+    { crate = "windows_x86_64_msvc", reason = "Windows platform crate version fragmentation" },
+    { crate = "socket2", reason = "multiple versions across hyper-util and ipconfig" },
+    { crate = "core-foundation", reason = "Apple platform crate version fragmentation" },
+    { crate = "getrandom", reason = "different versions for different rand ecosystem crates" },
+    { crate = "hashbrown", reason = "indexmap and other crates use different versions" },
+    { crate = "thiserror", reason = "ecosystem transition between v1 and v2" },
+    { crate = "thiserror-impl", reason = "follows thiserror versioning" },
 ]
 # Similarly to `skip` allows you to skip certain crates during duplicate
 # detection. Unlike skip, it also includes the entire tree of transitive
@@ -218,10 +236,10 @@ skip-tree = [
 [sources]
 # Lint level for what to happen when a crate from a crate registry that is not
 # in the allow list is encountered
-unknown-registry = "warn"
+unknown-registry = "deny"
 # Lint level for what to happen when a crate from a git repository that is not
 # in the allow list is encountered
-unknown-git = "warn"
+unknown-git = "deny"
 # List of URLs for allowed crate registries. Defaults to the crates.io index
 # if not specified. If it is specified but empty, no registries are allowed.
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]

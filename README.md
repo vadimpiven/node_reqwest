@@ -13,15 +13,11 @@ The build is made in a fashion that allows usage by Electron-based applications.
 
 ### Required
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) for Python integration
-- [pnpm](https://pnpm.io/installation) for workspace management
 - C++ development toolchain (required by Rust)
   - Windows: [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)
   - macOS: `xcode-select --install`
   - Linux: preinstalled `g++`
-- [Rust](https://www.rust-lang.org/tools/install) development toolchain
-- [Cargo binstall](https://github.com/cargo-bins/cargo-binstall?tab=readme-ov-file#installation)
-  for installing Rust binaries
+- [mise](https://mise.jdx.dev/getting-started.html) for tool version management
 
 ### Optional
 
@@ -33,17 +29,8 @@ The build is made in a fashion that allows usage by Electron-based applications.
 For native build run:
 
 ```bash
-# Synchronize Rust toolchain
-pnpm run rustup
-
-# Install pnpm and uv dependencies
-pnpm install
-
-# Install playwright dependencies
-pnpm run playwright
-
-# Run tests
-pnpm test
+# Trust the project, install tools, and run all tests
+mise trust && mise test
 ```
 
 VSCode [recommended extensions](.vscode/extensions.json) make development experience
@@ -65,16 +52,13 @@ grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
 grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 
 # Build and run the container
-docker compose up --build -d
+docker compose up --build -d --wait
 
 # Enter the container shell
 docker compose exec dev bash
 
-# Prepare the environment
-pnpm install
-
 # Run the tests
-pnpm test
+mise test
 
 # Exit the container
 exit
@@ -89,8 +73,8 @@ For simplicity you can use docker script:
 # Build and attach to the container
 pnpm docker
 
-# Run the commands inside the container
-pnpm test
+# Run the tests
+mise test
 
 # Exit and stop the container
 exit
@@ -111,7 +95,7 @@ MITMPROXY_WEB_PASSWORD=example_password
 echo "MITMPROXY_WEB_PASSWORD=${MITMPROXY_WEB_PASSWORD}" >> .env
 
 # Rebuild the container
-docker compose up --build -d
+docker compose up --build -d --wait
 
 # Access the UI at: `http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}`
 open http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}
@@ -120,7 +104,7 @@ open http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}
 To run without mitmproxy:
 
 ```bash
-docker compose up -f docker-compose.yml --build -d
+docker compose -f docker-compose.yml up --build -d --wait
 ```
 
 ## Troubleshooting
@@ -128,5 +112,5 @@ docker compose up -f docker-compose.yml --build -d
 Use the clean script to reset the environment (and free up disk space):
 
 ```bash
-pnpm run clean
+mise run clean
 ```

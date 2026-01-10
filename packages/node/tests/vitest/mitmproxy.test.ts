@@ -3,10 +3,7 @@
 import { request, Agent as UndiciAgent } from 'undici';
 import { it } from 'vitest';
 
-// Run these tests only when MITM_PROXY is set
-const itMitm = process.env.MITM_PROXY ? it : it.skip;
-
-itMitm('should fail with standard undici agent', async ({ expect }) => {
+it.runIf(process.env.MITM_PROXY)('should fail with standard undici agent', async ({ expect }) => {
   // Since undici does not pick up the system proxy by default,
   // it should fail to resolve echo.lan (or fail to connect).
   const response = request('https://echo.lan', { dispatcher: new UndiciAgent() });

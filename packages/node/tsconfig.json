@@ -6,15 +6,31 @@
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "esModuleInterop": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "outDir": "./export_dist"
+    "outDir": "./export_dist",
+
+    // Strict mode (base)
+    "strict": true,
+
+    // Additional strictness
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Node.js native type stripping compatibility
+    // Disallows enums, namespaces, parameter properties, and decorators
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true
   },
   "include": ["./export/**/*.ts", "./tests/**/*.{mjs,ts}"]
 }
