@@ -56,7 +56,6 @@ RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
     \
     # Install rustup
     && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain none \
-    && export PATH="/home/${USERNAME}/.cargo/bin:$PATH" \
     \
     # Dependency Installation
     && rm -f /usr/local/bin/git-lfs \
