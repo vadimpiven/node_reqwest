@@ -10,7 +10,6 @@ ARG USER_GID=$USER_UID
 # Toolchain Homes - now in workspace for persistence
 ENV MISE_DATA_DIR=/workspace/.cache/docker/mise
 ENV PNPM_HOME=/home/${USERNAME}/.pnpm
-ENV CARGO_HOME=/workspace/.cache/docker/cargo
 
 # Cache Directories - all in workspace for persistence
 ENV UV_CACHE_DIR=/workspace/.cache/docker/uv
@@ -19,11 +18,15 @@ ENV npm_config_store_dir=/workspace/.cache/docker/pnpm-store
 ENV SCCACHE_DIR=/workspace/.cache/docker/sccache
 
 # Prioritize Mise shims, then other tool paths
-ENV PATH=${MISE_DATA_DIR}/shims:${PNPM_HOME}:${CARGO_HOME}/bin:/home/${USERNAME}/.local/bin:$PATH
+ENV PATH=${MISE_DATA_DIR}/shims:${PNPM_HOME}:/home/${USERNAME}/.local/bin:$PATH
 
 # Configure Python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+
+# Rust configuration via rustup
+ENV RUSTUP_HOME=/workspace/.cache/docker/rustup
+ENV CARGO_HOME=/workspace/.cache/docker/cargo
 
 # Container environment variables
 ENV DEV_CONTAINER=1
@@ -53,6 +56,10 @@ RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
     && echo "python.precompiled_arch = \"$MISE_CPU\"" >> /etc/mise/config.toml \
     && echo "python.precompiled_os = \"unknown-linux-gnu\"" >> /etc/mise/config.toml \
     \
+    # Install rustup
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain none \
+    && export PATH="/home/${USERNAME}/.cargo/bin:$PATH" \
+    \
     # Dependency Installation
     && rm -f /usr/local/bin/git-lfs \
     && dnf update -y \
@@ -72,12 +79,13 @@ RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
     && useradd --uid ${USER_UID} --gid ${USER_GID} --non-unique --shell /bin/bash --create-home ${USERNAME} \
     && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} \
     && chmod 0440 /etc/sudoers.d/${USERNAME} \
-    && mkdir -p ${MISE_DATA_DIR} ${PNPM_HOME} \
+    && mkdir -p ${MISE_DATA_DIR} ${PNPM_HOME} ${RUSTUP_HOME} ${CARGO_HOME} \
     && mkdir -p /mitmproxy-certs \
     && printf '%s\n' \
         '# Wait for container initialization before proceeding' \
         'while [ ! -f "$READY_MARKER" ]; do sleep 0.1; done' \
         'source /etc/environment' \
+        '. "$HOME/.cargo/env"' \
         'eval "$(mise activate bash)"' \
         >> /home/${USERNAME}/.bashrc \
     && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}

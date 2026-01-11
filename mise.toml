@@ -26,11 +26,6 @@ node = "22.21.1"
 # Python
 python = "3.13"
 
-# Rust
-rust.version = "nightly-2026-01-03"
-rust.profile = "minimal"
-rust.components = "clippy,rustfmt,llvm-tools-preview"
-
 # Rust tools
 "github:cargo-bins/cargo-binstall" = "1.16.6"
 "github:mozilla/sccache" = "0.12.0"
@@ -71,6 +66,7 @@ windows-arm64 = { asset_pattern = "*win32-arm64*", rename_exe = "biome" }
 # Hooks - auto-run after mise install
 [hooks]
 postinstall = """
+rustup show
 uv sync --no-install-workspace
 node -e "
   const { execSync } = require('child_process');
