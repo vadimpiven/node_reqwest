@@ -16,19 +16,16 @@ outputs:
       }
   cache-key:
     description: "Cache key prefix for manual invalidation"
-    value: "v12"
+    value: "v14"
   env:
     description: "Environment variables"
     value: |
       {
         "CI": "true",
-        "HUSKY": "0",
         "MISE_VERBOSE": "1",
         "CARGO_INCREMENTAL": "0",
         "CARGO_NET_GIT_FETCH_WITH_CLI": "true",
-        "RUST_BACKTRACE": "1",
-        "RUSTC_WRAPPER": "sccache",
-        "SCCACHE_CACHE_SIZE": "5G"
+        "RUST_BACKTRACE": "1"
       }
   test-coverage:
     description: "Globs for coverage reports"

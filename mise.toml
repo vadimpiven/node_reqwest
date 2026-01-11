@@ -2,24 +2,30 @@
 # https://mise.jdx.dev/
 
 redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
-experimental_monorepo_root = true
 
 [settings]
 experimental = true
 env_file = ".env"
-
-# Best practices for pnpm monorepos
 npm.package_manager = "pnpm"
-task.monorepo_depth = 2
+
+[vars]
+cache_suffix = ".cache/{% if env.DEV_CONTAINER %}docker{% else %}native{% endif %}"
 
 [env]
-MISE_EXPERIMENTAL = "1"
 PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
-# Configure uv venv/caches (allow overrides e.g., inside Docker)
-UV_PROJECT_ENVIRONMENT = "{{ get_env(name=\"UV_PROJECT_ENVIRONMENT\", default=\".cache/native/venv\") }}"
-UV_VENV_DIR = "{{ get_env(name=\"UV_VENV_DIR\", default=\".cache/native/venv\") }}"
-UV_CACHE_DIR = "{{ get_env(name=\"UV_CACHE_DIR\", default=\".cache/native/uv\") }}"
+SCCACHE_CACHE_SIZE = "1G"
+
+# Cache directories
+CARGO_HOME = "{{ config_root }}/{{ vars.cache_suffix }}/cargo"
+npm_config_store_dir = "{{ config_root }}/{{ vars.cache_suffix }}/pnpm"
+RUSTUP_HOME = "{{ config_root }}/{{ vars.cache_suffix }}/rustup"
+SCCACHE_DIR = "{{ config_root }}/{{ vars.cache_suffix }}/sccache"
+UV_CACHE_DIR = "{{ config_root }}/{{ vars.cache_suffix }}/uv"
+UV_PROJECT_ENVIRONMENT = "{{ config_root }}/{{ vars.cache_suffix }}/venv"
+
+# Add Rust binaries to PATH
+_.path = ["{{ config_root }}/{{ vars.cache_suffix }}/cargo/bin"]
 
 [tools]
 # Node
@@ -28,6 +34,11 @@ node = "22.21.1"
 
 # Python
 python = "3.13"
+
+# Rust
+rust.version = "nightly-2026-01-10"
+rust.profile = "minimal"
+rust.components = "clippy,rustfmt,llvm-tools-preview"
 
 # Rust tools
 "github:cargo-bins/cargo-binstall" = "1.16.6"
@@ -69,16 +80,20 @@ windows-arm64 = { asset_pattern = "*win32-arm64*", rename_exe = "biome" }
 # Hooks - auto-run after mise install
 [hooks]
 postinstall = """
-rustup show
-uv sync --no-install-workspace
-node -e "
+cargo --version \
+&& uv sync --no-install-workspace \
+&& node -e "
   const { execSync } = require('child_process');
   execSync('pnpm install --frozen-lockfile --prefer-offline', {
     stdio: 'inherit',
+    shell: process.platform === 'win32',
     env: { ...process.env, CI: 'true', HUSKY: '0' },
   });
   if (!process.env.DEV_CONTAINER) {
-    execSync('pnpm exec playwright install-deps', { stdio: 'inherit' });
+    execSync('pnpm exec playwright install-deps', {
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    });
   }
 "
 """
