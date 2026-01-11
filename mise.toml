@@ -17,9 +17,10 @@ task.monorepo_depth = 2
 MISE_EXPERIMENTAL = "1"
 PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
-# Configure uv venv location
-UV_PROJECT_ENVIRONMENT = ".cache/native/venv"
-UV_VENV_DIR = ".cache/native/venv"
+# Configure uv venv/caches (allow overrides e.g., inside Docker)
+UV_PROJECT_ENVIRONMENT = "{{ get_env(name=\"UV_PROJECT_ENVIRONMENT\", default=\".cache/native/venv\") }}"
+UV_VENV_DIR = "{{ get_env(name=\"UV_VENV_DIR\", default=\".cache/native/venv\") }}"
+UV_CACHE_DIR = "{{ get_env(name=\"UV_CACHE_DIR\", default=\".cache/native/uv\") }}"
 
 [tools]
 # Node
@@ -70,7 +71,7 @@ windows-arm64 = { asset_pattern = "*win32-arm64*", rename_exe = "biome" }
 [hooks]
 postinstall = """
 rustup show
-uv sync --no-install-workspace --no-cache
+uv sync --no-install-workspace
 node -e "
   const { execSync } = require('child_process');
   execSync('pnpm install --frozen-lockfile --prefer-offline', {
