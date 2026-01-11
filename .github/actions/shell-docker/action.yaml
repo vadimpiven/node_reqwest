@@ -15,6 +15,7 @@ runs:
       env:
         INPUT_RUN: "${{ inputs.run }}"
         DOCKER_SERVICE: "${{ inputs.docker-service }}"
-        COMPOSE_FILE: "docker-compose.yml"
+        COMPOSE_FILE: "docker-compose.yml:docker-compose.override.yml"
       run: |
-        docker compose exec -T "$DOCKER_SERVICE" bash -c "$INPUT_RUN"
+        printf "%s" "$INPUT_RUN" | \
+          docker compose exec -T "$DOCKER_SERVICE" bash

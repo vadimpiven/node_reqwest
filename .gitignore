@@ -29,6 +29,8 @@ __pycache__/
 !.cache/docker/mise/.gitkeep
 !.cache/docker/pnpm-store/
 !.cache/docker/pnpm-store/.gitkeep
+!.cache/docker/rustup/
+!.cache/docker/rustup/.gitkeep
 !.cache/docker/sccache/
 !.cache/docker/sccache/.gitkeep
 !.cache/docker/uv/

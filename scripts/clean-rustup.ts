@@ -16,7 +16,7 @@ runScript('clean-rustup', async () => {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.includes('(default)')) {
+    if (!trimmed || trimmed.includes('(default)') || trimmed.includes('(active)')) {
       continue;
     }
 
