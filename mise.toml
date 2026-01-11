@@ -6,7 +6,6 @@ experimental_monorepo_root = true
 
 [settings]
 experimental = true
-python.uv_venv_auto = true
 env_file = ".env"
 
 # Best practices for pnpm monorepos
