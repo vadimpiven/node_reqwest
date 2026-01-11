@@ -17,6 +17,9 @@ task.monorepo_depth = 2
 MISE_EXPERIMENTAL = "1"
 PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
+# Configure uv venv location
+UV_PROJECT_ENVIRONMENT = ".cache/native/venv"
+UV_VENV_DIR = ".cache/native/venv"
 
 [tools]
 # Node
@@ -67,7 +70,7 @@ windows-arm64 = { asset_pattern = "*win32-arm64*", rename_exe = "biome" }
 [hooks]
 postinstall = """
 rustup show
-uv sync --no-install-workspace
+uv sync --no-install-workspace --no-cache
 node -e "
   const { execSync } = require('child_process');
   execSync('pnpm install --frozen-lockfile --prefer-offline', {

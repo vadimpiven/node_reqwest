@@ -1,6 +1,7 @@
 [tool.uv]
 required-version = ">=0.9.21"
 exclude-newer = "7 days"
+cache-dir = ".cache/native/uv"
 
 [tool.uv.workspace]
 members = ["packages/node/tests/mitmproxy"]
