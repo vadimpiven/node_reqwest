@@ -10,6 +10,8 @@ ARG USER_GID=$USER_UID
 # Toolchain Homes - now in workspace for persistence
 ENV MISE_DATA_DIR=/workspace/.cache/docker/mise
 ENV PNPM_HOME=/home/${USERNAME}/.pnpm
+ENV RUSTUP_HOME=/workspace/.cache/docker/rustup
+ENV CARGO_HOME=/workspace/.cache/docker/cargo
 
 # Cache Directories - all in workspace for persistence
 ENV UV_CACHE_DIR=/workspace/.cache/docker/uv
@@ -17,16 +19,12 @@ ENV UV_PROJECT_ENVIRONMENT=/workspace/.cache/docker/venv
 ENV npm_config_store_dir=/workspace/.cache/docker/pnpm-store
 ENV SCCACHE_DIR=/workspace/.cache/docker/sccache
 
-# Prioritize Mise shims, then other tool paths
-ENV PATH=${MISE_DATA_DIR}/shims:${PNPM_HOME}:/home/${USERNAME}/.local/bin:$PATH
-
 # Configure Python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Rust configuration via rustup
-ENV RUSTUP_HOME=/workspace/.cache/docker/rustup
-ENV CARGO_HOME=/workspace/.cache/docker/cargo
+# Prioritize Mise shims, then other tool paths
+ENV PATH=${MISE_DATA_DIR}/shims:${PNPM_HOME}:${CARGO_HOME}/bin:/home/${USERNAME}/.local/bin:$PATH
 
 # Container environment variables
 ENV DEV_CONTAINER=1
