@@ -27,13 +27,13 @@ UV_PROJECT_ENVIRONMENT = "{{ config_root }}/{{ vars.cache_suffix }}/venv"
 # Add Rust binaries to PATH
 _.path = ["{{ config_root }}/{{ vars.cache_suffix }}/cargo/bin"]
 
+# Set Python virtual environment path
+_.python.venv = { path = "{{ config_root }}/{{ vars.cache_suffix }}/venv" }
+
 [tools]
 # Node
 pnpm = "10.28.0"
 node = "22.21.1"
-
-# Python
-python = "3.13"
 
 # Rust
 rust.version = "nightly-2026-01-10"
@@ -82,12 +82,13 @@ windows-arm64 = { asset_pattern = "*win32-arm64*", rename_exe = "biome" }
 postinstall = """
 cargo --version \
 && uv sync --no-install-workspace \
+&& mise sync python --uv \
 && node -e "
   const { execSync } = require('child_process');
   execSync('pnpm install --frozen-lockfile --prefer-offline', {
     stdio: 'inherit',
     shell: process.platform === 'win32',
-    env: { ...process.env, CI: 'true', HUSKY: '0' },
+    env: { ...process.env, CI: 'true', HUSKY: '1' },
   });
   if (!process.env.DEV_CONTAINER) {
     execSync('pnpm exec playwright install-deps', {

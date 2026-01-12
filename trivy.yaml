@@ -3,11 +3,12 @@
 # Scan options
 scan:
   type: fs
+  skip-dirs:
+    - ".cache"
+    - ".venv"
+    - "node_modules"
+    - "target"
   skip-files:
-    - ".cache/**"
-    - ".venv/**"
-    - "node_modules/**"
-    - "target/**"
     - ".env"
 
 scanners:
