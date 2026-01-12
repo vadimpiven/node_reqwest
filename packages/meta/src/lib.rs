@@ -4,11 +4,10 @@
 
 use core::fmt;
 use std::env::var;
-use std::process::Command;
+use std::fs::{read_to_string, write};
 
 use anyhow::{Context, Result};
 use chrono::Datelike;
-use indoc::formatdoc;
 use tauri_winres::{VersionInfo, WindowsResource};
 
 /// Git tag (release build) or commit hash (dev build), or "undefined" when no git context available.
@@ -81,45 +80,29 @@ impl Version {
     }
 }
 
-/// Override package.json version with the given version
+/// Override `package.json` version with the given version.
+///
+/// This implementation uses `serde_json` with the `preserve_order` feature to ensure that the
+/// `package.json` file is updated without changing the order of entries or significantly
+/// altering the formatting (it uses standard 2-space indentation).
 pub fn npm_version(version: &Version) -> Result<()> {
-    let error = formatdoc! {"
-        Failed to run
-        `npm version {version}
-            --allow-same-version --no-git-tag-version --workspaces-update=false`",
-        version = version
-    };
-    // npm must be executed on Windows using CMD and on Posix systems using Bash
-    // https://github.com/jeronimosg/npm_rs/blob/80d7f99f82fea5bb53947c12575bb8a5834398ae/src/lib.rs#L48-L56
-    // to not bother with this we let node properly execute the correct runner
-    Command::new("node")
-        .arg("-p")
-        .arg(formatdoc! {"
-            process.exit(
-                require('child_process')
-                    .spawnSync(
-                        'npm',
-                        [
-                            'version',
-                            '{version}',
-                            '--allow-same-version',
-                            '--no-git-tag-version',
-                            '--workspaces-update=false'
-                        ], {{
-                            stdio: 'inherit',
-                            shell: true,
-                            encoding: 'utf-8'
-                        }}
-                    )
-                    .status
-            )",
-            version = version
-        })
-        .status()
-        .context(error.clone())? // use cloned error context
-        .success()
-        .then_some(())
-        .context(error)?; // use error context
+    let path = "package.json";
+    let content = read_to_string(path).context(format!("Failed to read {path}"))?;
+
+    let mut json: serde_json::Value =
+        serde_json::from_str(&content).context(format!("Failed to parse {path}"))?;
+
+    if let Some(obj) = json.as_object_mut() {
+        obj.insert(
+            "version".to_string(),
+            serde_json::Value::String(version.to_string()),
+        );
+    }
+
+    let mut new_content =
+        serde_json::to_string_pretty(&json).context(format!("Failed to serialize {path}"))?;
+    new_content.push('\n');
+    write(path, new_content).context(format!("Failed to write {path}"))?;
 
     Ok(())
 }

@@ -16,7 +16,7 @@ outputs:
       }
   cache-key:
     description: "Cache key prefix for manual invalidation"
-    value: "v14"
+    value: "v15"
   env:
     description: "Environment variables"
     value: |

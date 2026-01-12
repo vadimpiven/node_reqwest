@@ -7,6 +7,8 @@ redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 experimental = true
 env_file = ".env"
 npm.package_manager = "pnpm"
+rust.cargo_home = ".cache/native/cargo"
+rust.rustup_home = ".cache/native/rustup"
 
 [vars]
 cache_suffix = ".cache/{% if env.DEV_CONTAINER %}docker{% else %}native{% endif %}"
@@ -28,7 +30,7 @@ UV_PROJECT_ENVIRONMENT = "{{ config_root }}/{{ vars.cache_suffix }}/venv"
 _.path = ["{{ config_root }}/{{ vars.cache_suffix }}/cargo/bin"]
 
 # Set Python virtual environment path
-_.python.venv = { path = "{{ config_root }}/{{ vars.cache_suffix }}/venv" }
+_.python.venv.path = "{{ config_root }}/{{ vars.cache_suffix }}/venv"
 
 [tools]
 # Node
@@ -46,42 +48,24 @@ rust.components = "clippy,rustfmt,llvm-tools-preview"
 "github:nextest-rs/nextest" = "cargo-nextest-0.9.117"
 "github:EmbarkStudios/cargo-deny" = "0.19.0"
 "github:mstange/samply" = "samply-v0.13.1"
-"github:crate-ci/typos" = "v1.31.1"
+"github:crate-ci/typos" = "v1.42.0"
+"github:taiki-e/cargo-llvm-cov" = "0.6.23"
 
 # Common tools
 "github:aquasecurity/trivy" = "0.68.2"
 "github:google/yamlfmt" = "0.21.0"
 "github:koalaman/shellcheck" = "0.10.0"
+"github:astral-sh/uv" = "0.9.24"
 
-# Tools requiring specific overrides for compatibility
-[tools."github:astral-sh/uv"]
-version = "0.9.24"
-[tools."github:astral-sh/uv".platforms]
-linux-x64 = { asset_pattern = "*x86_64-unknown-linux-gnu*" }
-linux-arm64 = { asset_pattern = "*aarch64-unknown-linux-gnu*" }
-
-[tools."github:taiki-e/cargo-llvm-cov"]
-version = "0.6.23"
-[tools."github:taiki-e/cargo-llvm-cov".platforms]
-linux-x64 = { asset_pattern = "*x86_64*linux-gnu*" }
-linux-arm64 = { asset_pattern = "*aarch64*linux-gnu*" }
-
+# Biome versioning uses a prefix for tags
 [tools."github:biomejs/biome"]
 version = "2.3.11"
 version_prefix = "@biomejs/biome@"
-[tools."github:biomejs/biome".platforms]
-linux-x64 = { asset_pattern = "*linux-x64-musl*", rename_exe = "biome" }
-linux-arm64 = { asset_pattern = "*linux-arm64-musl*", rename_exe = "biome" }
-macos-x64 = { asset_pattern = "*darwin-x64*", rename_exe = "biome" }
-macos-arm64 = { asset_pattern = "*darwin-arm64*", rename_exe = "biome" }
-windows-x64 = { asset_pattern = "*win32-x64*", rename_exe = "biome" }
-windows-arm64 = { asset_pattern = "*win32-arm64*", rename_exe = "biome" }
 
 # Hooks - auto-run after mise install
 [hooks]
 postinstall = """
-cargo --version \
-&& uv sync --no-install-workspace \
+uv sync --no-install-workspace \
 && mise sync python --uv \
 && node -e "
   const { execSync } = require('child_process');
@@ -127,7 +111,7 @@ sources = [
 [tasks."check:taplo"]
 description = "Check TOML files with taplo"
 run = "pnpm exec taplo check"
-sources = ["*.toml", ".cargo/*.toml", ".config/*.toml", "packages/**/*.toml"]
+sources = ["*.toml", "{.cargo,.config,packages}/**/*.toml"]
 
 [tasks."check:markdownlint"]
 description = "Check Markdown files"
@@ -137,12 +121,12 @@ sources = ["*.md", "packages/**/*.md", "plans/*.md", ".markdownlint-cli2.jsonc"]
 [tasks."check:yamlfmt"]
 description = "Check YAML formatting"
 run = "yamlfmt -gitignore_excludes -lint"
-sources = ["*.yaml", "*.yml", ".github/**/*.yaml", ".github/**/*.yml", ".devcontainer/*.yaml"]
+sources = ["*.{yaml,yml}", ".github/**/*.{yaml,yml}", ".devcontainer/*.yaml"]
 
 [tasks."check:clippy"]
 description = "Check Rust code with clippy"
 run = "cargo clippy -r --locked -- -D warnings"
-sources = ["packages/**/*.rs", "Cargo.toml", "Cargo.lock", "clippy.toml"]
+sources = ["packages/**/*.rs", "Cargo.{toml,lock}", "clippy.toml"]
 
 [tasks."check:rustfmt"]
 description = "Check Rust formatting"
@@ -152,17 +136,13 @@ sources = ["packages/**/*.rs", "rustfmt.toml"]
 [tasks."check:cargo-deny"]
 description = "Check Rust dependencies with cargo-deny"
 run = "cargo deny check"
-sources = ["Cargo.toml", "Cargo.lock", "deny.toml"]
+sources = ["Cargo.{toml,lock}", "deny.toml"]
 
 [tasks."check:typos"]
 description = "Check for typos in all files"
 run = "typos ."
 sources = [
-    "*.md",
-    "*.toml",
-    "*.json",
-    "*.yaml",
-    "*.yml",
+    "*.{md,toml,json,yaml,yml}",
     "scripts/**/*.ts",
     "packages/**/*.{md,rs,ts,js,py,toml,json}",
     "plans/*.md",
@@ -177,17 +157,17 @@ sources = ["docker-entrypoint.sh"]
 [tasks."check:zizmor"]
 description = "Security audit GitHub Actions with zizmor"
 run = "uv run --no-sync zizmor -q --persona auditor .github"
-sources = [".github/**/*.yaml", ".github/**/*.yml"]
+sources = [".github/**/*.{yaml,yml}"]
 
 [tasks."check:semgrep"]
 description = "Security scan with semgrep"
 run = "uv run --no-sync semgrep scan --error -q"
-sources = ["packages/**/*.{py,rs,ts,js}", ".github/**/*.yaml", ".github/**/*.yml"]
+sources = ["packages/**/*.{py,rs,ts,js}", ".github/**/*.{yaml,yml}"]
 
 [tasks."check:trivy"]
 description = "Security scan with trivy"
 run = "trivy fs . --format table"
-sources = ["*.toml", "*.lock", "*.json", "packages/**/*.{toml,json}", "trivy.yaml", "Dockerfile"]
+sources = ["*.{toml,lock,json}", "packages/**/*.{toml,json}", "trivy.yaml", "Dockerfile"]
 
 [tasks.check]
 description = "Run all checks"
@@ -236,7 +216,7 @@ sources = [
 [tasks."fix:taplo"]
 description = "Format TOML files with taplo"
 run = "pnpm exec taplo format"
-sources = ["*.toml", ".cargo/*.toml", ".config/*.toml", "packages/**/*.toml"]
+sources = ["*.toml", "{.cargo,.config,packages}/**/*.toml"]
 
 [tasks."fix:markdownlint"]
 description = "Fix Markdown files"
@@ -246,12 +226,12 @@ sources = ["*.md", "packages/**/*.md", "plans/*.md", ".markdownlint-cli2.jsonc"]
 [tasks."fix:yamlfmt"]
 description = "Format YAML files"
 run = "yamlfmt -gitignore_excludes"
-sources = ["*.yaml", "*.yml", ".github/**/*.yaml", ".github/**/*.yml", ".devcontainer/*.yaml"]
+sources = ["*.{yaml,yml}", ".github/**/*.{yaml,yml}", ".devcontainer/*.yaml"]
 
 [tasks."fix:clippy"]
 description = "Fix Rust code with clippy"
 run = "cargo clippy --fix --allow-dirty"
-sources = ["packages/**/*.rs", "Cargo.toml", "Cargo.lock", "clippy.toml"]
+sources = ["packages/**/*.rs", "Cargo.{toml,lock}", "clippy.toml"]
 
 [tasks."fix:rustfmt"]
 description = "Format Rust code"
@@ -262,17 +242,13 @@ sources = ["packages/**/*.rs", "rustfmt.toml"]
 [tasks."fix:cargo-deny"]
 description = "Check cargo-deny (no auto-fix available)"
 run = "cargo deny check"
-sources = ["Cargo.toml", "Cargo.lock", "deny.toml"]
+sources = ["Cargo.{toml,lock}", "deny.toml"]
 
 [tasks."fix:typos"]
 description = "Fix typos in all files"
 run = "typos -w ."
 sources = [
-    "*.md",
-    "*.toml",
-    "*.json",
-    "*.yaml",
-    "*.yml",
+    "*.{md,toml,json,yaml,yml}",
     "scripts/**/*.ts",
     "packages/**/*.{md,rs,ts,js,py,toml,json}",
     "plans/*.md",
@@ -287,7 +263,7 @@ sources = ["docker-entrypoint.sh"]
 [tasks."fix:zizmor"]
 description = "Check GitHub Actions (no auto-fix available)"
 run = "uv run --no-sync zizmor -q --persona auditor .github"
-sources = [".github/**/*.yaml", ".github/**/*.yml"]
+sources = [".github/**/*.{yaml,yml}"]
 
 [tasks."fix:semgrep"]
 description = "Fix semgrep issues"
@@ -297,7 +273,7 @@ sources = ["packages/**/*.{py,rs,ts,js}", ".github/**/*.{yaml,yml}"]
 [tasks."fix:trivy"]
 description = "Check trivy (no auto-fix available)"
 run = "trivy fs . --format table"
-sources = ["*.toml", "*.lock", "*.json", "packages/**/*.{toml,json}", "trivy.yaml", "Dockerfile"]
+sources = ["*.{toml,lock,json}", "packages/**/*.{toml,json}", "trivy.yaml", "Dockerfile"]
 
 [tasks.fix]
 description = "Run all fixes"
@@ -389,21 +365,21 @@ depends = ["update:pnpm", "update:cargo", "update:uv"]
 [tasks."ci-build"]
 description = "Build for CI (runs recursive pnpm ci-build)"
 run = "pnpm run --recursive ci-build"
-sources = ["packages/**/*.{rs,ts,js}", "Cargo.toml", "Cargo.lock"]
+sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
 
 [tasks."ci-test"]
 description = "Run CI tests with pre-check"
 run = "pnpm run --recursive ci-test"
 depends = ["check"]
-sources = ["packages/**/*.{rs,ts,js}", "Cargo.toml", "Cargo.lock"]
+sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
 
 [tasks.build]
 description = "Build all packages"
 run = "pnpm run --recursive build"
-sources = ["packages/**/*.{rs,ts,js}", "Cargo.toml", "Cargo.lock"]
+sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
 
 [tasks.test]
 description = "Run all tests with pre-fix"
 run = "pnpm run --recursive test"
 depends = ["fix"]
-sources = ["packages/**/*.{rs,ts,js}", "Cargo.toml", "Cargo.lock"]
+sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]

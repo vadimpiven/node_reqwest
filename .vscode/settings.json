@@ -36,5 +36,9 @@
   "rust-analyzer.imports.preferPrelude": true,
   "rust-analyzer.imports.prefix": "plain",
   "trivy.configPath": "trivy.yaml",
-  "trivy.ignoreFilesInGitIgnore": true
+  "trivy.ignoreFilesInGitIgnore": true,
+  "debug.javascript.defaultRuntimeExecutable": {
+    "pwa-node": "/Users/vadimpiven/.local/share/mise/shims/node"
+  },
+  "python.defaultInterpreterPath": "${workspaceFolder}/.cache/native/venv"
 }

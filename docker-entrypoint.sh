@@ -25,6 +25,7 @@ if [[ -n "${MITM_PROXY:-}" ]]; then
 fi
 
 mise trust --all --yes
+mise install --yes
 
 # Signal that initialization is complete
 touch "$READY_MARKER"
