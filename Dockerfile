@@ -25,7 +25,7 @@ ENV MISE_TRACE=1
 ENV SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt
 ENV SSL_CERT_DIR=/etc/ssl/certs
 
-HEALTHCHECK --interval=2s --timeout=5s --start-period=30s --retries=15 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=150s --retries=3 \
     CMD [ -f "$READY_MARKER" ] || exit 1
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -34,8 +34,8 @@ COPY --from=musl-base /lib/libc.musl-*.so.1 /usr/lib/
 RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
     MISE_VERSION=$(cat /tmp/.mise-version) \
     && rm -f /tmp/.mise-version \
-    && ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") \
-    && curl -sSL "https://github.com/jdx/mise/releases/download/${MISE_VERSION}/mise-${MISE_VERSION}-linux-${ARCH}-musl" -o /usr/local/bin/mise \
+    && MISE_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") \
+    && curl -sSL "https://github.com/jdx/mise/releases/download/${MISE_VERSION}/mise-${MISE_VERSION}-linux-${MISE_ARCH}-musl" -o /usr/local/bin/mise \
     && chmod +x /usr/local/bin/mise \
     \
     # Configure mise for glibc compatibility (forces correct Python binaries)
@@ -55,11 +55,10 @@ RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
     && dnf clean all \
     \
     # Support musl-linked tools
-    && MUSL_CPU=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64") \
-    && ln -snf /usr/lib/libc.musl-$MUSL_CPU.so.1 /usr/lib/ld-musl-$MUSL_CPU.so.1 \
-    && for path in /lib /lib64 /usr/lib64; do \
+    && MUSL_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64") \
+    && for path in /lib /lib64 /usr/lib /usr/lib64; do \
          [ -d "$path" ] || continue; \
-         [ -e "$path/ld-musl-$MUSL_CPU.so.1" ] || ln -snf /usr/lib/ld-musl-$MUSL_CPU.so.1 "$path/ld-musl-$MUSL_CPU.so.1"; \
+         ln -snf /usr/lib/libc.musl-$MUSL_ARCH.so.1 "$path/ld-musl-$MUSL_ARCH.so.1"; \
        done \
     \
     # Create SSL symlinks
