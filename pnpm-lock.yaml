@@ -67,8 +67,8 @@ catalogs:
       specifier: ^7.16.0
       version: 7.16.0
     vite:
-      specifier: ^7.3.0
-      version: 7.3.0
+      specifier: ^7.3.1
+      version: 7.3.1
     vite-plugin-dts:
       specifier: ^4.5.4
       version: 4.5.4
@@ -82,7 +82,7 @@ importers:
     dependencies:
       node:
         specifier: runtime:^22.21.1
-        version: runtime:22.21.1
+        version: runtime:22.22.0
     devDependencies:
       '@biomejs/cli-darwin-arm64':
         specifier: 'catalog:'
@@ -136,7 +136,7 @@ importers:
     devDependencies:
       '@codecov/vite-plugin':
         specifier: 'catalog:'
-        version: 1.9.1(vite@7.3.0(@types/node@22.19.3))
+        version: 1.9.1(vite@7.3.1(@types/node@22.19.3))
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.57.0
@@ -163,10 +163,10 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 7.3.0(@types/node@22.19.3)
+        version: 7.3.1(@types/node@22.19.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 4.5.4(@types/node@22.19.3)(rollup@4.54.0)(typescript@5.9.3)(vite@7.3.0(@types/node@22.19.3))
+        version: 4.5.4(@types/node@22.19.3)(rollup@4.54.0)(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.3))
       vitest:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@22.19.3)
@@ -272,12 +272,14 @@ packages:
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@biomejs/cli-linux-x64-musl@2.3.10':
     resolution: {integrity: sha512-QTfHZQh62SDFdYc2nfmZFuTm5yYb4eO1zwfB+90YxUumRCR171tS1GoTX5OD0wrv4UsziMPmrePMtkTnNyYG3g==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@biomejs/cli-win32-arm64@2.3.10':
     resolution: {integrity: sha512-o7lYc9n+CfRbHvkjPhm8s9FgbKdYZu5HCcGVMItLjz93EhgJ8AM44W+QckDqLA9MKDNFrR8nPbO4b73VC5kGGQ==}
@@ -1708,113 +1710,113 @@ packages:
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
 
-  node@runtime:22.21.1:
+  node@runtime:22.22.0:
     resolution:
       type: variations
       variants:
         - resolution:
             archive: tarball
             bin: bin/node
-            integrity: sha256-nk72dIu8Vefev3klKaEIvCY1hZ9M5G0HdWaLJ8xcx1A=
+            integrity: sha256-tatt7rjVS5c4A5qP/cR4HMS4GykeebINNgD4MNHWacs=
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-aix-ppc64.tar.gz
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-aix-ppc64.tar.gz
           targets:
             - cpu: ppc64
               os: aix
         - resolution:
             archive: tarball
             bin: bin/node
-            integrity: sha256-wXDWVU+6g9QdJads262FSHwHflH6c1GeQayIWqQp2K8=
+            integrity: sha256-XtTbD88er4TZGtEkYmMdc79FdsE3fhktIi5IAmqQJkA=
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-darwin-arm64.tar.gz
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-darwin-arm64.tar.gz
           targets:
             - cpu: arm64
               os: darwin
         - resolution:
             archive: tarball
             bin: bin/node
-            integrity: sha256-jj3IlhTevmbCpq0jE6GtsG6zfbbNbEDX3m99mH99Gv0=
+            integrity: sha256-XqUMnW3qPfo6u2ayZW96ThyM7yNDK1WNRftTjHtd7c4=
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-darwin-x64.tar.gz
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-darwin-x64.tar.gz
           targets:
             - cpu: x64
               os: darwin
         - resolution:
             archive: tarball
             bin: bin/node
-            integrity: sha256-yGgw3t93+JQfqmxanIY7390ZJ6M2pGlD3swGo4+Av7I=
+            integrity: sha256-JbqV37locfou+XfxH5XqkIGMj6FcDyEQdx2wjUukI74=
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-linux-arm64.tar.gz
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-linux-arm64.tar.gz
           targets:
             - cpu: arm64
               os: linux
         - resolution:
             archive: tarball
             bin: bin/node
-            integrity: sha256-QNPQmu5VarwpfdeChk/Ma55grNQ4/wZgup3c1WnACSA=
+            integrity: sha256-qSaE2HIFifGXdvsYbFo6TSc8E0NvyMRLYd0+7vgfDTo=
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-linux-armv7l.tar.gz
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-linux-armv7l.tar.gz
           targets:
             - cpu: armv7l
               os: linux
         - resolution:
             archive: tarball
             bin: bin/node
-            integrity: sha256-sk9MGdVUbNQYZ06DveVtUKfCtl+ux6ZcNQLyhe6zqnA=
+            integrity: sha256-VGgO7FmDMLmGOrN62kZFZBW3duRjRZWEdvzSISq98PM=
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-linux-ppc64le.tar.gz
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-linux-ppc64le.tar.gz
           targets:
             - cpu: ppc64le
               os: linux
         - resolution:
             archive: tarball
             bin: bin/node
-            integrity: sha256-fEa9SlErNfA6y5crKwT+zC1MR+NQaauajdXNjwCRGVo=
+            integrity: sha256-myTMbdFxBnJdeWRa3wo7YvozEOTTCqERR90/4tgyXvQ=
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-linux-s390x.tar.gz
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-linux-s390x.tar.gz
           targets:
             - cpu: s390x
               os: linux
         - resolution:
             archive: tarball
             bin: bin/node
-            integrity: sha256-IZoVLqhZhh11repXi97D3OgUOFPBPFGH9AxA53sBQ7I=
+            integrity: sha256-wzw57ZyA3t3ed8lg0AEZkYueNSQm/WBLpBY41lJqR0Q=
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-linux-x64.tar.gz
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-linux-x64.tar.gz
           targets:
             - cpu: x64
               os: linux
         - resolution:
             archive: zip
             bin: node.exe
-            integrity: sha256-udf6rNC1QLi0ZkDbyPVvQgX/Y7ed7HANTwPTZZGwMY8=
-            prefix: node-v22.21.1-win-arm64
+            integrity: sha256-W0T9QQ33tM0KGJGgWntgb4+32HhqlJl7mWo3LoJHjXo=
+            prefix: node-v22.22.0-win-arm64
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-win-arm64.zip
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-win-arm64.zip
           targets:
             - cpu: arm64
               os: win32
         - resolution:
             archive: zip
             bin: node.exe
-            integrity: sha256-PGJOn74H4yF1UuxSoPhOK9wub/pzSPP9+5+/j0LiP88=
-            prefix: node-v22.21.1-win-x64
+            integrity: sha256-yX+jdtK+zciGP808ot2ag6nzRo7nzPem0HbsZqZFx3o=
+            prefix: node-v22.22.0-win-x64
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-win-x64.zip
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-win-x64.zip
           targets:
             - cpu: x64
               os: win32
         - resolution:
             archive: zip
             bin: node.exe
-            integrity: sha256-/K279FdbtlSulN5TKOd+Mj/zzqY2ByXQc7pW4sl1PlI=
-            prefix: node-v22.21.1-win-x86
+            integrity: sha256-XX9s/FBHTPeEAnzp3av0egGY6ktYgwGrhnXejFYhckc=
+            prefix: node-v22.22.0-win-x86
             type: binary
-            url: https://nodejs.org/download/release/v22.21.1/node-v22.21.1-win-x86.zip
+            url: https://nodejs.org/download/release/v22.22.0/node-v22.22.0-win-x86.zip
           targets:
             - cpu: x86
               os: win32
-    version: 22.21.1
+    version: 22.22.0
     hasBin: true
 
   nodemailer@7.0.12:
@@ -2188,8 +2190,8 @@ packages:
       vite:
         optional: true
 
-  vite@7.3.0:
-    resolution: {integrity: sha512-dZwN5L1VlUBewiP6H9s2+B3e3Jg96D0vzN+Ry73sOefebhYr9f94wwkMNN/9ouoU8pV1BqA1d1zGk8928cx0rg==}
+  vite@7.3.1:
+    resolution: {integrity: sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -2452,11 +2454,11 @@ snapshots:
       unplugin: 1.16.1
       zod: 3.25.76
 
-  '@codecov/vite-plugin@1.9.1(vite@7.3.0(@types/node@22.19.3))':
+  '@codecov/vite-plugin@1.9.1(vite@7.3.1(@types/node@22.19.3))':
     dependencies:
       '@codecov/bundler-plugin-core': 1.9.1
       unplugin: 1.16.1
-      vite: 7.3.0(@types/node@22.19.3)
+      vite: 7.3.1(@types/node@22.19.3)
 
   '@electron/get@2.0.3':
     dependencies:
@@ -2916,13 +2918,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@4.0.16(vite@7.3.0(@types/node@22.19.3))':
+  '@vitest/mocker@4.0.16(vite@7.3.1(@types/node@22.19.3))':
     dependencies:
       '@vitest/spy': 4.0.16
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.0(@types/node@22.19.3)
+      vite: 7.3.1(@types/node@22.19.3)
 
   '@vitest/pretty-format@4.0.16':
     dependencies:
@@ -3936,7 +3938,7 @@ snapshots:
 
   node-releases@2.0.27: {}
 
-  node@runtime:22.21.1: {}
+  node@runtime:22.22.0: {}
 
   nodemailer@7.0.12: {}
 
@@ -4255,7 +4257,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite-plugin-dts@4.5.4(@types/node@22.19.3)(rollup@4.54.0)(typescript@5.9.3)(vite@7.3.0(@types/node@22.19.3)):
+  vite-plugin-dts@4.5.4(@types/node@22.19.3)(rollup@4.54.0)(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.3)):
     dependencies:
       '@microsoft/api-extractor': 7.55.2(@types/node@22.19.3)
       '@rollup/pluginutils': 5.3.0(rollup@4.54.0)
@@ -4268,13 +4270,13 @@ snapshots:
       magic-string: 0.30.21
       typescript: 5.9.3
     optionalDependencies:
-      vite: 7.3.0(@types/node@22.19.3)
+      vite: 7.3.1(@types/node@22.19.3)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
       - supports-color
 
-  vite@7.3.0(@types/node@22.19.3):
+  vite@7.3.1(@types/node@22.19.3):
     dependencies:
       esbuild: 0.27.2
       fdir: 6.5.0(picomatch@4.0.3)
@@ -4289,7 +4291,7 @@ snapshots:
   vitest@4.0.16(@types/node@22.19.3):
     dependencies:
       '@vitest/expect': 4.0.16
-      '@vitest/mocker': 4.0.16(vite@7.3.0(@types/node@22.19.3))
+      '@vitest/mocker': 4.0.16(vite@7.3.1(@types/node@22.19.3))
       '@vitest/pretty-format': 4.0.16
       '@vitest/runner': 4.0.16
       '@vitest/snapshot': 4.0.16
@@ -4306,7 +4308,7 @@ snapshots:
       tinyexec: 1.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 7.3.0(@types/node@22.19.3)
+      vite: 7.3.1(@types/node@22.19.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.19.3
