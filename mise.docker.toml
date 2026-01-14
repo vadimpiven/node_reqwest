@@ -1,0 +1,27 @@
+# mise.docker.toml - Docker container-specific overrides
+# This file is automatically loaded when MISE_ENV=docker
+# It inherits from mise.toml and overrides container-specific settings
+
+[settings]
+rust.cargo_home = "/workspace/.cache/docker/cargo"
+rust.rustup_home = "/workspace/.cache/docker/rustup"
+# Force GNU Python builds (manylinux_2_28 container is glibc-based)
+python.precompiled_os = "unknown-linux-gnu"
+
+[env]
+CARGO_HOME = "/workspace/.cache/docker/cargo"
+RUSTUP_HOME = "/workspace/.cache/docker/rustup"
+SCCACHE_DIR = "/workspace/.cache/docker/sccache"
+UV_CACHE_DIR = "/workspace/.cache/docker/uv"
+UV_PROJECT_ENVIRONMENT = "/workspace/.cache/docker/venv"
+npm_config_store_dir = "/workspace/.cache/docker/pnpm"
+
+# Override Rust binaries path
+_.path = ["/workspace/.cache/docker/cargo/bin"]
+
+# Override Python virtual environment path
+_.python.venv.path = "/workspace/.cache/docker/venv"
+
+# Setup Python in the container
+PYTHONDONTWRITEBYTECODE = "1"
+PYTHONUNBUFFERED = "1"

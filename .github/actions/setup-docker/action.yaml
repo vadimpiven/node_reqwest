@@ -22,13 +22,13 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: "Restore mise cache"
+    - name: "Restore docker caches"
       uses: "actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb" # v5.0.1
       with:
-        path: ".cache/docker/mise"
-        key: "${{ inputs.cache-key }}-mise-docker-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml') }}"
+        path: ".cache/docker"
+        key: "${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml', 'Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
         restore-keys: |
-          ${{ inputs.cache-key }}-mise-docker-${{ runner.os }}-${{ runner.arch }}-
+          ${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-
     - name: "Login to GitHub Container Registry"
       uses: "docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef" # v3.6.0
       with:
@@ -73,8 +73,6 @@ runs:
         up-flags: "--no-build --wait"
     - name: "Run mise install script"
       uses: "./.github/actions/shell-docker"
-      env:
-        MISE_VERBOSE: "1"
       with:
         docker-service: "${{ inputs.docker-service }}"
         run: "mise install"

@@ -39,6 +39,8 @@ __pycache__/
 !.cache/native/.gitkeep
 !.cache/native/cargo/
 !.cache/native/cargo/.gitkeep
+!.cache/native/mise/
+!.cache/native/mise/.gitkeep
 !.cache/native/pnpm/
 !.cache/native/pnpm/.gitkeep
 !.cache/native/rustup/
@@ -47,10 +49,12 @@ __pycache__/
 !.cache/native/sccache/.gitkeep
 !.cache/native/uv/
 !.cache/native/uv/.gitkeep
-!.cache/ruff/
-!.cache/ruff/.gitkeep
-!.cache/trivy/
-!.cache/trivy/.gitkeep
+!.cache/shared/
+!.cache/shared/.gitkeep
+!.cache/shared/ruff/
+!.cache/shared/ruff/.gitkeep
+!.cache/shared/trivy/
+!.cache/shared/trivy/.gitkeep
 
 # packages/node
 packages/node/report-playwright.junit.xml

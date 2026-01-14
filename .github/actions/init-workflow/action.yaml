@@ -16,13 +16,12 @@ outputs:
       }
   cache-key:
     description: "Cache key prefix for manual invalidation"
-    value: "v15"
+    value: "v16"
   env:
     description: "Environment variables"
     value: |
       {
         "CI": "true",
-        "MISE_VERBOSE": "1",
         "CARGO_INCREMENTAL": "0",
         "CARGO_NET_GIT_FETCH_WITH_CLI": "true",
         "RUST_BACKTRACE": "1"

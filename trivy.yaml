@@ -27,4 +27,4 @@ severity:
 ignore-unfixed: true
 exit-code: 1
 # Cache options
-cache-dir: .cache/trivy
+cache-dir: .cache/shared/trivy

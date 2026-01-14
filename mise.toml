@@ -10,27 +10,24 @@ npm.package_manager = "pnpm"
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
 
-[vars]
-cache_suffix = ".cache/{% if env.DEV_CONTAINER %}docker{% else %}native{% endif %}"
-
 [env]
 PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"
 
-# Cache directories
-CARGO_HOME = "{{ config_root }}/{{ vars.cache_suffix }}/cargo"
-npm_config_store_dir = "{{ config_root }}/{{ vars.cache_suffix }}/pnpm"
-RUSTUP_HOME = "{{ config_root }}/{{ vars.cache_suffix }}/rustup"
-SCCACHE_DIR = "{{ config_root }}/{{ vars.cache_suffix }}/sccache"
-UV_CACHE_DIR = "{{ config_root }}/{{ vars.cache_suffix }}/uv"
-UV_PROJECT_ENVIRONMENT = "{{ config_root }}/{{ vars.cache_suffix }}/venv"
+# Cache directories (native paths, overridden in mise.docker.toml for containers)
+CARGO_HOME = "{{ config_root }}/.cache/native/cargo"
+npm_config_store_dir = "{{ config_root }}/.cache/native/pnpm"
+RUSTUP_HOME = "{{ config_root }}/.cache/native/rustup"
+SCCACHE_DIR = "{{ config_root }}/.cache/native/sccache"
+UV_CACHE_DIR = "{{ config_root }}/.cache/native/uv"
+UV_PROJECT_ENVIRONMENT = "{{ config_root }}/.cache/native/venv"
 
 # Add Rust binaries to PATH
-_.path = ["{{ config_root }}/{{ vars.cache_suffix }}/cargo/bin"]
+_.path = ["{{ config_root }}/.cache/native/cargo/bin"]
 
 # Set Python virtual environment path
-_.python.venv.path = "{{ config_root }}/{{ vars.cache_suffix }}/venv"
+_.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
 # Node
@@ -44,7 +41,6 @@ rust.components = "clippy,rustfmt,llvm-tools-preview"
 
 # Rust tools
 "github:cargo-bins/cargo-binstall" = "1.16.6"
-"github:mozilla/sccache" = "0.12.0"
 "github:nextest-rs/nextest" = "cargo-nextest-0.9.117"
 "github:EmbarkStudios/cargo-deny" = "0.19.0"
 "github:mstange/samply" = "samply-v0.13.1"
@@ -56,8 +52,33 @@ rust.components = "clippy,rustfmt,llvm-tools-preview"
 "github:google/yamlfmt" = "0.21.0"
 "github:koalaman/shellcheck" = "0.10.0"
 "github:astral-sh/uv" = "0.9.24"
+hadolint = "2.12.0"
 
-"ubi:biomejs/biome" = { version = "@biomejs/biome@2.3.11", as = "biome" }
+# sccache - need explicit asset_pattern to avoid picking sccache-dist
+[tools."github:mozilla/sccache"]
+version = "0.12.0"
+filter_bins = "sccache"
+
+[tools."github:mozilla/sccache".platforms]
+windows-x64 = { asset_pattern = "sccache-v*-x86_64-pc-windows-msvc.zip" }
+windows-arm64 = { asset_pattern = "sccache-v*-aarch64-pc-windows-msvc.tar.gz" }
+linux-x64 = { asset_pattern = "sccache-v*-x86_64-unknown-linux-musl.tar.gz" }
+linux-arm64 = { asset_pattern = "sccache-v*-aarch64-unknown-linux-musl.tar.gz" }
+macos-x64 = { asset_pattern = "sccache-v*-x86_64-apple-darwin.tar.gz" }
+macos-arm64 = { asset_pattern = "sccache-v*-aarch64-apple-darwin.tar.gz" }
+
+# Biome - uses @biomejs/biome@X.Y.Z tag format with platform-specific binaries
+[tools."github:biomejs/biome"]
+version_prefix = "@biomejs/biome@"
+version = "2.3.11"
+
+[tools."github:biomejs/biome".platforms]
+windows-x64 = { asset_pattern = "biome-win32-x64.exe", bin = "biome.exe" }
+windows-arm64 = { asset_pattern = "biome-win32-arm64.exe", bin = "biome.exe" }
+linux-x64 = { asset_pattern = "biome-linux-x64-musl", bin = "biome" }
+linux-arm64 = { asset_pattern = "biome-linux-arm64-musl", bin = "biome" }
+macos-x64 = { asset_pattern = "biome-darwin-x64", bin = "biome" }
+macos-arm64 = { asset_pattern = "biome-darwin-arm64", bin = "biome" }
 
 # Hooks - auto-run after mise install
 [hooks]
@@ -134,6 +155,11 @@ description = "Check shell scripts with shellcheck"
 run = "shellcheck docker-entrypoint.sh"
 sources = ["docker-entrypoint.sh"]
 
+[tasks."check:hadolint"]
+description = "Check Dockerfile with hadolint"
+run = "hadolint Dockerfile"
+sources = ["Dockerfile", ".hadolint.yaml"]
+
 [tasks."check:zizmor"]
 description = "Security audit GitHub Actions with zizmor"
 run = "uv run --no-sync zizmor -q --persona auditor .github"
@@ -163,6 +189,7 @@ depends = [
     "check:cargo-deny",
     "check:typos",
     "check:shellcheck",
+    "check:hadolint",
     "check:zizmor",
     "check:semgrep",
     "check:trivy",
@@ -240,6 +267,11 @@ description = "Check shell scripts (no auto-fix available)"
 run = "shellcheck docker-entrypoint.sh"
 sources = ["docker-entrypoint.sh"]
 
+[tasks."fix:hadolint"]
+description = "Check Dockerfile (no auto-fix available)"
+run = "hadolint Dockerfile"
+sources = ["Dockerfile", ".hadolint.yaml"]
+
 [tasks."fix:zizmor"]
 description = "Check GitHub Actions (no auto-fix available)"
 run = "uv run --no-sync zizmor -q --persona auditor .github"
@@ -269,6 +301,7 @@ depends = [
     "fix:cargo-deny",
     "fix:typos",
     "fix:shellcheck",
+    "fix:hadolint",
     "fix:zizmor",
     "fix:semgrep",
     "fix:trivy",

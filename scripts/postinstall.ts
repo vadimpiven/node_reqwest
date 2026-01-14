@@ -6,7 +6,6 @@ import { runScript } from './helpers/run-script.ts';
 
 runScript('postinstall', async () => {
   await runCommand('uv', ['sync', '--no-install-workspace']);
-
   await runCommand('mise', ['sync', 'python', '--uv']);
 
   await runCommand('pnpm', ['install', '--frozen-lockfile', '--prefer-offline'], {
@@ -16,7 +15,7 @@ runScript('postinstall', async () => {
     ])
   });
 
-  if (!process.env.DEV_CONTAINER) {
+  if (process.env.MISE_ENV !== 'docker') {
     await runCommand('pnpm', ['exec', 'playwright', 'install-deps']);
   }
 });

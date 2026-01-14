@@ -16,12 +16,10 @@ runs:
     - name: "Restore native caches"
       uses: "actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb" # v5.0.1
       with:
-        path: |
-          .cache/native
-          ~/.local/share/mise
-        key: "${{ inputs.cache-key }}-mise-native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
+        path: ".cache/native"
+        key: "${{ inputs.cache-key }}-native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml', 'Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
         restore-keys: |
-          ${{ inputs.cache-key }}-mise-native-${{ runner.os }}-${{ runner.arch }}-
+          ${{ inputs.cache-key }}-native-${{ runner.os }}-${{ runner.arch }}-
     - name: "Update apt index"
       if: "runner.os == 'Linux'"
       shell: "bash"
@@ -35,6 +33,7 @@ runs:
         ENV: "${{ inputs.env }}"
       run: | # zizmor: ignore[github-env]
         printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> "$GITHUB_ENV"
+        echo "MISE_DATA_DIR=$GITHUB_WORKSPACE/.cache/native/mise" >> "$GITHUB_ENV"
     - name: "Install tools via mise"
       uses: "jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5" # v3.5.1
       with:
@@ -42,4 +41,3 @@ runs:
         cache: false
       env:
         GITHUB_TOKEN: "${{ inputs.github-token }}"
-        MISE_VERBOSE: "1"

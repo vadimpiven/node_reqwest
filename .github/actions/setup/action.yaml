@@ -22,28 +22,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: "Extend environment with cache paths"
-      id: "native-env"
-      shell: "bash"
-      env:
-        INPUT_ENV: "${{ inputs.env }}"
-      run: |
-        RESULT=$(echo "$INPUT_ENV" | jq -c --arg workspace "$GITHUB_WORKSPACE" '
-          . + {
-            "UV_CACHE_DIR": ($workspace + "/.cache/native/uv"),
-            "npm_config_store_dir": ($workspace + "/.cache/native/pnpm-store"),
-            "CARGO_HOME": ($workspace + "/.cache/native/cargo"),
-            "SCCACHE_DIR": ($workspace + "/.cache/native/sccache")
-          }
-        ')
-        echo "env=$RESULT" >> "$GITHUB_OUTPUT"
-    - name: "Restore cargo cache"
+    - name: "Restore shared caches"
       uses: "actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb" # v5.0.1
       with:
-        path: "${{ runner.os == 'Linux' && '.cache/docker/cargo' || '.cache/native/cargo' }}"
-        key: "${{ inputs.cache-key }}-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.lock') }}"
-        restore-keys: |
-          ${{ inputs.cache-key }}-cargo-${{ runner.os }}-${{ runner.arch }}-
+        path: ".cache/shared"
+        key: "${{ inputs.cache-key }}-shared-${{ runner.os }}-${{ runner.arch }}"
     - name: "Write GITHUB_TOKEN to .env"
       shell: "bash"
       env:
@@ -64,6 +47,6 @@ runs:
       if: "runner.os != 'Linux'"
       uses: "./.github/actions/setup-native"
       with:
-        env: "${{ steps.native-env.outputs.env }}"
+        env: "${{ inputs.env }}"
         cache-key: "${{ inputs.cache-key }}"
         github-token: "${{ inputs.github-token }}"

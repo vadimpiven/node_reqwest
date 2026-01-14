@@ -19,7 +19,7 @@ project-includes = ["packages/**/*.py"]
 use-ignore-files = true
 
 [tool.ruff]
-cache-dir = ".cache/ruff"
+cache-dir = ".cache/shared/ruff"
 line-length = 100
 
 [tool.ruff.format]
