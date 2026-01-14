@@ -15,7 +15,7 @@ PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"
 
-# Cache directories (native paths, overridden in mise.docker.toml for containers)
+# Cache directories
 CARGO_HOME = "{{ config_root }}/.cache/native/cargo"
 npm_config_store_dir = "{{ config_root }}/.cache/native/pnpm"
 RUSTUP_HOME = "{{ config_root }}/.cache/native/rustup"
@@ -52,20 +52,26 @@ rust.components = "clippy,rustfmt,llvm-tools-preview"
 "github:google/yamlfmt" = "0.21.0"
 "github:koalaman/shellcheck" = "0.10.0"
 "github:astral-sh/uv" = "0.9.24"
-hadolint = "2.12.0"
+# hadolint - no Windows ARM64 binary available
+[tools."github:hadolint/hadolint"]
+version = "2.14.0"
+[tools."github:hadolint/hadolint".platforms]
+windows-x64 = true
+linux-x64 = true
+linux-arm64 = true
+macos-x64 = true
+macos-arm64 = true
+# windows-arm64 intentionally omitted - no binary available
 
 # sccache - need explicit asset_pattern to avoid picking sccache-dist
 [tools."github:mozilla/sccache"]
-version = "0.12.0"
+version = "0.13.0"
 filter_bins = "sccache"
 
 [tools."github:mozilla/sccache".platforms]
-windows-x64 = { asset_pattern = "sccache-v*-x86_64-pc-windows-msvc.zip" }
-windows-arm64 = { asset_pattern = "sccache-v*-aarch64-pc-windows-msvc.tar.gz" }
 linux-x64 = { asset_pattern = "sccache-v*-x86_64-unknown-linux-musl.tar.gz" }
 linux-arm64 = { asset_pattern = "sccache-v*-aarch64-unknown-linux-musl.tar.gz" }
-macos-x64 = { asset_pattern = "sccache-v*-x86_64-apple-darwin.tar.gz" }
-macos-arm64 = { asset_pattern = "sccache-v*-aarch64-apple-darwin.tar.gz" }
+macos-x64 = { version = "0.12.0" }
 
 # Biome - uses @biomejs/biome@X.Y.Z tag format with platform-specific binaries
 [tools."github:biomejs/biome"]
@@ -158,6 +164,7 @@ sources = ["docker-entrypoint.sh"]
 [tasks."check:hadolint"]
 description = "Check Dockerfile with hadolint"
 run = "hadolint Dockerfile"
+run_windows = "exit 0"
 sources = ["Dockerfile", ".hadolint.yaml"]
 
 [tasks."check:zizmor"]
@@ -270,6 +277,7 @@ sources = ["docker-entrypoint.sh"]
 [tasks."fix:hadolint"]
 description = "Check Dockerfile (no auto-fix available)"
 run = "hadolint Dockerfile"
+run_windows = "exit 0"
 sources = ["Dockerfile", ".hadolint.yaml"]
 
 [tasks."fix:zizmor"]

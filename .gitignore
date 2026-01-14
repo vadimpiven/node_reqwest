@@ -39,8 +39,6 @@ __pycache__/
 !.cache/native/.gitkeep
 !.cache/native/cargo/
 !.cache/native/cargo/.gitkeep
-!.cache/native/mise/
-!.cache/native/mise/.gitkeep
 !.cache/native/pnpm/
 !.cache/native/pnpm/.gitkeep
 !.cache/native/rustup/

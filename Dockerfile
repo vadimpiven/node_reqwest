@@ -1,6 +1,4 @@
 # syntax=docker/dockerfile:1.4
-# <https://hub.docker.com/layers/library/alpine/latest>
-FROM alpine@sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62 AS musl-base
 # <https://quay.io/repository/pypa/manylinux_2_28?tab=tags>
 FROM quay.io/pypa/manylinux_2_28@sha256:ab0ba3e806c10f95049334c3af6266fcf8a18a843d535ac98cc1893499aec6cb
 
@@ -23,9 +21,9 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=150s --retries=3 \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY .mise-version /tmp/.mise-version
-COPY --from=musl-base /lib/libc.musl-*.so.1 /usr/lib/
 # hadolint ignore=DL3041,SC2016
 RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
+    # Install mise (musl binary, statically linked)
     MISE_VERSION=$(cat /tmp/.mise-version) \
     && rm -f /tmp/.mise-version \
     && MISE_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") \
@@ -40,13 +38,6 @@ RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
     gdk-pixbuf2 gtk3 libX11 libXcomposite libXcursor libXdamage libXext libXfixes libXi \
     libXrandr libXrender libXtst mesa-libgbm libicu libxkbcommon nss pango \
     && dnf clean all \
-    \
-    # Support musl-linked tools
-    && MUSL_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64") \
-    && for path in /lib /lib64 /usr/lib /usr/lib64; do \
-    [ -d "$path" ] || continue; \
-    ln -snf /usr/lib/libc.musl-$MUSL_ARCH.so.1 "$path/ld-musl-$MUSL_ARCH.so.1"; \
-    done \
     \
     # Create SSL symlinks
     && mkdir -p ${SSL_CERT_DIR} \

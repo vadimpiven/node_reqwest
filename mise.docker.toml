@@ -9,6 +9,10 @@ rust.rustup_home = "/workspace/.cache/docker/rustup"
 python.precompiled_os = "unknown-linux-gnu"
 
 [env]
+PYTHONUNBUFFERED = "1"
+PYTHONDONTWRITEBYTECODE = "1"
+
+# Override cache directories
 CARGO_HOME = "/workspace/.cache/docker/cargo"
 RUSTUP_HOME = "/workspace/.cache/docker/rustup"
 SCCACHE_DIR = "/workspace/.cache/docker/sccache"
@@ -21,7 +25,3 @@ _.path = ["/workspace/.cache/docker/cargo/bin"]
 
 # Override Python virtual environment path
 _.python.venv.path = "/workspace/.cache/docker/venv"
-
-# Setup Python in the container
-PYTHONDONTWRITEBYTECODE = "1"
-PYTHONUNBUFFERED = "1"
