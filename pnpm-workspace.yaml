@@ -8,7 +8,7 @@ allowBuilds:
 blockExoticSubdeps: true
 
 catalog:
-  "@biomejs/cli-darwin-arm64": ^2.3.10
+  "@biomejs/cli-darwin-arm64": ^2.3.11
   "@biomejs/cli-darwin-x64": ^2.3.10
   "@biomejs/cli-linux-arm64-musl": ^2.3.10
   "@biomejs/cli-linux-x64-musl": ^2.3.10
