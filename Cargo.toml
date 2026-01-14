@@ -90,7 +90,7 @@ tauri-winres = { version = "0.3.5" }
 tempfile = { version = "3.24.0" }
 thiserror = { version = "2.0.17" }
 tokio = { version = "1.49.0", features = ["rt-multi-thread", "sync", "time"] }
-tokio-stream = { version = "0.1.17" }
+tokio-stream = { version = "0.1.18" }
 tokio-test = { version = "0.4.4" }
 tokio-util = { version = "0.7.17", features = ["join-map"] }
 wiremock = { version = "0.6.4" }
