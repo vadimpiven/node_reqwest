@@ -10,7 +10,6 @@ blockExoticSubdeps: true
 # Install optional dependencies for all target platforms
 supportedArchitectures:
   os:
-    - current
     - darwin
     - linux
     - win32
