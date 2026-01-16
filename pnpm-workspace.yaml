@@ -8,20 +8,20 @@ allowBuilds:
 blockExoticSubdeps: true
 
 catalog:
-  "@codecov/vite-plugin": ^1.9.1
-  "@mapbox/node-pre-gyp": ^2.0.3
-  "@playwright/test": 1.57.0
-  "@rollup/plugin-node-resolve": ^16.0.3
-  "@taplo/cli": ^0.7.0
-  "@types/node": ^22.19.3
-  "@vitest/coverage-istanbul": ^4.0.16
+  '@codecov/vite-plugin': ^1.9.1
+  '@mapbox/node-pre-gyp': ^2.0.3
+  '@playwright/test': 1.57.0
+  '@rollup/plugin-node-resolve': ^16.0.3
+  '@taplo/cli': ^0.7.0
+  '@types/node': ^22.19.3
+  '@vitest/coverage-istanbul': ^4.0.16
   electron: ^39.2.7
   husky: ^9.1.7
   markdownlint-cli2: ^0.20.0
   monocart-reporter: ^2.9.23
   rollup-plugin-node-externals: ^8.1.2
   typescript: ^5.9.3
-  undici: ^7.16.0
+  undici: ^7.18.2
   vite: ^7.3.0
   vite-plugin-dts: ^4.5.4
   vitest: ^4.0.16

@@ -12,7 +12,8 @@
   },
   "scripts": {
     "prepare": "husky",
-    "docker": "docker compose up --build -d --wait && docker compose exec dev bash",
+    "predocker": "docker compose up --build -d --wait",
+    "docker": "docker compose exec dev bash",
     "postdocker": "docker compose down --remove-orphans"
   }
 }
