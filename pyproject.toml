@@ -8,8 +8,10 @@ members = ["packages/node/tests/mitmproxy"]
 [dependency-groups]
 dev = [
     "mitmproxy==12.2.1",
-    "pyrefly==0.48.1",
+    "pyrefly==0.47.0",
     "ruff==0.14.10",
+    "semgrep==1.146.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
+    "zizmor==1.19.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
 ]
 
 [tool.pyrefly]

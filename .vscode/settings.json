@@ -1,6 +1,6 @@
 {
   "mise.configureExtensionsAutomatically": true,
-  "mise.configureExtensionsAutomaticallyIgnoreList": [],
+  "mise.configureExtensionsAutomaticallyIgnoreList": ["ms-python.python", "ms-vscode.js-debug"],
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "biomejs.biome",
   "[dockerfile]": {
