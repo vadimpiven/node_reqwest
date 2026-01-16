@@ -82,6 +82,15 @@ macos-x64 = { asset_pattern = "sccache-v*-x86_64-apple-darwin.tar.gz", bin = "sc
 macos-arm64 = { asset_pattern = "sccache-v*-aarch64-apple-darwin.tar.gz", bin = "sccache" }
 
 # ============================================================================
+# SETUP TASKS - Initialize environment and tools
+# ============================================================================
+
+[tasks."rust:setup"]
+description = "Install Rust toolchain and components sequentially"
+run = "rustup show"
+sources = ["rust-toolchain.toml"]
+
+# ============================================================================
 # LINT & CHECK TASKS - Verify code quality and security
 # ============================================================================
 
@@ -123,16 +132,19 @@ sources = ["*.{yaml,yml}", ".github/**/*.{yaml,yml}", ".devcontainer/*.yaml"]
 
 [tasks."check:clippy"]
 description = "Check Rust code with clippy"
+depends = ["rust:setup"]
 run = "cargo clippy -r --locked -- -D warnings"
 sources = ["packages/**/*.rs", "Cargo.{toml,lock}", "clippy.toml"]
 
 [tasks."check:rustfmt"]
 description = "Check Rust formatting"
+depends = ["check:clippy"]
 run = "cargo fmt --check"
 sources = ["packages/**/*.rs", "rustfmt.toml"]
 
 [tasks."check:cargo-deny"]
 description = "Check Rust dependencies with cargo-deny"
+depends = ["rust:setup"]
 run = "cargo deny check"
 sources = ["Cargo.{toml,lock}", "deny.toml"]
 
@@ -237,6 +249,7 @@ sources = ["*.{yaml,yml}", ".github/**/*.{yaml,yml}", ".devcontainer/*.yaml"]
 
 [tasks."fix:clippy"]
 description = "Fix Rust code with clippy"
+depends = ["rust:setup"]
 run = "cargo clippy --fix --allow-dirty"
 sources = ["packages/**/*.rs", "Cargo.{toml,lock}", "clippy.toml"]
 
@@ -380,6 +393,7 @@ depends = ["update:pnpm", "update:cargo", "update:uv"]
 
 [tasks."ci-build"]
 description = "Build for CI (runs recursive pnpm ci-build)"
+depends = ["rust:setup"]
 run = "pnpm run --recursive ci-build"
 sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
 
@@ -391,6 +405,7 @@ sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
 
 [tasks.build]
 description = "Build all packages"
+depends = ["rust:setup"]
 run = "pnpm run --recursive build"
 sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
 
