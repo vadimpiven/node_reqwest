@@ -21,7 +21,7 @@ UV_PROJECT_ENVIRONMENT = "/workspace/.cache/docker/venv"
 npm_config_store_dir = "/workspace/.cache/docker/pnpm"
 
 # Override Rust binaries path
-_.path = ["/workspace/.cache/docker/cargo/bin"]
+_.path = ["/workspace/.cache/docker/cargo/bin", "/workspace/node_modules/.bin"]
 
 # Override Python virtual environment path
 _.python.venv.path = "/workspace/.cache/docker/venv"

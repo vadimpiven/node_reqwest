@@ -30,10 +30,7 @@ For native build run:
 
 ```bash
 mise trust # Trust the project
-
 mise install # Install tools
-pnpm install # Install dependencies
-
 mise test # Run tests
 ```
 
@@ -58,7 +55,6 @@ grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 docker compose up --build -d --wait # Build and run the container
 docker compose exec dev bash # Enter the container shell
 
-pnpm install # Install dependencies
 mise test # Run the tests
 
 exit # Exit the container
@@ -70,7 +66,6 @@ For simplicity you can use docker script:
 ```bash
 pnpm docker # Build and attach to the container
 
-pnpm install # Install dependencies
 mise test # Run the tests
 
 exit # Exit and stop the container

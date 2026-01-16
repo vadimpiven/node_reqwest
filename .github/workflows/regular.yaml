@@ -71,7 +71,7 @@ jobs:
         uses: "./.github/actions/shell"
         with:
           docker-service: "${{ needs.init.outputs.docker-service }}"
-          run: "mise run ci-test"
+          run: "mise run ci-test --force"
       - name: "Upload reports"
         uses: "./.github/actions/upload-reports"
         with:
