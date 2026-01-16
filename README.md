@@ -29,8 +29,12 @@ The build is made in a fashion that allows usage by Electron-based applications.
 For native build run:
 
 ```bash
-# Trust the project, install tools, and run all tests
-mise trust && mise test
+mise trust # Trust the project
+
+mise install # Install tools
+pnpm install # Install dependencies
+
+mise test # Run tests
 ```
 
 VSCode [recommended extensions](.vscode/extensions.json) make development experience
@@ -51,33 +55,25 @@ For manual Docker usage run:
 grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
 grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 
-# Build and run the container
-docker compose up --build -d --wait
+docker compose up --build -d --wait # Build and run the container
+docker compose exec dev bash # Enter the container shell
 
-# Enter the container shell
-docker compose exec dev bash
+pnpm install # Install dependencies
+mise test # Run the tests
 
-# Run the tests
-mise test
-
-# Exit the container
-exit
-
-# Stop the container
-docker compose down --remove-orphans
+exit # Exit the container
+docker compose down --remove-orphans # Stop the container
 ```
 
 For simplicity you can use docker script:
 
 ```bash
-# Build and attach to the container
-pnpm docker
+pnpm docker # Build and attach to the container
 
-# Run the tests
-mise test
+pnpm install # Install dependencies
+mise test # Run the tests
 
-# Exit and stop the container
-exit
+exit # Exit and stop the container
 ```
 
 ## Mitmproxy Web UI
