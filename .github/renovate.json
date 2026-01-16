@@ -22,6 +22,11 @@
       "enabled": false
     },
     {
+      "description": "Do not update sccache",
+      "matchPackageNames": ["mozilla/sccache", "sccache"],
+      "enabled": false
+    },
+    {
       "description": "Ignore major updates for @types/node",
       "matchPackageNames": ["@types/node"],
       "matchUpdateTypes": ["major"],
