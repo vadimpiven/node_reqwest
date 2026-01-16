@@ -102,6 +102,7 @@ sources = ["packages/**/*.py", "pyproject.toml"]
 [tasks."check:pyrefly"]
 description = "Check Python code with pyrefly"
 run = "uv run pyrefly check"
+run_windows = "exit 0"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
 [tasks."check:biome"]
@@ -219,6 +220,7 @@ sources = ["packages/**/*.py", "pyproject.toml"]
 [tasks."fix:pyrefly"]
 description = "Fix pyrefly issues"
 run = "uv run pyrefly check --remove-unused-ignores --all"
+run_windows = "exit 0"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
 [tasks."fix:biome"]

@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-01-09T11:57:56.499372Z"
+exclude-newer = "2026-01-09T12:46:15.290782Z"
 exclude-newer-span = "P7D"
 
 [manifest]
@@ -17,7 +17,7 @@ members = [
 
 [manifest.dependency-groups]
 dev = [
-    { name = "mitmproxy", specifier = "==12.2.1" },
+    { name = "mitmproxy", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'", specifier = "==12.2.1" },
     { name = "pyrefly", specifier = "==0.47.0" },
     { name = "ruff", specifier = "==0.14.10" },
     { name = "semgrep", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'", specifier = "==1.146.0" },
