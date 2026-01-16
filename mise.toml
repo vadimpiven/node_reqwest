@@ -64,6 +64,28 @@ linux-arm64 = { asset_pattern = "biome-linux-arm64-musl", bin = "biome" }
 macos-x64 = { asset_pattern = "biome-darwin-x64", bin = "biome" }
 macos-arm64 = { asset_pattern = "biome-darwin-arm64", bin = "biome" }
 
+# semgrep - no Windows ARM64 binary available
+[tools."pipx:semgrep"]
+version = "1.146.0"
+[tools."pipx:semgrep".platforms]
+windows-x64 = true
+linux-x64 = true
+linux-arm64 = true
+macos-x64 = true
+macos-arm64 = true
+# windows-arm64 intentionally omitted - no binary available
+
+# zizmor - no Windows ARM64 binary available
+[tools."pipx:zizmor"]
+version = "1.19.0"
+[tools."pipx:zizmor".platforms]
+windows-x64 = true
+linux-x64 = true
+linux-arm64 = true
+macos-x64 = true
+macos-arm64 = true
+# windows-arm64 intentionally omitted - no binary available
+
 # hadolint - no Windows ARM64 binary available
 [tools."github:hadolint/hadolint"]
 version = "2.14.0"
@@ -165,12 +187,14 @@ sources = ["Dockerfile", ".hadolint.yaml"]
 
 [tasks."check:zizmor"]
 description = "Security audit GitHub Actions with zizmor"
-run = "uv run zizmor -q --persona auditor .github"
+run = "zizmor -q --persona auditor .github"
+run_windows = "exit 0"
 sources = [".github/**/*.{yaml,yml}"]
 
 [tasks."check:semgrep"]
 description = "Security scan with semgrep"
-run = "uv run semgrep scan --error -q"
+run = "semgrep scan --error -q"
+run_windows = "exit 0"
 sources = ["packages/**/*.{py,rs,ts,js}", ".github/**/*.{yaml,yml}"]
 
 [tasks."check:trivy"]
@@ -278,12 +302,14 @@ sources = ["Dockerfile", ".hadolint.yaml"]
 
 [tasks."fix:zizmor"]
 description = "Check GitHub Actions (no auto-fix available)"
-run = "uv run zizmor -q --persona auditor .github"
+run = "zizmor -q --persona auditor .github"
+run_windows = "exit 0"
 sources = [".github/**/*.{yaml,yml}"]
 
 [tasks."fix:semgrep"]
 description = "Fix semgrep issues"
-run = "uv run semgrep scan --error -q --autofix"
+run = "semgrep scan --error -q --autofix"
+run_windows = "exit 0"
 sources = ["packages/**/*.{py,rs,ts,js}", ".github/**/*.{yaml,yml}"]
 
 [tasks."fix:trivy"]
