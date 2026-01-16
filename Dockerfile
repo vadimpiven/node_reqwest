@@ -16,7 +16,7 @@ ENV READY_MARKER=/home/${USERNAME}/.container-ready
 ENV SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt
 ENV SSL_CERT_DIR=/etc/ssl/certs
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=150s --retries=3 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=180s --retries=3 \
     CMD [ -f "$READY_MARKER" ] || exit 1
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
