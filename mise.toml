@@ -4,9 +4,9 @@
 redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 
 [settings]
-experimental = true
 env_file = ".env"
 npm.package_manager = "pnpm"
+python.uv_venv_auto = true
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
 
@@ -25,9 +25,6 @@ UV_PROJECT_ENVIRONMENT = "{{ config_root }}/.cache/native/venv"
 
 # Add Rust binaries to PATH
 _.path = ["{{ config_root }}/.cache/native/cargo/bin"]
-
-# Set Python virtual environment path
-_.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
 # Node
@@ -97,12 +94,12 @@ postinstall = "node scripts/postinstall.ts"
 
 [tasks."check:ruff"]
 description = "Check Python code with ruff"
-run = "uv run --no-sync ruff check --diff && uv run --no-sync ruff format --check --diff"
+run = "uv run ruff check --diff && uv run ruff format --check --diff"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
 [tasks."check:pyrefly"]
 description = "Check Python code with pyrefly"
-run = "uv run --no-sync pyrefly check"
+run = "uv run pyrefly check"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
 [tasks."check:biome"]
@@ -170,12 +167,12 @@ sources = ["Dockerfile", ".hadolint.yaml"]
 
 [tasks."check:zizmor"]
 description = "Security audit GitHub Actions with zizmor"
-run = "uv run --no-sync zizmor -q --persona auditor .github"
+run = "uv run zizmor -q --persona auditor .github"
 sources = [".github/**/*.{yaml,yml}"]
 
 [tasks."check:semgrep"]
 description = "Security scan with semgrep"
-run = "uv run --no-sync semgrep scan --error -q"
+run = "uv run semgrep scan --error -q"
 sources = ["packages/**/*.{py,rs,ts,js}", ".github/**/*.{yaml,yml}"]
 
 [tasks."check:trivy"]
@@ -209,12 +206,12 @@ depends = [
 
 [tasks."fix:ruff"]
 description = "Fix Python code with ruff"
-run = "uv run --no-sync ruff check --fix && uv run --no-sync ruff format"
+run = "uv run ruff check --fix && uv run ruff format"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
 [tasks."fix:pyrefly"]
 description = "Fix pyrefly issues"
-run = "uv run --no-sync pyrefly check --remove-unused-ignores --all"
+run = "uv run pyrefly check --remove-unused-ignores --all"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
 [tasks."fix:biome"]
@@ -283,12 +280,12 @@ sources = ["Dockerfile", ".hadolint.yaml"]
 
 [tasks."fix:zizmor"]
 description = "Check GitHub Actions (no auto-fix available)"
-run = "uv run --no-sync zizmor -q --persona auditor .github"
+run = "uv run zizmor -q --persona auditor .github"
 sources = [".github/**/*.{yaml,yml}"]
 
 [tasks."fix:semgrep"]
 description = "Fix semgrep issues"
-run = "uv run --no-sync semgrep scan --error -q --autofix"
+run = "uv run semgrep scan --error -q --autofix"
 sources = ["packages/**/*.{py,rs,ts,js}", ".github/**/*.{yaml,yml}"]
 
 [tasks."fix:trivy"]

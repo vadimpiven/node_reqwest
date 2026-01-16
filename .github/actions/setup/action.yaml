@@ -50,3 +50,8 @@ runs:
         env: "${{ inputs.env }}"
         cache-key: "${{ inputs.cache-key }}"
         github-token: "${{ inputs.github-token }}"
+    - name: "Run pnpm install"
+      uses: "./.github/actions/shell"
+      with:
+        docker-service: "${{ inputs.docker-service }}"
+        run: "pnpm install --frozen-lockfile --prefer-offline"

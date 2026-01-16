@@ -11,6 +11,7 @@
     "vitest": "catalog:"
   },
   "scripts": {
+    "postinstall": "node ./scripts/postinstall.ts",
     "prepare": "husky",
     "predocker": "docker compose up --build -d --wait",
     "docker": "docker compose exec dev bash",

@@ -35,7 +35,7 @@ runs:
     - name: "Setup MSVC developer command prompt"
       if: "runner.os == 'Windows'"
       uses: "ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756" # v1.13.0
-    - name: "Install tools via mise"
+    - name: "Run mise install"
       uses: "jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5" # v3.5.1
       with:
         install: true

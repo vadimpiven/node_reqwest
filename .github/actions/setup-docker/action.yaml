@@ -71,7 +71,7 @@ runs:
           docker-compose.yml
           docker-compose.override.yml
         up-flags: "--no-build --wait"
-    - name: "Run mise install script"
+    - name: "Run mise install"
       uses: "./.github/actions/shell-docker"
       with:
         docker-service: "${{ inputs.docker-service }}"
