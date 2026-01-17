@@ -1,6 +1,8 @@
 [workspace]
 members = [
-    "packages/*",
+    "packages/core",
+    "packages/meta",
+    "packages/node",
 ]
 resolver = "3"
 

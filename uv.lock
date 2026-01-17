@@ -7,21 +7,13 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-01-09T12:46:15.290782Z"
+exclude-newer = "2026-01-10T11:55:26.399011Z"
 exclude-newer-span = "P7D"
 
 [manifest]
 members = [
     "mitmproxy-scripts",
-]
-
-[manifest.dependency-groups]
-dev = [
-    { name = "mitmproxy", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'", specifier = "==12.2.1" },
-    { name = "pyrefly", specifier = "==0.47.0" },
-    { name = "ruff", specifier = "==0.14.10" },
-    { name = "semgrep", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'", specifier = "==1.146.0" },
-    { name = "zizmor", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'", specifier = "==1.19.0" },
+    "workspace",
 ]
 
 [[package]]
@@ -1652,6 +1644,31 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/45/ea/b0f8eeb287f8df9066e56e831c7824ac6bab645dd6c7a8f4b2d767944f9b/werkzeug-3.1.4.tar.gz", hash = "sha256:cd3cd98b1b92dc3b7b3995038826c68097dcb16f9baa63abe35f20eafeb9fe5e", size = 864687, upload-time = "2025-11-29T02:15:22.841Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2f/f9/9e082990c2585c744734f85bec79b5dae5df9c974ffee58fe421652c8e91/werkzeug-3.1.4-py3-none-any.whl", hash = "sha256:2ad50fb9ed09cc3af22c54698351027ace879a0b60a3b5edf5730b2f7d876905", size = 224960, upload-time = "2025-11-29T02:15:21.13Z" },
+]
+
+[[package]]
+name = "workspace"
+version = "0.0.0"
+source = { virtual = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "mitmproxy", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'" },
+    { name = "pyrefly" },
+    { name = "ruff" },
+    { name = "semgrep", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'" },
+    { name = "zizmor", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mitmproxy", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'", specifier = "==12.2.1" },
+    { name = "pyrefly", specifier = "==0.47.0" },
+    { name = "ruff", specifier = "==0.14.10" },
+    { name = "semgrep", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'", specifier = "==1.146.0" },
+    { name = "zizmor", marker = "platform_machine != 'ARM64' or sys_platform != 'win32'", specifier = "==1.19.0" },
 ]
 
 [[package]]

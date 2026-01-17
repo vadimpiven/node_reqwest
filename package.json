@@ -13,5 +13,10 @@
   },
   "scripts": {
     "prepare": "husky"
+  },
+  "pnpm": {
+    "overrides": {
+      "tar": "7.5.3"
+    }
   }
 }
