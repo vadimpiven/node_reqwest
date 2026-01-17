@@ -19,7 +19,7 @@ let window: Page;
 
 test.beforeEach(async () => {
   app = await electron.launch({
-    args: [path.join(currentDirname, 'main.ts'), '--no-sandbox']
+    args: [path.join(currentDirname, 'main.ts'), '--no-sandbox', '--headless']
   });
   window = await app.firstWindow();
 

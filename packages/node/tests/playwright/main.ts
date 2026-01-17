@@ -29,7 +29,9 @@ app.whenReady().then(() => {
     //   .catch(() => false);
   });
 
+  const isHeadless = process.argv.includes('--headless');
   const window = new BrowserWindow({
+    show: !isHeadless, // Hide window when running in headless/test mode
     webPreferences: {
       sandbox: false, // <https://www.electronjs.org/docs/latest/tutorial/esm>
       preload: path.join(currentDirname, 'preload.mjs')
