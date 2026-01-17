@@ -41,6 +41,11 @@
       "description": "Group Docker updates",
       "matchManagers": ["dockerfile", "docker-compose"],
       "groupName": "Docker dependencies"
+    },
+    {
+      "description": "Group Rust toolchain updates",
+      "matchPackageNames": ["rust", "rustlang/rust"],
+      "groupName": "Rust Toolchain"
     }
   ],
   "regexManagers": [
@@ -49,6 +54,16 @@
       "matchStrings": ["(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "jdx/mise",
       "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "Update Rust nightly toolchain",
+      "fileMatch": ["^rust-toolchain\\.toml$", "^mise\\.toml$"],
+      "matchStrings": [
+        "(?:channel|rust)\\s*=\\s*\"(?<currentValue>nightly-\\d{4}-\\d{2}-\\d{2})\""
+      ],
+      "depNameTemplate": "rustlang/rust",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "regex:^(?<compatibility>nightly-)(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$"
     }
   ],
   "pinDigests": true,
