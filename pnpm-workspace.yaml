@@ -7,16 +7,6 @@ allowBuilds:
 
 blockExoticSubdeps: true
 
-# Install optional dependencies for all target platforms
-supportedArchitectures:
-  os:
-    - darwin
-    - linux
-    - win32
-  cpu:
-    - x64
-    - arm64
-
 catalog:
   "@codecov/vite-plugin": ^1.9.1
   "@mapbox/node-pre-gyp": ^2.0.3
