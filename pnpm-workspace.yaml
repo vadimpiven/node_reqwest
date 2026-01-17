@@ -11,6 +11,7 @@ blockExoticSubdeps: true
 
 catalog:
   "@codecov/vite-plugin": ^1.9.1
+  "@google/gemini-cli": ^0.24.3
   "@mapbox/node-pre-gyp": ^2.0.3
   "@playwright/test": 1.57.0
   "@rollup/plugin-node-resolve": ^16.0.3
@@ -30,6 +31,6 @@ catalog:
 
 minimumReleaseAge: 10080
 
-minimumReleaseAgeExclude: [tar]
+minimumReleaseAgeExclude: []
 
 strictDepBuilds: true
