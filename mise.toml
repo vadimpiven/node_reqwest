@@ -33,19 +33,19 @@ node = "24.13.0"
 
 rust.version = "nightly-2026-01-15"
 
+jq = "1.8.1"
+yq = "4.50.1"
 "github:BurntSushi/ripgrep" = "15.1.0"
-"github:jqlang/jq" = "1.7.1"
-"github:mikefarah/yq" = "4.50.1"
 "github:aquasecurity/trivy" = "0.68.2"
 "github:google/yamlfmt" = "0.21.0"
 "github:koalaman/shellcheck" = "0.11.0"
-"github:astral-sh/uv" = "0.9.24"
+"github:astral-sh/uv" = "0.9.26"
 "github:cargo-bins/cargo-binstall" = "1.16.6"
 
 # Tools with non-standard version prefix
 [tools."github:nextest-rs/nextest"]
 version_prefix = "cargo-nextest-"
-version = "0.9.117"
+version = "0.9.122"
 
 [tools."github:mstange/samply"]
 version_prefix = "samply-v"
@@ -380,7 +380,7 @@ sources = [
 [tasks."check:trivy-fs"]
 description = "Security scan filesystem with trivy"
 hide = true
-run = "trivy fs . --scanners vuln --include-dev-deps --format table"
+run = "trivy fs . --include-dev-deps --format table"
 sources = ["*.{toml,lock,json,yaml,yml}", "packages/**/*.{toml,json}", "Dockerfile"]
 
 [tasks."fix:trivy-fs"]
