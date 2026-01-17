@@ -1,5 +1,6 @@
 {
   "recommendations": [
+    "hverlin.mise-vscode",
     "natqe.reload",
     "streetsidesoftware.code-spell-checker",
     "gruntfuggly.todo-tree",
@@ -17,6 +18,9 @@
     "charliermarsh.ruff",
     "ms-python.python",
     "redhat.vscode-yaml",
-    "timonwong.shellcheck"
+    "timonwong.shellcheck",
+    "ms-azuretools.vscode-containers",
+    "docker.docker",
+    "ms-vscode-remote.remote-containers"
   ]
 }

@@ -5,7 +5,10 @@ import { promisify } from 'node:util';
 import { runCommand } from './helpers/run-command.ts';
 import { runScript } from './helpers/run-script.ts';
 
-const execAsync = promisify(exec);
+type ExecResult = { stdout: string; stderr: string };
+type ExecAsync = (command: string) => Promise<ExecResult>;
+
+const execAsync: ExecAsync = promisify(exec);
 
 runScript('clean-rustup', async () => {
   const { stdout } = await execAsync('rustup toolchain list');
@@ -13,7 +16,7 @@ runScript('clean-rustup', async () => {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.includes('(default)')) {
+    if (!trimmed || trimmed.includes('(default)') || trimmed.includes('(active)')) {
       continue;
     }
 

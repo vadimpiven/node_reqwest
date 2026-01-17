@@ -1,13 +1,23 @@
 {
-  "biome.lsp.bin": "./.path/biome",
-  "biome.lspBin": "./.path/biome",
-  "biome.lsp.trace.server": "verbose",
+  "mise.configureExtensionsAutomatically": true,
+  "mise.configureExtensionsAutomaticallyIgnoreList": ["ms-python.python", "ms-vscode.js-debug"],
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "biomejs.biome",
-  "[rust]": { "editor.defaultFormatter": "rust-lang.rust-analyzer" },
-  "[toml]": { "editor.defaultFormatter": "tamasfe.even-better-toml" },
-  "[yaml]": { "editor.defaultFormatter": "redhat.vscode-yaml" },
-  "[shellscript]": { "editor.defaultFormatter": "timonwong.shellcheck" },
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-containers"
+  },
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "timonwong.shellcheck"
+  },
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.codeActionsOnSave": {
@@ -19,6 +29,9 @@
     "**/.cargo/registry/src/**/*.rs": true,
     "**/.cargo/git/checkouts/**/*.rs": true,
     "**/lib/rustlib/src/rust/library/**/*.rs": true
+  },
+  "files.associations": {
+    ".env*": "properties"
   },
   "files.exclude": {
     "**/.cache": true
@@ -37,10 +50,5 @@
   "rust-analyzer.imports.preferPrelude": true,
   "rust-analyzer.imports.prefix": "plain",
   "trivy.configPath": "trivy.yaml",
-  "trivy.ignoreFilesInGitIgnore": true,
-  "python.defaultInterpreterPath": "${workspaceFolder}/.path/python",
-  "python.autoComplete.extraPaths": [
-    "${workspaceFolder}/.venv/lib/python3.14/site-packages",
-    "${workspaceFolder}/.venv/Lib/site-packages"
-  ]
+  "trivy.ignoreFilesInGitIgnore": true
 }

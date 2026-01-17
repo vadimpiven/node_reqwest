@@ -1,118 +1,56 @@
-name: 'Setup Environment'
-description: 'Platform-aware setup - uses Docker on Linux, native on others'
+name: "Setup Environment"
+description: "Platform-aware setup - uses Docker on Linux, native on others"
 inputs:
   env:
-    description: 'Environment variables in JSON format'
+    description: "Environment variables in JSON format"
     required: true
   cache-key:
-    description: 'Cache key prefix'
-    required: true
-  pnpm-version:
-    description: 'Version of pnpm to install'
-    required: true
-  node-version:
-    description: 'Version of Node.js to install'
+    description: "Cache key prefix"
     required: true
   docker-image:
-    description: 'Docker image tag to use'
+    description: "Docker image tag to use"
     required: true
   docker-cache:
-    description: 'Docker cache registry reference'
+    description: "Docker cache registry reference"
     required: true
   github-token:
-    description: 'GitHub token for authenticated API requests'
+    description: "GitHub token for authenticated API requests"
     required: true
   docker-service:
-    description: 'Docker service name'
+    description: "Docker service name"
+    required: true
+  mise-version:
+    description: "Mise version to use"
     required: true
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-    - name: Create host cache directories
-      shell: bash
-      run: |
-        mkdir -p \
-          .cache/uv \
-          .cache/pnpm-store \
-          .cache/cargo/bin \
-          .cache/cargo/registry \
-          .cache/cargo/git \
-          .cache/sccache \
-          .trivycache
-    - name: Extend environment with cache paths
-      id: native-env
-      shell: bash
+    - name: "Restore shared caches"
+      uses: "actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb" # v5.0.1
+      with:
+        path: ".cache/shared"
+        key: "${{ inputs.cache-key }}-shared-${{ runner.os }}-${{ runner.arch }}"
+    - name: "Write GITHUB_TOKEN to .env"
+      shell: "bash"
       env:
-        INPUT_ENV: ${{ inputs.env }}
-      run: |
-        RESULT=$(echo "$INPUT_ENV" | jq -c --arg workspace "$GITHUB_WORKSPACE" '
-          . + {
-            "UV_CACHE_DIR": ($workspace + "/.cache/uv"),
-            "PNPM_STORE_PATH": ($workspace + "/.cache/pnpm-store"),
-            "CARGO_HOME": ($workspace + "/.cache/cargo"),
-            "SCCACHE_DIR": ($workspace + "/.cache/sccache")
-          }
-        ')
-        echo "env=$RESULT" >> "$GITHUB_OUTPUT"
-    - name: Restore uv cache
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: .cache/uv
-        key: ${{ inputs.cache-key }}-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pyproject.toml') }}
-        restore-keys: |
-          ${{ inputs.cache-key }}-uv-${{ runner.os }}-${{ runner.arch }}-
-    - name: Restore pnpm cache
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: .cache/pnpm-store
-        key: ${{ inputs.cache-key }}-pnpm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ inputs.cache-key }}-pnpm-${{ runner.os }}-${{ runner.arch }}-
-    - name: Restore cargo cache
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: |
-          .bin
-          .cache/cargo/bin
-          .cache/cargo/registry
-          .cache/cargo/git
-        key: ${{ inputs.cache-key }}-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.toml', 'Cargo.lock') }}
-        restore-keys: |
-          ${{ inputs.cache-key }}-cargo-${{ runner.os }}-${{ runner.arch }}-
-    - name: Restore sccache
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: .cache/sccache
-        key: ${{ inputs.cache-key }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
-        restore-keys: |
-          ${{ inputs.cache-key }}-sccache-${{ runner.os }}-${{ runner.arch }}-
-    - name: Restore Trivy cache
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: .trivycache
-        key: ${{ inputs.cache-key }}-trivy-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
-        restore-keys: |
-          ${{ inputs.cache-key }}-trivy-${{ runner.os }}-${{ runner.arch }}-
-    - name: Write GITHUB_TOKEN to .env
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GITHUB_TOKEN: "${{ inputs.github-token }}"
       run: |
         printf "GITHUB_TOKEN=%s\n" "$GITHUB_TOKEN" >> .env
-    - name: Setup (Docker)
-      if: runner.os == 'Linux'
-      uses: ./.github/actions/setup-docker
+    - name: "Setup (Docker)"
+      if: "runner.os == 'Linux'"
+      uses: "./.github/actions/setup-docker"
       with:
-        env: ${{ inputs.env }}
-        docker-image: ${{ inputs.docker-image }}
-        docker-cache: ${{ inputs.docker-cache }}
-        github-token: ${{ inputs.github-token }}
-        docker-service: ${{ inputs.docker-service }}
-    - name: Setup (Native)
-      if: runner.os != 'Linux'
-      uses: ./.github/actions/setup-native
+        env: "${{ inputs.env }}"
+        cache-key: "${{ inputs.cache-key }}"
+        docker-image: "${{ inputs.docker-image }}"
+        docker-cache: "${{ inputs.docker-cache }}"
+        github-token: "${{ inputs.github-token }}"
+        docker-service: "${{ inputs.docker-service }}"
+    - name: "Setup (Native)"
+      if: "runner.os != 'Linux'"
+      uses: "./.github/actions/setup-native"
       with:
-        env: ${{ steps.native-env.outputs.env }}
-        pnpm-version: ${{ inputs.pnpm-version }}
-        node-version: ${{ inputs.node-version }}
-        github-token: ${{ inputs.github-token }}
+        env: "${{ inputs.env }}"
+        cache-key: "${{ inputs.cache-key }}"
+        github-token: "${{ inputs.github-token }}"
+        mise-version: "${{ inputs.mise-version }}"

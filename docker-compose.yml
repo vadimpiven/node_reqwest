@@ -13,11 +13,6 @@ services:
     working_dir: /workspace
     volumes:
       - .:/workspace:cached
-      - ./.cache/uv:/home/runner/.cache/uv
-      - ./.cache/pnpm-store:/home/runner/.cache/pnpm-store
-      - ./.cache/cargo/registry:/home/runner/.cargo/registry
-      - ./.cache/cargo/git:/home/runner/.cargo/git
-      - ./.cache/sccache:/home/runner/.cache/sccache
     env_file:
       - .env
     cap_add:

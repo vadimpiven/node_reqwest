@@ -1,19 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 import { spawn } from 'node:child_process';
+import process from 'node:process';
 import { ensureError } from './run-script.ts';
 
 /**
  * Executes a command asynchronously, logs it, and handles errors/exit status.
  */
-export async function runCommand(command: string, args: string[]): Promise<void> {
+export async function runCommand(
+  command: string,
+  args: string[],
+  options: { env?: NodeJS.ProcessEnv } = {}
+): Promise<void> {
   console.log('> %s %s', command, args.join(' '));
 
   return new Promise((resolve, reject) => {
     // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true, javascript.lang.security.detect-child-process.detect-child-process
     const child = spawn(command, args, {
       stdio: 'inherit',
-      shell: process.platform === 'win32'
+      shell: process.platform === 'win32',
+      env: { ...process.env, ...options.env }
     });
 
     child.on('error', (err: unknown) => {

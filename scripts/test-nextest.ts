@@ -1,67 +1,67 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import fs from 'node:fs/promises';
-import { join } from 'node:path';
+import { type FileHandle, open } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+import FdLock from 'fd-lock';
 import { runCommand } from './helpers/run-command.ts';
 import { ensureError, runScript } from './helpers/run-script.ts';
 
-const packageDir = process.cwd();
-const projectRoot = join(packageDir, '..', '..');
+const packageDir: string = process.cwd();
+const projectRoot: string = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const isLinux = process.platform === 'linux';
-const isWindowsArm = process.platform === 'win32' && process.arch === 'arm64';
-
-// Skip coverage on Linux (cargo-llvm-cov requires glibc 2.29+) and Windows ARM
-const skipCoverage = isLinux || isWindowsArm;
+// Linux binaries require new GLIBC, and there is no support for Windows ARM64
+const skipCoverage: boolean = ['linux', 'win32'].includes(process.platform);
 
 runScript('Nextest execution', async () => {
   const args = process.argv.slice(2);
 
-  if (skipCoverage) {
-    // Run tests directly without coverage
-    await runCommand('cargo', ['bin', 'cargo-nextest', 'run', '--no-tests', 'pass', ...args]);
-  } else {
-    // Run tests and collect coverage data, but don't generate report yet
-    // This preserves object files for subsequent report commands
-    await runCommand('cargo', [
-      'bin',
-      'cargo-llvm-cov',
-      'nextest',
-      '--no-report',
-      '--no-tests',
-      'pass',
-      ...args
-    ]);
-  }
+  // Ensure lock file exists
+  const lockPath: string = join(projectRoot, 'target', '.test-nextest.lock');
+  const fileHandle: FileHandle = await open(lockPath, 'a+');
+  const lock: FdLock = new FdLock(fileHandle.fd, { wait: true });
 
-  // Copy junit report from target to package directory
-  const junitSource = join(projectRoot, 'target', 'nextest', 'default', 'junit.xml');
-  const junitDest = join(packageDir, 'report-nextest.junit.xml');
-
+  await lock.ready();
   try {
-    await fs.copyFile(junitSource, junitDest);
-  } catch (err: unknown) {
-    const error = ensureError(err);
-    console.warn(`Warning: Could not copy junit report from ${junitSource}: ${error.message}`);
-  }
+    if (skipCoverage) {
+      // Run tests directly without coverage
+      await runCommand('cargo', ['nextest', 'run', '--no-tests', 'pass', ...args]);
+    } else {
+      // Run tests and collect coverage data, but don't generate report yet
+      // This preserves object files for subsequent report commands
+      await runCommand('cargo', ['llvm-cov', 'nextest', '--no-report', ...args]);
+    }
 
-  if (!skipCoverage) {
-    // Generate lcov report for CI
-    await runCommand('cargo', [
-      'bin',
-      'cargo-llvm-cov',
-      'report',
-      '--lcov',
-      '--output-path',
-      'lcov.info',
-      ...args
-    ]);
+    // Copy junit report from target to package directory
+    const junitSource = join(projectRoot, 'target', 'nextest', 'default', 'junit.xml');
+    const junitDest = join(packageDir, 'report-nextest.junit.xml');
 
-    // Generate text report for developer review
-    await runCommand('cargo', ['bin', 'cargo-llvm-cov', 'report', ...args]);
+    try {
+      // Use fs from promises for copyFile
+      const { copyFile } = await import('node:fs/promises');
+      await copyFile(junitSource, junitDest);
+    } catch (copyErr: unknown) {
+      const error = ensureError(copyErr);
+      console.warn(`Warning: Could not copy junit report from ${junitSource}: ${error.message}`);
+    }
 
-    // Clean up object files
-    await runCommand('cargo', ['bin', 'cargo-llvm-cov', 'clean', '--workspace']);
+    if (!skipCoverage) {
+      // Generate lcov report for CI
+      await runCommand('cargo', [
+        'llvm-cov',
+        'report',
+        '--lcov',
+        '--output-path',
+        'lcov.info',
+        ...args
+      ]);
+
+      // Generate text report for developer review
+      await runCommand('cargo', ['llvm-cov', 'report', ...args]);
+    }
+  } finally {
+    // Unlock and close resource
+    await lock.close();
   }
 });

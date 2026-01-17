@@ -2,14 +2,12 @@
 
 //! Module with the relevant metadata and helper methods for build.rs files.
 
+use core::fmt;
 use std::env::var;
-use std::fmt;
-use std::path::Path;
-use std::process::Command;
+use std::fs::{read_to_string, write};
 
 use anyhow::{Context, Result};
 use chrono::Datelike;
-use indoc::formatdoc;
 use tauri_winres::{VersionInfo, WindowsResource};
 
 /// Git tag (release build) or commit hash (dev build), or "undefined" when no git context available.
@@ -20,6 +18,7 @@ pub const SEMVER: Option<Version> = Version::parse(VERSION);
 
 /// Semantic version structure
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Version {
     /// Major version number
     pub major: u64,
@@ -36,6 +35,16 @@ impl fmt::Display for Version {
 }
 
 impl Version {
+    /// Create a new Version structure
+    #[must_use]
+    pub const fn new(major: u64, minor: u64, patch: u64) -> Self {
+        Self {
+            major,
+            minor,
+            patch,
+        }
+    }
+
     /// Parse version in "vX.Y.Z" format from string slice
     #[must_use]
     const fn parse(s: &str) -> Option<Self> {
@@ -71,46 +80,29 @@ impl Version {
     }
 }
 
-/// Override package.json version with the given version
+/// Override `package.json` version with the given version.
+///
+/// This implementation uses `serde_json` with the `preserve_order` feature to ensure that the
+/// `package.json` file is updated without changing the order of entries or significantly
+/// altering the formatting (it uses standard 2-space indentation).
 pub fn npm_version(version: &Version) -> Result<()> {
-    let error = formatdoc! {"
-        Failed to run
-        `npm version {version}
-            --allow-same-version --no-git-tag-version --workspaces-update=false`",
-        version = version
-    };
-    // npm must be executed on Windows using CMD and on Posix systems using Bash
-    // https://github.com/jeronimosg/npm_rs/blob/80d7f99f82fea5bb53947c12575bb8a5834398ae/src/lib.rs#L48-L56
-    // to not bother with this we let node properly execute the correct runner
-    let node_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.path/node");
-    Command::new(&node_path)
-        .arg("-p")
-        .arg(formatdoc! {"
-            process.exit(
-                require('child_process')
-                    .spawnSync(
-                        'npm',
-                        [
-                            'version',
-                            '{version}',
-                            '--allow-same-version',
-                            '--no-git-tag-version',
-                            '--workspaces-update=false'
-                        ], {{
-                            stdio: 'inherit',
-                            shell: true,
-                            encoding: 'utf-8'
-                        }}
-                    )
-                    .status
-            )",
-            version = version
-        })
-        .status()
-        .context(error.clone())? // use clonned error context
-        .success()
-        .then_some(())
-        .context(error)?; // use error context
+    let path = "package.json";
+    let content = read_to_string(path).context(format!("Failed to read {path}"))?;
+
+    let mut json: serde_json::Value =
+        serde_json::from_str(&content).context(format!("Failed to parse {path}"))?;
+
+    if let Some(obj) = json.as_object_mut() {
+        obj.insert(
+            "version".to_string(),
+            serde_json::Value::String(version.to_string()),
+        );
+    }
+
+    let mut new_content =
+        serde_json::to_string_pretty(&json).context(format!("Failed to serialize {path}"))?;
+    new_content.push('\n');
+    write(path, new_content).context(format!("Failed to write {path}"))?;
 
     Ok(())
 }
@@ -182,11 +174,7 @@ mod tests {
 
     #[test]
     fn version_formatting_test() {
-        let version = Version {
-            major: 1,
-            minor: 0,
-            patch: 82,
-        };
+        let version = Version::new(1, 0, 82);
         assert_eq!("1.0.82", version.to_string());
     }
 
@@ -194,14 +182,7 @@ mod tests {
     fn version_parsing_test() {
         // Valid semantic version tag
         let result = Version::parse("v1.0.82");
-        assert_eq!(
-            Some(Version {
-                major: 1,
-                minor: 0,
-                patch: 82
-            }),
-            result
-        );
+        assert_eq!(Some(Version::new(1, 0, 82)), result);
 
         // Git describe output with additional info (should fail)
         let result = Version::parse("v1.0.81-2-ge6a4f89");
@@ -225,11 +206,7 @@ mod tests {
             set_var("OUT_DIR", temp_dir.path());
         }
 
-        let version = Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-        };
+        let version = Version::new(1, 2, 3);
         cdylib_win_rc("TestProduct", &version, "test.dll")?;
 
         Ok(())

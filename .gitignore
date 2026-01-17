@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+docker-compose.override.yml
+mise.local.toml
 .DS_Store
 lcov.info
 package.tar.gz
@@ -9,20 +11,50 @@ profile.json.gz
 report-nextest.junit.xml
 report-vitest.junit.xml
 trivy-results.sarif
-.bin/
-.path/
+
 .venv/
 dist/
 node_modules/
 coverage-vitest/
 target/
-.trivycache/
-.ruff_cache/
 __pycache__/
 
 # .cache
-.cache/*
-!.cache/**/.gitkeep
+.cache/**
+!.cache/
+!.cache/.gitkeep
+!.cache/docker/
+!.cache/docker/.gitkeep
+!.cache/docker/cargo/
+!.cache/docker/cargo/.gitkeep
+!.cache/docker/mise/
+!.cache/docker/mise/.gitkeep
+!.cache/docker/pnpm/
+!.cache/docker/pnpm/.gitkeep
+!.cache/docker/rustup/
+!.cache/docker/rustup/.gitkeep
+!.cache/docker/sccache/
+!.cache/docker/sccache/.gitkeep
+!.cache/docker/uv/
+!.cache/docker/uv/.gitkeep
+!.cache/native/
+!.cache/native/.gitkeep
+!.cache/native/cargo/
+!.cache/native/cargo/.gitkeep
+!.cache/native/pnpm/
+!.cache/native/pnpm/.gitkeep
+!.cache/native/rustup/
+!.cache/native/rustup/.gitkeep
+!.cache/native/sccache/
+!.cache/native/sccache/.gitkeep
+!.cache/native/uv/
+!.cache/native/uv/.gitkeep
+!.cache/shared/
+!.cache/shared/.gitkeep
+!.cache/shared/ruff/
+!.cache/shared/ruff/.gitkeep
+!.cache/shared/trivy/
+!.cache/shared/trivy/.gitkeep
 
 # packages/node
 packages/node/report-playwright.junit.xml

@@ -3,8 +3,13 @@
 # Scan options
 scan:
   type: fs
+  skip-dirs:
+    - ".cache"
+    - ".venv"
+    - "node_modules"
+    - "target"
   skip-files:
-    - ".cache/**"
+    - ".env"
 
 scanners:
   - vuln
@@ -22,4 +27,4 @@ severity:
 ignore-unfixed: true
 exit-code: 1
 # Cache options
-cache-dir: .trivycache
+cache-dir: .cache/shared/trivy

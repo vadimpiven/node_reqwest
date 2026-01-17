@@ -11,15 +11,15 @@ import {
 } from '@playwright/test';
 import { addCoverageReport } from 'monocart-reporter';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const currentFilename: string = fileURLToPath(import.meta.url);
+const currentDirname: string = path.dirname(currentFilename);
 
 let app: ElectronApplication;
 let window: Page;
 
 test.beforeEach(async () => {
   app = await electron.launch({
-    args: [path.join(__dirname, 'main.ts'), '--no-sandbox']
+    args: [path.join(currentDirname, 'main.ts'), '--no-sandbox', '--headless']
   });
   window = await app.firstWindow();
 

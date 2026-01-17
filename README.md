@@ -13,15 +13,11 @@ The build is made in a fashion that allows usage by Electron-based applications.
 
 ### Required
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) for Python integration
-- [pnpm](https://pnpm.io/installation) for workspace management
+- [mise](https://mise.jdx.dev/getting-started.html) for tool version management
 - C++ development toolchain (required by Rust)
-  - Windows: [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)
+  - Windows: [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2026)
   - macOS: `xcode-select --install`
   - Linux: preinstalled `g++`
-- [Rust](https://www.rust-lang.org/tools/install) development toolchain
-- [Cargo binstall](https://github.com/cargo-bins/cargo-binstall?tab=readme-ov-file#installation)
-  for installing Rust binaries
 
 ### Optional
 
@@ -33,18 +29,20 @@ The build is made in a fashion that allows usage by Electron-based applications.
 For native build run:
 
 ```bash
-# Synchronize Rust toolchain
-pnpm run rustup
+# Set GitHub token for mise tools installation (to avoid rate limits)
+# <https://github.com/settings/personal-access-tokens/new?name=node_reqwest-env>
+GITHUB_TOKEN=github_token_with_read_only_access_to_public_repositories
 
-# Install pnpm and uv dependencies
-pnpm install
+# Setup .env file (better to do that manually, but here is some automation)
+[ -f .env ] || cp .env.example .env
+grep -q "^GITHUB_TOKEN=" .env || echo "GITHUB_TOKEN=${GITHUB_TOKEN}" >> .env
 
-# Install playwright dependencies
-pnpm run playwright
-
-# Run tests
-pnpm test
+mise trust # Trust the project
+mise install # Install tools
+mise test # Run tests
 ```
+
+You can forcefully rerun tests with `mise run -f t`.
 
 VSCode [recommended extensions](.vscode/extensions.json) make development experience
 better. Check VSCode [debug configurations](.vscode/launch.json) for debugging and
@@ -64,44 +62,19 @@ For manual Docker usage run:
 grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
 grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 
-# Build and run the container
-docker compose up --build -d
+mise run docker # Build, run and attach to the container
 
-# Enter the container shell
-docker compose exec dev bash
+mise test # Run the tests (inside the container)
 
-# Prepare the environment
-pnpm install
-
-# Run the tests
-pnpm test
-
-# Exit the container
-exit
-
-# Stop the container
-docker compose down --remove-orphans
-```
-
-For simplicity you can use docker script:
-
-```bash
-# Build and attach to the container
-pnpm docker
-
-# Run the commands inside the container
-pnpm test
-
-# Exit and stop the container
-exit
+exit # Exit and automatically stop the container
 ```
 
 ## Mitmproxy Web UI
 
 The Docker environment includes [mitmproxy](https://mitmproxy.org/)
 for inspecting HTTP/HTTPS traffic from the dev container.
-The `docker-compose.override.yml` is automatically merged by Docker Compose,
-enabling mitmproxy by default. To access the web UI:
+The `docker-compose.proxied.yaml` is automatically merged by `mise run docker`.
+To access the web UI:
 
 ```bash
 # Set a known password
@@ -111,16 +84,10 @@ MITMPROXY_WEB_PASSWORD=example_password
 echo "MITMPROXY_WEB_PASSWORD=${MITMPROXY_WEB_PASSWORD}" >> .env
 
 # Rebuild the container
-docker compose up --build -d
+mise run docker
 
 # Access the UI at: `http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}`
 open http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}
-```
-
-To run without mitmproxy:
-
-```bash
-docker compose up -f docker-compose.yml --build -d
 ```
 
 ## Troubleshooting
@@ -128,5 +95,5 @@ docker compose up -f docker-compose.yml --build -d
 Use the clean script to reset the environment (and free up disk space):
 
 ```bash
-pnpm run clean
+mise run clean
 ```

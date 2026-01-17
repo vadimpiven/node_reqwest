@@ -1,68 +1,78 @@
-name: 'Setup (Docker)'
-description: 'Build container image locally, warm registry cache'
+name: "Setup (Docker)"
+description: "Build container image locally, warm registry cache"
 inputs:
   env:
-    description: 'Environment variables in JSON format'
+    description: "Environment variables in JSON format"
+    required: true
+  cache-key:
+    description: "Cache key prefix"
     required: true
   docker-image:
-    description: 'Docker image tag to use'
+    description: "Docker image tag to use"
     required: true
   docker-cache:
-    description: 'Docker cache registry reference'
+    description: "Docker cache registry reference"
     required: true
   github-token:
-    description: 'GitHub token for registry authentication'
+    description: "GitHub token for registry authentication"
     required: true
   docker-service:
-    description: 'Docker service name'
+    description: "Docker service name"
     required: true
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+    - name: "Restore docker caches"
+      uses: "actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb" # v5.0.1
       with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ inputs.github-token }}
-    - name: Setup Buildx
-      uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-    - name: Get current UID/GID
-      id: ids
-      shell: bash
+        path: ".cache/docker"
+        key: "${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml', 'Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
+        restore-keys: |
+          ${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-
+    - name: "Login to GitHub Container Registry"
+      uses: "docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef" # v3.6.0
+      with:
+        registry: "ghcr.io"
+        username: "${{ github.actor }}"
+        password: "${{ inputs.github-token }}"
+    - name: "Setup Buildx"
+      uses: "docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f" # v3.12.0
+    - name: "Get current UID/GID"
+      id: "ids"
+      shell: "bash"
       run: |
         echo "uid=$(id -u)" >> "$GITHUB_OUTPUT"
         echo "gid=$(id -g)" >> "$GITHUB_OUTPUT"
-    - name: Build Docker image
-      uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+    - name: "Build Docker image"
+      uses: "docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83" # v6.18.0
       with:
-        context: .
-        file: Dockerfile
+        context: "."
+        file: "Dockerfile"
         load: true
-        tags: ${{ inputs.docker-image }}
-        cache-from: type=registry,ref=${{ inputs.docker-cache }}
-        cache-to: type=registry,ref=${{ inputs.docker-cache }},mode=max,image-manifest=true
+        tags: "${{ inputs.docker-image }}"
+        cache-from: "type=registry,ref=${{ inputs.docker-cache }}"
+        cache-to: "type=registry,ref=${{ inputs.docker-cache }},mode=max,image-manifest=true"
         build-args: |
           USER_UID=${{ steps.ids.outputs.uid }}
           USER_GID=${{ steps.ids.outputs.gid }}
-    - name: Set environment variables
-      shell: bash
+    - name: "Set environment variables"
+      shell: "bash"
       env:
-        ENV: ${{ inputs.env }}
+        ENV: "${{ inputs.env }}"
       run: |
-        printf "%s" "$ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"' >> .env
-        printf "%s" "$ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
-    - name: Start persistent container
-      uses: hoverkraft-tech/compose-action@248470ecc5ed40d8ed3d4480d8260d77179ef579 # v2.4.2
+        printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> .env
+        printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> "$GITHUB_ENV"
+    - name: "Start persistent container"
+      uses: "hoverkraft-tech/compose-action@248470ecc5ed40d8ed3d4480d8260d77179ef579" # v2.4.2
       env:
-        COMPOSE_IMAGE: ${{ inputs.docker-image }}
+        COMPOSE_IMAGE: "${{ inputs.docker-image }}"
       with:
         compose-file: |
           docker-compose.yml
-          docker-compose.override.yml
-        up-flags: "--no-build"
-    - name: Run pnpm install script
-      uses: ./.github/actions/shell-docker
+          docker-compose.proxied.yaml
+        up-flags: "--no-build --wait"
+    - name: "Run mise install"
+      uses: "./.github/actions/shell-docker"
       with:
-        docker-service: ${{ inputs.docker-service }}
-        run: pnpm install --frozen-lockfile --prefer-offline
+        docker-service: "${{ inputs.docker-service }}"
+        run: "mise install"
