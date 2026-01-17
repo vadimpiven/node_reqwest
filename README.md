@@ -29,6 +29,14 @@ The build is made in a fashion that allows usage by Electron-based applications.
 For native build run:
 
 ```bash
+# Set GitHub token for mise tools installation (to avoid rate limits)
+# <https://github.com/settings/personal-access-tokens/new?name=node_reqwest-env>
+GITHUB_TOKEN=github_token_with_read_only_access_to_public_repositories
+
+# Setup .env file (better to do that manually, but here is some automation)
+[ -f .env ] || cp .env.example .env
+grep -q "^GITHUB_TOKEN=" .env || echo "GITHUB_TOKEN=${GITHUB_TOKEN}" >> .env
+
 mise trust # Trust the project
 mise install # Install tools
 mise test # Run tests
@@ -52,31 +60,19 @@ For manual Docker usage run:
 grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
 grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 
-docker compose up --build -d --wait # Build and run the container
-docker compose exec dev bash # Enter the container shell
+mise run docker # Build, run and attach to the container
 
-mise test # Run the tests
+mise test # Run the tests (inside the container)
 
-exit # Exit the container
-docker compose down --remove-orphans # Stop the container
-```
-
-For simplicity you can use docker script:
-
-```bash
-pnpm docker # Build and attach to the container
-
-mise test # Run the tests
-
-exit # Exit and stop the container
+exit # Exit and automatically stop the container
 ```
 
 ## Mitmproxy Web UI
 
 The Docker environment includes [mitmproxy](https://mitmproxy.org/)
 for inspecting HTTP/HTTPS traffic from the dev container.
-The `docker-compose.override.yml` is automatically merged by Docker Compose,
-enabling mitmproxy by default. To access the web UI:
+The `docker-compose.proxied.yaml` is automatically merged by `mise run docker`.
+To access the web UI:
 
 ```bash
 # Set a known password
@@ -86,16 +82,10 @@ MITMPROXY_WEB_PASSWORD=example_password
 echo "MITMPROXY_WEB_PASSWORD=${MITMPROXY_WEB_PASSWORD}" >> .env
 
 # Rebuild the container
-docker compose up --build -d --wait
+mise run docker
 
 # Access the UI at: `http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}`
 open http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}
-```
-
-To run without mitmproxy:
-
-```bash
-docker compose -f docker-compose.yml up --build -d --wait
 ```
 
 ## Troubleshooting

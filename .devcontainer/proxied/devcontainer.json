@@ -1,6 +1,6 @@
 {
   "name": "Dev with Proxied Network",
-  "dockerComposeFile": ["../../docker-compose.yml", "../../docker-compose.override.yml"],
+  "dockerComposeFile": ["../../docker-compose.yml", "../../docker-compose.proxied.yaml"],
   "service": "dev",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",

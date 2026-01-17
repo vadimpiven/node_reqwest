@@ -69,7 +69,7 @@ runs:
       with:
         compose-file: |
           docker-compose.yml
-          docker-compose.override.yml
+          docker-compose.proxied.yaml
         up-flags: "--no-build --wait"
     - name: "Run mise install"
       uses: "./.github/actions/shell-docker"

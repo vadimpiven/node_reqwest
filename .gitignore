@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+docker-compose.override.yml
+mise.local.toml
 .DS_Store
 lcov.info
 package.tar.gz

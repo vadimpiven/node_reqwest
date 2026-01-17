@@ -13,9 +13,6 @@
   },
   "scripts": {
     "postinstall": "node ./scripts/setup-playwright.ts",
-    "prepare": "husky",
-    "predocker": "docker compose up --build -d --wait",
-    "docker": "docker compose exec dev bash",
-    "postdocker": "docker compose down --remove-orphans"
+    "prepare": "husky"
   }
 }
