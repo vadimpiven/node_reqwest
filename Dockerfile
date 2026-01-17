@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.20@sha256:26147acbda4f14c5add9946e2fd2ed543fc402884fd75146bd342a7f6271dc1d
 # <https://quay.io/repository/pypa/manylinux_2_28?tab=tags>
 FROM quay.io/pypa/manylinux_2_28@sha256:f26d80d4e483823df796cc3f5a1818a72f16ccbb67d55b437db70dffa142c9ab
 
