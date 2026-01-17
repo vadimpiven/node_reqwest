@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # <https://quay.io/repository/pypa/manylinux_2_28?tab=tags>
-FROM quay.io/pypa/manylinux_2_28@sha256:ab0ba3e806c10f95049334c3af6266fcf8a18a843d535ac98cc1893499aec6cb
+FROM quay.io/pypa/manylinux_2_28@sha256:f26d80d4e483823df796cc3f5a1818a72f16ccbb67d55b437db70dffa142c9ab
 
 ARG TARGETARCH
 ARG USERNAME=runner
@@ -33,10 +33,32 @@ RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
     # Dependency Installation
     && rm -f /usr/local/bin/git-lfs \
     && dnf update -y \
-    && dnf install -y sudo git git-lfs curl \
-    xorg-x11-server-Xvfb alsa-lib atk at-spi2-atk cairo cups-libs dbus-libs \
-    gdk-pixbuf2 gtk3 libX11 libXcomposite libXcursor libXdamage libXext libXfixes libXi \
-    libXrandr libXrender libXtst mesa-libgbm libicu libxkbcommon nss pango \
+    && dnf install -y --setopt=install_weak_deps=False \
+    alsa-lib \
+    at-spi2-atk \
+    atk \
+    cairo \
+    dbus-libs \
+    gdk-pixbuf2 \
+    git \
+    gtk3 \
+    libicu \
+    libX11 \
+    libXcomposite \
+    libXcursor \
+    libXdamage \
+    libXext \
+    libXfixes \
+    libXi \
+    libXrandr \
+    libXrender \
+    libxkbcommon \
+    libXtst \
+    mesa-libgbm \
+    nss \
+    pango \
+    sudo \
+    xorg-x11-server-Xvfb \
     && dnf clean all \
     \
     # Create SSL symlinks

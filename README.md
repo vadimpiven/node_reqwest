@@ -13,11 +13,11 @@ The build is made in a fashion that allows usage by Electron-based applications.
 
 ### Required
 
+- [mise](https://mise.jdx.dev/getting-started.html) for tool version management
 - C++ development toolchain (required by Rust)
-  - Windows: [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)
+  - Windows: [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2026)
   - macOS: `xcode-select --install`
   - Linux: preinstalled `g++`
-- [mise](https://mise.jdx.dev/getting-started.html) for tool version management
 
 ### Optional
 
@@ -41,6 +41,8 @@ mise trust # Trust the project
 mise install # Install tools
 mise test # Run tests
 ```
+
+You can forcefully rerun tests with `mise -f run test`.
 
 VSCode [recommended extensions](.vscode/extensions.json) make development experience
 better. Check VSCode [debug configurations](.vscode/launch.json) for debugging and

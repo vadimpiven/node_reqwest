@@ -20,6 +20,8 @@
       "tar": "7.5.3"
     },
     "onlyBuiltDependencies": [
+      "electron",
+      "esbuild",
       "node-pty",
       "protobufjs",
       "tree-sitter-bash"

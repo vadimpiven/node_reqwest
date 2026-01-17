@@ -129,19 +129,39 @@ description = "Install all tools and dependencies"
 depends = ["setup:rust", "setup:pnpm", "setup:python"]
 
 # ============================================================================
-# LINT & CHECK TASKS - Verify code quality and security
+# LINT & CHECK/FIX TASKS - Verify and fix code quality and security
 # ============================================================================
 
-[tasks."check:ruff"]
+# --- ruff (Python) ---
+[tasks."check:ruff-lint"]
 description = "Check Python code with ruff"
 hide = true
 depends = ["setup:python"]
-run = """
-uv run --no-sync ruff check --diff
-uv run --no-sync ruff format --check --diff
-"""
+run = "uv run --no-sync ruff check"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
+[tasks."fix:ruff-lint"]
+description = "Fix Python code with ruff"
+hide = true
+depends = ["setup:python"]
+run = "uv run --no-sync ruff check --fix"
+sources = ["packages/**/*.py", "pyproject.toml"]
+
+[tasks."check:ruff-format"]
+description = "Check Python code formatting with ruff"
+hide = true
+depends = ["check:ruff-lint"]
+run = "uv run --no-sync ruff format --check --diff"
+sources = ["packages/**/*.py", "pyproject.toml"]
+
+[tasks."fix:ruff-format"]
+description = "Format Python code with ruff"
+hide = true
+depends = ["fix:ruff-lint"]
+run = "uv run --no-sync ruff format"
+sources = ["packages/**/*.py", "pyproject.toml"]
+
+# --- pyrefly (Python) ---
 [tasks."check:pyrefly"]
 description = "Check Python code with pyrefly"
 hide = true
@@ -150,6 +170,15 @@ run = "uv run --no-sync pyrefly check"
 run_windows = "exit 0"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
+[tasks."fix:pyrefly"]
+description = "Fix pyrefly issues"
+hide = true
+depends = ["setup:python"]
+run = "uv run --no-sync pyrefly check --remove-unused-ignores --all"
+run_windows = "exit 0"
+sources = ["packages/**/*.py", "pyproject.toml"]
+
+# --- biome (JS/TS/JSON) ---
 [tasks."check:biome"]
 description = "Check JS/TS/JSON with Biome"
 hide = true
@@ -159,6 +188,16 @@ sources = [
     "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}",
 ]
 
+[tasks."fix:biome"]
+description = "Fix JS/TS/JSON with Biome"
+hide = true
+run = "biome check . --log-level warn --fix"
+sources = [
+    "*.{json,jsonc}",
+    "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}",
+]
+
+# --- taplo (TOML) ---
 [tasks."check:taplo"]
 description = "Check TOML files with taplo"
 hide = true
@@ -166,6 +205,14 @@ depends = ["setup:pnpm"]
 run = "pnpm exec taplo check"
 sources = ["*.toml", "{.cargo,.config,packages}/**/*.toml"]
 
+[tasks."fix:taplo"]
+description = "Format TOML files with taplo"
+hide = true
+depends = ["setup:pnpm"]
+run = "pnpm exec taplo format"
+sources = ["*.toml", "{.cargo,.config,packages}/**/*.toml"]
+
+# --- markdownlint (Markdown) ---
 [tasks."check:markdownlint"]
 description = "Check Markdown files"
 hide = true
@@ -173,12 +220,27 @@ depends = ["setup:pnpm"]
 run = "pnpm exec markdownlint-cli2"
 sources = ["*.md", "{packages,plans}/**/*.md", ".markdownlint-cli2.jsonc"]
 
+[tasks."fix:markdownlint"]
+description = "Fix Markdown files"
+hide = true
+depends = ["setup:pnpm"]
+run = "pnpm exec markdownlint-cli2 --fix"
+sources = ["*.md", "{packages,plans}/**/*.md", ".markdownlint-cli2.jsonc"]
+
+# --- yamlfmt (YAML) ---
 [tasks."check:yamlfmt"]
 description = "Check YAML formatting"
 hide = true
 run = "yamlfmt -gitignore_excludes -lint"
 sources = ["*.{yaml,yml}", "{.devcontainer,.github}/**/*.{yaml,yml}"]
 
+[tasks."fix:yamlfmt"]
+description = "Format YAML files"
+hide = true
+run = "yamlfmt -gitignore_excludes"
+sources = ["*.{yaml,yml}", "{.devcontainer,.github}/**/*.{yaml,yml}"]
+
+# --- clippy (Rust) ---
 [tasks."check:clippy"]
 description = "Check Rust code with clippy"
 hide = true
@@ -186,6 +248,14 @@ depends = ["setup:rust"]
 run = "cargo clippy -r --locked -- -D warnings"
 sources = ["packages/**/*.rs", "Cargo.{toml,lock}", "clippy.toml"]
 
+[tasks."fix:clippy"]
+description = "Fix Rust code with clippy"
+hide = true
+depends = ["setup:rust"]
+run = "cargo clippy -r --locked --fix --allow-dirty"
+sources = ["packages/**/*.rs", "Cargo.{toml,lock}", "clippy.toml"]
+
+# --- rustfmt (Rust) ---
 [tasks."check:rustfmt"]
 description = "Check Rust formatting"
 hide = true
@@ -193,6 +263,14 @@ depends = ["check:clippy"]
 run = "cargo fmt --check"
 sources = ["packages/**/*.rs", "rustfmt.toml"]
 
+[tasks."fix:rustfmt"]
+description = "Format Rust code"
+hide = true
+depends = ["fix:clippy"]
+run = "cargo fmt"
+sources = ["packages/**/*.rs", "rustfmt.toml"]
+
+# --- cargo-deny (Rust dependencies) ---
 [tasks."check:cargo-deny"]
 description = "Check Rust dependencies with cargo-deny"
 hide = true
@@ -200,6 +278,12 @@ depends = ["setup:rust"]
 run = "cargo deny check"
 sources = ["Cargo.{toml,lock}", "deny.toml"]
 
+[tasks."fix:cargo-deny"]
+description = "Check cargo-deny (no auto-fix available)"
+hide = true
+run = [{ task = "check:cargo-deny" }]
+
+# --- typos ---
 [tasks."check:typos"]
 description = "Check for typos in all files"
 hide = true
@@ -209,12 +293,29 @@ sources = [
     "{.github,packages,plans,scripts}/**/*.{rs,ts,js,mts,mjs,py,md,toml,json,yaml,yml}",
 ]
 
+[tasks."fix:typos"]
+description = "Fix typos in all files"
+hide = true
+run = "typos -w ."
+sources = [
+    "*.{md,toml,json,yaml,yml}",
+    "{.github,packages,plans,scripts}/**/*.{rs,ts,js,mts,mjs,py,md,toml,json,yaml,yml}",
+]
+
+# --- shellcheck ---
 [tasks."check:shellcheck"]
 description = "Check shell scripts with shellcheck"
 hide = true
 run = "shellcheck docker-entrypoint.sh"
+run_windows = "exit 0"
 sources = ["docker-entrypoint.sh"]
 
+[tasks."fix:shellcheck"]
+description = "Check shell scripts (no auto-fix available)"
+hide = true
+run = [{ task = "check:shellcheck" }]
+
+# --- hadolint (Dockerfile) ---
 [tasks."check:hadolint"]
 description = "Check Dockerfile with hadolint"
 hide = true
@@ -222,6 +323,12 @@ run = "hadolint Dockerfile"
 run_windows = "exit 0"
 sources = ["Dockerfile", ".hadolint.yaml"]
 
+[tasks."fix:hadolint"]
+description = "Check Dockerfile (no auto-fix available)"
+hide = true
+run = [{ task = "check:hadolint" }]
+
+# --- zizmor (GitHub Actions) ---
 [tasks."check:zizmor"]
 description = "Security audit GitHub Actions with zizmor"
 hide = true
@@ -230,6 +337,12 @@ run = "uv run --no-sync zizmor -q --persona auditor .github"
 run_windows = "exit 0"
 sources = [".github/**/*.{yaml,yml}"]
 
+[tasks."fix:zizmor"]
+description = "Check GitHub Actions (no auto-fix available)"
+hide = true
+run = [{ task = "check:zizmor" }]
+
+# --- semgrep ---
 [tasks."check:semgrep"]
 description = "Security scan with semgrep"
 hide = true
@@ -240,16 +353,52 @@ sources = [
     "{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}",
 ]
 
-[tasks."check:trivy"]
-description = "Security scan with trivy"
+[tasks."fix:semgrep"]
+description = "Fix semgrep issues"
+hide = true
+depends = ["setup:python"]
+run = "uv run --no-sync semgrep scan --error -q --autofix"
+run_windows = "exit 0"
+sources = [
+    "{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}",
+]
+
+# --- trivy (filesystem) ---
+[tasks."check:trivy-fs"]
+description = "Security scan filesystem with trivy"
 hide = true
 run = "trivy fs . --format table"
 sources = ["*.{toml,lock,json,yaml,yml}", "packages/**/*.{toml,json}", "Dockerfile"]
 
+[tasks."fix:trivy-fs"]
+description = "Scan filesystem with trivy (no auto-fix available)"
+hide = true
+run = [{ task = "check:trivy-fs" }]
+
+# --- trivy (rootfs) ---
+[tasks."check:trivy-rootfs"]
+description = "Security scan container rootfs with trivy"
+hide = true
+usage = """
+arg "[env]" help="Environment name" env="MISE_ENV" default="native"
+"""
+run = """
+{%- if usage.env == "docker" -%}
+  trivy rootfs / --ignore-unfixed --config /dev/null
+{%- endif -%}
+"""
+
+[tasks."fix:trivy-rootfs"]
+description = "Scan container rootfs with trivy (no auto-fix available)"
+hide = true
+run = [{ task = "check:trivy-rootfs" }]
+
+# --- Global check/fix tasks ---
 [tasks.check]
 description = "Run all checks"
 depends = [
-    "check:ruff",
+    "check:ruff-lint",
+    "check:ruff-format",
     "check:pyrefly",
     "check:biome",
     "check:taplo",
@@ -263,130 +412,15 @@ depends = [
     "check:hadolint",
     "check:zizmor",
     "check:semgrep",
-    "check:trivy",
+    "check:trivy-fs",
+    "check:trivy-rootfs",
 ]
-
-# ============================================================================
-# FIX TASKS - Auto-fix issues where possible
-# ============================================================================
-
-[tasks."fix:ruff"]
-description = "Fix Python code with ruff"
-hide = true
-depends = ["setup:python"]
-run = """
-uv run --no-sync ruff check --fix
-uv run --no-sync ruff format
-"""
-sources = ["packages/**/*.py", "pyproject.toml"]
-
-[tasks."fix:pyrefly"]
-description = "Fix pyrefly issues"
-hide = true
-depends = ["setup:python"]
-run = "uv run --no-sync pyrefly check --remove-unused-ignores --all"
-run_windows = "exit 0"
-sources = ["packages/**/*.py", "pyproject.toml"]
-
-[tasks."fix:biome"]
-description = "Fix JS/TS/JSON with Biome"
-hide = true
-run = "biome check . --log-level warn --fix"
-sources = [
-    "*.{json,jsonc}",
-    "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}",
-]
-
-[tasks."fix:taplo"]
-description = "Format TOML files with taplo"
-hide = true
-depends = ["setup:pnpm"]
-run = "pnpm exec taplo format"
-sources = ["*.toml", "{.cargo,.config,packages}/**/*.toml"]
-
-[tasks."fix:markdownlint"]
-description = "Fix Markdown files"
-hide = true
-depends = ["setup:pnpm"]
-run = "pnpm exec markdownlint-cli2 --fix"
-sources = ["*.md", "{packages,plans}/**/*.md", ".markdownlint-cli2.jsonc"]
-
-[tasks."fix:yamlfmt"]
-description = "Format YAML files"
-hide = true
-run = "yamlfmt -gitignore_excludes"
-sources = ["*.{yaml,yml}", "{.devcontainer,.github}/**/*.{yaml,yml}"]
-
-[tasks."fix:clippy"]
-description = "Fix Rust code with clippy"
-hide = true
-depends = ["setup:rust"]
-run = "cargo clippy --fix --allow-dirty"
-sources = ["packages/**/*.rs", "Cargo.{toml,lock}", "clippy.toml"]
-
-[tasks."fix:rustfmt"]
-description = "Format Rust code"
-hide = true
-depends = ["fix:clippy"]
-run = "cargo fmt"
-sources = ["packages/**/*.rs", "rustfmt.toml"]
-
-[tasks."fix:cargo-deny"]
-description = "Check cargo-deny (no auto-fix available)"
-hide = true
-run = "cargo deny check"
-sources = ["Cargo.{toml,lock}", "deny.toml"]
-
-[tasks."fix:typos"]
-description = "Fix typos in all files"
-hide = true
-run = "typos -w ."
-sources = [
-    "*.{md,toml,json,yaml,yml}",
-    "{.github,packages,plans,scripts}/**/*.{rs,ts,js,mts,mjs,py,md,toml,json,yaml,yml}",
-]
-
-[tasks."fix:shellcheck"]
-description = "Check shell scripts (no auto-fix available)"
-hide = true
-run = "shellcheck docker-entrypoint.sh"
-sources = ["docker-entrypoint.sh"]
-
-[tasks."fix:hadolint"]
-description = "Check Dockerfile (no auto-fix available)"
-hide = true
-run = "hadolint Dockerfile"
-run_windows = "exit 0"
-sources = ["Dockerfile", ".hadolint.yaml"]
-
-[tasks."fix:zizmor"]
-description = "Check GitHub Actions (no auto-fix available)"
-hide = true
-depends = ["setup:python"]
-run = "uv run --no-sync zizmor -q --persona auditor .github"
-run_windows = "exit 0"
-sources = [".github/**/*.{yaml,yml}"]
-
-[tasks."fix:semgrep"]
-description = "Fix semgrep issues"
-hide = true
-depends = ["setup:python"]
-run = "uv run --no-sync semgrep scan --error -q --autofix"
-run_windows = "exit 0"
-sources = [
-    "{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}",
-]
-
-[tasks."fix:trivy"]
-description = "Check trivy (no auto-fix available)"
-hide = true
-run = "trivy fs . --format table"
-sources = ["*.{toml,lock,json,yaml,yml}", "packages/**/*.{toml,json}", "Dockerfile"]
 
 [tasks.fix]
 description = "Run all fixes"
 depends = [
-    "fix:ruff",
+    "fix:ruff-lint",
+    "fix:ruff-format",
     "fix:pyrefly",
     "fix:biome",
     "fix:taplo",
@@ -400,7 +434,8 @@ depends = [
     "fix:hadolint",
     "fix:zizmor",
     "fix:semgrep",
-    "fix:trivy",
+    "fix:trivy-fs",
+    "fix:trivy-rootfs",
 ]
 
 # ============================================================================
@@ -554,27 +589,107 @@ raw = true
 # BUILD & TEST TASKS - Build and test the project
 # ============================================================================
 
-[tasks."ci-build"]
-description = "Build for CI (runs recursive pnpm ci-build)"
+# --- CI Build tasks ---
+[tasks."ci-build:code"]
+description = "Build core package for CI"
+hide = true
 depends = ["setup:rust"]
-run = "pnpm run --recursive ci-build"
-sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
+run = "pnpm --filter core run ci-build --if-present"
+sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
+
+[tasks."ci-build:meta"]
+description = "Build meta package for CI"
+hide = true
+depends = ["setup:rust"]
+run = "pnpm --filter meta run ci-build --if-present"
+sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
+
+[tasks."ci-build:node"]
+description = "Build node package for CI"
+hide = true
+depends = ["setup:rust"]
+run = "pnpm --filter node-reqwest run ci-build --if-present"
+sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
+
+[tasks."ci-build"]
+description = "Build all packages for CI"
+depends = ["ci-build:code", "ci-build:meta", "ci-build:node"]
+
+# --- CI Test tasks ---
+[tasks."ci-test:code"]
+description = "Run CI tests for core package"
+hide = true
+depends = ["check"]
+run = "pnpm --filter core run ci-test --if-present"
+sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
+
+[tasks."ci-test:meta"]
+description = "Run CI tests for meta package"
+hide = true
+depends = ["check"]
+run = "pnpm --filter meta run ci-test --if-present"
+sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
+
+[tasks."ci-test:node"]
+description = "Run CI tests for node package"
+hide = true
+depends = ["check"]
+run = "pnpm --filter node-reqwest run ci-test --if-present"
+sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test"]
-description = "Run CI tests with pre-check"
-run = "pnpm run --recursive ci-test"
-depends = ["check"]
-sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
+description = "Run all CI tests"
+depends = ["ci-test:code", "ci-test:meta", "ci-test:node"]
+
+# --- Build tasks ---
+[tasks."build:code"]
+description = "Build core package"
+hide = true
+depends = ["setup:rust"]
+run = "pnpm --filter core run build --if-present"
+sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
+
+[tasks."build:meta"]
+description = "Build meta package"
+hide = true
+depends = ["setup:rust"]
+run = "pnpm --filter meta run build --if-present"
+sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
+
+[tasks."build:node"]
+description = "Build node package"
+hide = true
+depends = ["setup:rust"]
+run = "pnpm --filter node-reqwest run build --if-present"
+sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.build]
 description = "Build all packages"
-depends = ["setup:rust"]
-run = "pnpm run --recursive build"
-sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
+depends = ["build:code", "build:meta", "build:node"]
+
+# --- Test tasks ---
+[tasks."test:code"]
+description = "Run tests for core package"
+hide = true
+depends = ["fix"]
+run = "pnpm --filter core run test --if-present"
+sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
+
+[tasks."test:meta"]
+description = "Run tests for meta package"
+hide = true
+depends = ["fix"]
+run = "pnpm --filter meta run test --if-present"
+sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
+
+[tasks."test:node"]
+description = "Run tests for node package"
+hide = true
+depends = ["fix"]
+run = "pnpm --filter node-reqwest run test --if-present"
+sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.test]
-description = "Run all tests with pre-fix"
+description = "Run all tests"
 alias = "t"
-run = "pnpm run --recursive test"
-depends = ["fix"]
-sources = ["packages/**/*.{rs,ts,js}", "Cargo.{toml,lock}"]
+depends = ["test:code", "test:meta", "test:node"]
