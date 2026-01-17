@@ -12,7 +12,6 @@
     "vitest": "catalog:"
   },
   "scripts": {
-    "postinstall": "node ./scripts/setup-playwright.ts",
     "prepare": "husky"
   }
 }

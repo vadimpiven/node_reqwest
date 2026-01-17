@@ -95,11 +95,25 @@ sources = ["rust-toolchain.toml"]
 description = "Install pnpm dependencies"
 hide = true
 env = { CI = "true", HUSKY = "1" }
-run = """
-corepack enable pnpm
-pnpm install --frozen-lockfile --prefer-offline
-"""
+run = [
+    "corepack enable pnpm",
+    "pnpm install --frozen-lockfile --prefer-offline",
+    { task = "setup:playwright" },
+]
 sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
+
+[tasks."setup:playwright"]
+description = "Install Playwright dependencies"
+hide = true
+usage = """
+arg "[env]" help="Environment name" env="MISE_ENV" default="native"
+"""
+run = """
+{%- if usage.env != "docker" -%}
+  playwright install-deps
+{%- endif -%}
+"""
+sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"]
 
 [tasks."setup:python"]
 description = "Setup Python environment with uv"
@@ -109,6 +123,10 @@ uv sync --no-install-workspace
 mise sync python --uv
 """
 sources = ["pyproject.toml", "packages/**/pyproject.toml", "uv.lock"]
+
+[tasks.setup]
+description = "Install all tools and dependencies"
+depends = ["setup:rust", "setup:pnpm", "setup:python"]
 
 # ============================================================================
 # LINT & CHECK TASKS - Verify code quality and security
