@@ -70,6 +70,7 @@
     "@vitest/coverage-istanbul": "catalog:",
     "electron": "catalog:",
     "monocart-reporter": "catalog:",
+    "rollup": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

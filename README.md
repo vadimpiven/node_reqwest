@@ -42,7 +42,7 @@ mise install # Install tools
 mise test # Run tests
 ```
 
-You can forcefully rerun tests with `mise -f run test`.
+You can forcefully rerun tests with `mise run -f t`.
 
 VSCode [recommended extensions](.vscode/extensions.json) make development experience
 better. Check VSCode [debug configurations](.vscode/launch.json) for debugging and

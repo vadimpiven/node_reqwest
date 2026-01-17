@@ -10,6 +10,7 @@
     "@types/node": "catalog:",
     "husky": "catalog:",
     "markdownlint-cli2": "catalog:",
+    "fd-lock": "catalog:",
     "vitest": "catalog:"
   },
   "scripts": {
