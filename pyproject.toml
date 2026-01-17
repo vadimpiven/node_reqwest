@@ -4,18 +4,17 @@ version = "0.0.0"
 
 [tool.uv]
 required-version = ">=0.9.21"
-exclude-newer = "7 days"
 
 [tool.uv.workspace]
 members = ["packages/node/tests/mitmproxy"]
 
 [dependency-groups]
 dev = [
-    "mitmproxy==12.2.1 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
-    "pyrefly==0.47.0",
-    "ruff==0.14.11",
-    "semgrep==1.147.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
-    "zizmor==1.20.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
+    "mitmproxy==12.2.1 ; sys_platform != 'win32'",
+    "pyrefly==0.48.2",
+    "ruff==0.14.13",
+    "semgrep==1.148.0 ; sys_platform != 'win32'",
+    "zizmor==1.22.0 ; sys_platform != 'win32'",
 ]
 
 [tool.pyrefly]

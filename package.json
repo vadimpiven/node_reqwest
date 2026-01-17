@@ -9,6 +9,7 @@
     "@taplo/cli": "catalog:",
     "@types/node": "catalog:",
     "husky": "catalog:",
+    "hono": "catalog:",
     "markdownlint-cli2": "catalog:",
     "fd-lock": "catalog:",
     "vitest": "catalog:"
@@ -18,7 +19,12 @@
   },
   "pnpm": {
     "overrides": {
-      "tar": "7.5.3"
+      "tar": "7.5.3",
+      "hono": "4.11.4",
+      "@hono/node-server>hono": "4.11.4",
+      "@hono/node-server": "1.19.9",
+      "diff": "8.0.3",
+      "undici": "7.18.2"
     },
     "onlyBuiltDependencies": [
       "electron",

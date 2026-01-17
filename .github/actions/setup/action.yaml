@@ -54,3 +54,8 @@ runs:
         cache-key: "${{ inputs.cache-key }}"
         github-token: "${{ inputs.github-token }}"
         mise-version: "${{ inputs.mise-version }}"
+    - name: "Mise setup"
+      uses: "./.github/actions/shell"
+      with:
+        docker-service: "${{ inputs.docker-service }}"
+        run: "mise setup"
