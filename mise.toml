@@ -593,106 +593,106 @@ raw = true
 # ============================================================================
 
 # --- CI Build tasks ---
-[tasks."ci-build:code"]
+[tasks."ci-build:core"]
 description = "Build core package for CI"
 hide = true
 depends = ["setup:rust"]
-run = "pnpm --filter core run ci-build --if-present"
+run = "pnpm --filter core --if-present run ci-build"
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build:meta"]
 description = "Build meta package for CI"
 hide = true
 depends = ["setup:rust"]
-run = "pnpm --filter meta run ci-build --if-present"
+run = "pnpm --filter meta --if-present run ci-build"
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build:node"]
 description = "Build node package for CI"
 hide = true
-depends = ["setup:rust"]
-run = "pnpm --filter node-reqwest run ci-build --if-present"
+depends = ["setup:rust", "setup:pnpm", "setup:python"]
+run = "pnpm --filter node-reqwest --if-present run ci-build"
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build"]
 description = "Build all packages for CI"
-depends = ["ci-build:code", "ci-build:meta", "ci-build:node"]
+depends = ["ci-build:core", "ci-build:meta", "ci-build:node"]
 
 # --- CI Test tasks ---
-[tasks."ci-test:code"]
+[tasks."ci-test:core"]
 description = "Run CI tests for core package"
 hide = true
 depends = ["check"]
-run = "pnpm --filter core run ci-test --if-present"
+run = "pnpm --filter core --if-present run ci-test"
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test:meta"]
 description = "Run CI tests for meta package"
 hide = true
 depends = ["check"]
-run = "pnpm --filter meta run ci-test --if-present"
+run = "pnpm --filter meta --if-present run ci-test"
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test:node"]
 description = "Run CI tests for node package"
 hide = true
-depends = ["check"]
-run = "pnpm --filter node-reqwest run ci-test --if-present"
+depends = ["check", "setup:pnpm"]
+run = "pnpm --filter node-reqwest --if-present run ci-test"
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test"]
 description = "Run all CI tests"
-depends = ["ci-test:code", "ci-test:meta", "ci-test:node"]
+depends = ["ci-test:core", "ci-test:meta", "ci-test:node"]
 
 # --- Build tasks ---
-[tasks."build:code"]
+[tasks."build:core"]
 description = "Build core package"
 hide = true
 depends = ["setup:rust"]
-run = "pnpm --filter core run build --if-present"
+run = "pnpm --filter core --if-present run build"
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."build:meta"]
 description = "Build meta package"
 hide = true
 depends = ["setup:rust"]
-run = "pnpm --filter meta run build --if-present"
+run = "pnpm --filter meta --if-present run build"
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."build:node"]
 description = "Build node package"
 hide = true
-depends = ["setup:rust"]
-run = "pnpm --filter node-reqwest run build --if-present"
+depends = ["setup:rust", "setup:pnpm", "setup:python"]
+run = "pnpm --filter node-reqwest --if-present run build"
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.build]
 description = "Build all packages"
-depends = ["build:code", "build:meta", "build:node"]
+depends = ["build:core", "build:meta", "build:node"]
 
 # --- Test tasks ---
-[tasks."test:code"]
+[tasks."test:core"]
 description = "Run tests for core package"
 hide = true
 depends = ["fix"]
-run = "pnpm --filter core run test --if-present"
+run = "pnpm --filter core --if-present run test"
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."test:meta"]
 description = "Run tests for meta package"
 hide = true
 depends = ["fix"]
-run = "pnpm --filter meta run test --if-present"
+run = "pnpm --filter meta --if-present run test"
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."test:node"]
 description = "Run tests for node package"
 hide = true
-depends = ["fix"]
-run = "pnpm --filter node-reqwest run test --if-present"
+depends = ["fix", "setup:pnpm"]
+run = "pnpm --filter node-reqwest --if-present run test"
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.test]
 description = "Run all tests"
 alias = "t"
-depends = ["test:code", "test:meta", "test:node"]
+depends = ["test:core", "test:meta", "test:node"]
