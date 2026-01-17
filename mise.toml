@@ -29,8 +29,10 @@ _.path = ["{{ config_root }}/.cache/native/cargo/bin", "{{ config_root }}/node_m
 _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
-# Rust tools
+# Rust
 rust = "nightly-2026-01-15"
+
+# Rust tools
 "github:cargo-bins/cargo-binstall" = "1.16.6"
 "github:nextest-rs/nextest" = "cargo-nextest-0.9.117"
 "github:EmbarkStudios/cargo-deny" = "0.19.0"

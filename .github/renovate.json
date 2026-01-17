@@ -59,7 +59,7 @@
       "description": "Update Rust nightly toolchain",
       "fileMatch": ["^rust-toolchain\\.toml$", "^mise\\.toml$"],
       "matchStrings": [
-        "(?:channel|rust)\\s*=\\s*\"(?<currentValue>nightly-\\d{4}-\\d{2}-\\d{2})\""
+        "(?:channel|rust\\.version)\\s*=\\s*\"(?<currentValue>nightly-\\d{4}-\\d{2}-\\d{2})\""
       ],
       "depNameTemplate": "rustlang/rust",
       "datasourceTemplate": "docker",
