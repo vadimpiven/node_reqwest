@@ -19,6 +19,9 @@ inputs:
   docker-service:
     description: "Docker service name"
     required: true
+  mise-version:
+    description: "Mise version to use"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -50,3 +53,4 @@ runs:
         env: "${{ inputs.env }}"
         cache-key: "${{ inputs.cache-key }}"
         github-token: "${{ inputs.github-token }}"
+        mise-version: "${{ inputs.mise-version }}"

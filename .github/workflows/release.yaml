@@ -20,6 +20,7 @@ jobs:
       docker-image: "${{ steps.init-workflow.outputs.docker-image }}"
       docker-cache: "${{ steps.init-workflow.outputs.docker-cache }}"
       docker-service: "${{ steps.init-workflow.outputs.docker-service }}"
+      mise-version: "${{ steps.init-workflow.outputs.mise-version }}"
     steps:
       - name: "Checkout"
         uses: "actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8" # v6.0.1
@@ -60,6 +61,7 @@ jobs:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           cache-key: "${{ needs.init.outputs.cache-key }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
+          mise-version: "${{ needs.init.outputs.mise-version }}"
       - name: "Build node addon"
         uses: "./.github/actions/shell"
         with:
@@ -114,6 +116,7 @@ jobs:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           cache-key: "${{ needs.init.outputs.cache-key }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
+          mise-version: "${{ needs.init.outputs.mise-version }}"
       - name: "Build export wrapper"
         uses: "./.github/actions/shell"
         with:

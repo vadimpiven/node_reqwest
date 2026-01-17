@@ -10,6 +10,9 @@ inputs:
   github-token:
     description: "GitHub token for authenticated API requests (increases rate limits)"
     required: true
+  mise-version:
+    description: "Mise version to use"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -38,6 +41,7 @@ runs:
     - name: "Run mise install"
       uses: "jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5" # v3.5.1
       with:
+        version: "${{ inputs.mise-version }}"
         install: true
         cache: false
       env:

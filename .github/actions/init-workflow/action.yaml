@@ -41,6 +41,9 @@ outputs:
   docker-cache:
     description: "Docker cache registry reference"
     value: "${{ steps.parse.outputs.docker-cache }}"
+  mise-version:
+    description: "Mise version"
+    value: "${{ steps.parse.outputs.mise-version }}"
 runs:
   using: "composite"
   steps:
@@ -58,3 +61,4 @@ runs:
         echo "docker-image=$DOCKER_IMAGE" >> "$GITHUB_OUTPUT"
         echo "docker-service=$DOCKER_SERVICE" >> "$GITHUB_OUTPUT"
         echo "docker-cache=$DOCKER_CACHE" >> "$GITHUB_OUTPUT"
+        echo "mise-version=$(cat .mise-version)" >> "$GITHUB_OUTPUT"
