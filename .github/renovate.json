@@ -7,95 +7,59 @@
     "helpers:pinGitHubActionDigests"
   ],
   "timezone": "UTC",
-  "schedule": [
-    "every weekend"
-  ],
+  "schedule": ["every weekend"],
   "minimumReleaseAge": "7 days",
   "packageRules": [
     {
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "pin",
-        "digest"
-      ],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": false
     },
     {
       "description": "Ignore major updates for node and python in mise.toml",
-      "matchManagers": [
-        "mise"
-      ],
-      "matchPackageNames": [
-        "node",
-        "python"
-      ],
-      "matchUpdateTypes": [
-        "major"
-      ],
+      "matchManagers": ["mise"],
+      "matchPackageNames": ["node", "python"],
+      "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {
       "description": "Do not update sccache",
-      "matchPackageNames": [
-        "mozilla/sccache",
-        "sccache"
-      ],
+      "matchPackageNames": ["mozilla/sccache", "sccache"],
       "enabled": false
     },
     {
       "description": "Ignore major updates for @types/node",
-      "matchPackageNames": [
-        "@types/node"
-      ],
-      "matchUpdateTypes": [
-        "major"
-      ],
+      "matchPackageNames": ["@types/node"],
+      "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {
       "description": "Group GitHub Actions updates",
-      "matchManagers": [
-        "github-actions"
-      ],
+      "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions"
     },
     {
       "description": "Group Docker updates",
-      "matchManagers": [
-        "dockerfile",
-        "docker-compose"
-      ],
+      "matchManagers": ["dockerfile", "docker-compose"],
       "groupName": "Docker dependencies"
     },
     {
       "description": "Group Rust toolchain updates",
-      "matchPackageNames": [
-        "rust",
-        "rustlang/rust"
-      ],
+      "matchPackageNames": ["rust", "rustlang/rust"],
       "groupName": "Rust Toolchain"
     }
   ],
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": [
-        "/^\\.mise-version$/"
-      ],
-      "matchStrings": [
-        "(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
-      ],
+      "managerFilePatterns": ["/^\\.mise-version$/"],
+      "matchStrings": ["(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "jdx/mise",
       "datasourceTemplate": "github-releases"
     },
     {
       "customType": "regex",
       "description": "Update Rust nightly toolchain",
-      "managerFilePatterns": [
-        "/^rust-toolchain\\.toml$/",
-        "/^mise\\.toml$/"
-      ],
+      "managerFilePatterns": ["/^rust-toolchain\\.toml$/", "/^mise\\.toml$/"],
       "matchStrings": [
         "(?:channel|rust\\.version)\\s*=\\s*\"(?<currentValue>nightly-\\d{4}-\\d{2}-\\d{2})\""
       ],
@@ -110,8 +74,6 @@
   },
   "vulnerabilityAlerts": {
     "enabled": true,
-    "addLabels": [
-      "security"
-    ]
+    "addLabels": ["security"]
   }
 }
