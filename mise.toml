@@ -30,7 +30,7 @@ _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
 # Rust
-rust = "nightly-2026-01-15"
+rust.version = "nightly-2026-01-15"
 
 # Rust tools
 "github:cargo-bins/cargo-binstall" = "1.16.6"
