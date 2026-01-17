@@ -65,13 +65,7 @@ macos-arm64 = { asset_pattern = "biome-darwin-arm64", bin = "biome" }
 # hadolint - no Windows ARM64 binary available
 [tools."github:hadolint/hadolint"]
 version = "2.14.0"
-[tools."github:hadolint/hadolint".platforms]
-windows-x64 = true
-linux-x64 = true
-linux-arm64 = true
-macos-x64 = true
-macos-arm64 = true
-# windows-arm64 intentionally omitted - no binary available
+os = ["linux", "macos"]
 
 # sccache - need explicit asset_pattern to avoid picking sccache-dist
 [tools."github:mozilla/sccache"]
@@ -378,24 +372,6 @@ description = "Scan filesystem with trivy (no auto-fix available)"
 hide = true
 run = [{ task = "check:trivy-fs" }]
 
-# --- trivy (rootfs) ---
-[tasks."check:trivy-rootfs"]
-description = "Security scan container rootfs with trivy"
-hide = true
-usage = """
-arg "[env]" help="Environment name" env="MISE_ENV" default="native"
-"""
-run = """
-{%- if usage.env == "docker" -%}
-  trivy rootfs / --ignore-unfixed --config /dev/null
-{%- endif -%}
-"""
-
-[tasks."fix:trivy-rootfs"]
-description = "Scan container rootfs with trivy (no auto-fix available)"
-hide = true
-run = [{ task = "check:trivy-rootfs" }]
-
 # --- Global check/fix tasks ---
 [tasks.check]
 description = "Run all checks"
@@ -416,7 +392,6 @@ depends = [
     "check:zizmor",
     "check:semgrep",
     "check:trivy-fs",
-    "check:trivy-rootfs",
 ]
 
 [tasks.fix]
@@ -438,7 +413,6 @@ depends = [
     "fix:zizmor",
     "fix:semgrep",
     "fix:trivy-fs",
-    "fix:trivy-rootfs",
 ]
 
 # ============================================================================
