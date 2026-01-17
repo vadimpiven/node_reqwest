@@ -1,34 +1,28 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import { open } from 'node:fs/promises';
+import { type FileHandle, open } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-// @ts-expect-error: fd-lock does not have types
 import FdLock from 'fd-lock';
 import { runCommand } from './helpers/run-command.ts';
 import { ensureError, runScript } from './helpers/run-script.ts';
 
 const packageDir: string = process.cwd();
-const scriptDir: string = dirname(fileURLToPath(import.meta.url));
-const projectRoot: string = join(scriptDir, '..');
-const lockPath: string = join(projectRoot, 'target', '.test-nextest.lock');
+const projectRoot: string = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const isLinux: boolean = process.platform === 'linux';
-const isWindowsArm: boolean = process.platform === 'win32' && process.arch === 'arm64';
-
-// Skip coverage on Linux (cargo-llvm-cov requires glibc 2.29+) and Windows ARM
-const skipCoverage: boolean = isLinux || isWindowsArm;
+// Linux binaries require new GLIBC, and there is no support for Windows ARM64
+const skipCoverage: boolean = ['linux', 'win32'].includes(process.platform);
 
 runScript('Nextest execution', async () => {
   const args = process.argv.slice(2);
 
   // Ensure lock file exists
-  const fileHandle = await open(lockPath, 'a+');
-  const lock = new FdLock(fileHandle.fd, { wait: true });
+  const lockPath: string = join(projectRoot, 'target', '.test-nextest.lock');
+  const fileHandle: FileHandle = await open(lockPath, 'a+');
+  const lock: FdLock = new FdLock(fileHandle.fd, { wait: true });
 
   await lock.ready();
-
   try {
     if (skipCoverage) {
       // Run tests directly without coverage
@@ -36,14 +30,7 @@ runScript('Nextest execution', async () => {
     } else {
       // Run tests and collect coverage data, but don't generate report yet
       // This preserves object files for subsequent report commands
-      await runCommand('cargo', [
-        'llvm-cov',
-        'nextest',
-        '--no-report',
-        '--no-tests',
-        'pass',
-        ...args
-      ]);
+      await runCommand('cargo', ['llvm-cov', 'nextest', '--no-report', ...args]);
     }
 
     // Copy junit report from target to package directory
