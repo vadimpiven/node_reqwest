@@ -13,7 +13,7 @@ members = ["packages/node/tests/mitmproxy"]
 dev = [
     "mitmproxy==12.2.1 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
     "pyrefly==0.47.0",
-    "ruff==0.14.10",
+    "ruff==0.14.11",
     "semgrep==1.146.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
     "zizmor==1.19.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
 ]
