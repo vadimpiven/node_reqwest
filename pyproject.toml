@@ -14,8 +14,8 @@ dev = [
     "mitmproxy==12.2.1 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
     "pyrefly==0.47.0",
     "ruff==0.14.11",
-    "semgrep==1.146.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
-    "zizmor==1.19.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
+    "semgrep==1.147.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
+    "zizmor==1.20.0 ; sys_platform != 'win32' or platform_machine != 'ARM64'",
 ]
 
 [tool.pyrefly]

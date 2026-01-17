@@ -47,7 +47,7 @@ yq = "4.50.1"
 "github:astral-sh/uv" = "0.9.24"
 
 # Node - pnpm is installed via corepack using packageManager field in package.json
-node = "24.11.1"
+node = "24.12.0"
 
 # Biome - unpacked binaries require bin for renaming after download
 [tools."github:biomejs/biome"]
