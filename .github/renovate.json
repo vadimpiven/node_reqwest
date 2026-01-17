@@ -48,16 +48,18 @@
       "groupName": "Rust Toolchain"
     }
   ],
-  "regexManagers": [
+  "customManagers": [
     {
-      "fileMatch": ["^\\.mise-version$"],
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.mise-version$/"],
       "matchStrings": ["(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "jdx/mise",
       "datasourceTemplate": "github-releases"
     },
     {
+      "customType": "regex",
       "description": "Update Rust nightly toolchain",
-      "fileMatch": ["^rust-toolchain\\.toml$", "^mise\\.toml$"],
+      "managerFilePatterns": ["/^rust-toolchain\\.toml$/", "/^mise\\.toml$/"],
       "matchStrings": [
         "(?:channel|rust\\.version)\\s*=\\s*\"(?<currentValue>nightly-\\d{4}-\\d{2}-\\d{2})\""
       ],
