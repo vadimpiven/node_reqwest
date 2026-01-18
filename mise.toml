@@ -1,16 +1,20 @@
+# $schema: https://mise.jdx.dev/schema/mise.json
+
 # mise.toml - Single source of truth for all tool versions
 # https://mise.jdx.dev/
 
 redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 
 [settings]
-env_file = ".env"
 npm.package_manager = "pnpm"
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
 quiet = true
 
 [env]
+_.file = ".env"
+GITHUB_TOKEN = { required = "Set GITHUB_TOKEN to avoid GitHub API rate limiting" }
+
 PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"

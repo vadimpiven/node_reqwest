@@ -1,3 +1,5 @@
+# $schema: https://mise.jdx.dev/schema/mise.json
+
 # mise.docker.toml - Docker container-specific overrides
 # This file is automatically loaded when MISE_ENV=docker
 # It inherits from mise.toml and overrides container-specific settings

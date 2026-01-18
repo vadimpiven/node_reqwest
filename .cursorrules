@@ -3,7 +3,6 @@
 ## General Rules
 
 - Follow all coding and contribution standards defined in [CONTRIBUTING.md](CONTRIBUTING.md).
-- Always use `pnpm` for any command execution or package management tasks.
 - When creating new files, ensure the appropriate SPDX license header is included.
 - Prioritize workspace-level dependency management as outlined in the root configs.
 - Maintain concise, friendly, and professional attitude when assisting with development tasks.
