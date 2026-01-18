@@ -1,18 +1,25 @@
+# $schema: https://mise.jdx.dev/schema/mise.json
+
 # mise.toml - Single source of truth for all tool versions
 # https://mise.jdx.dev/
 
 redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 
 [settings]
-env_file = ".env"
 npm.package_manager = "pnpm"
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
+quiet = true
 
 [env]
+_.file = ".env"
+GITHUB_TOKEN = { required = "Set GITHUB_TOKEN to avoid GitHub API rate limiting" }
+
 PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"
+RUSTC_WRAPPER = "sccache"
+MISE_ACTIVE = "1"
 
 # Cache directories
 CARGO_HOME = "{{ config_root }}/.cache/native/cargo"
@@ -29,37 +36,27 @@ _.path = ["{{ config_root }}/.cache/native/cargo/bin", "{{ config_root }}/node_m
 _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
-# Rust
+node = "24.13.0"
+
 rust.version = "nightly-2026-01-15"
 
-# Rust tools
-"github:cargo-bins/cargo-binstall" = "1.16.6"
-"github:nextest-rs/nextest" = "cargo-nextest-0.9.117"
-"github:mstange/samply" = "samply-v0.13.1"
-
-# Common tools
-ripgrep = "15.1.0"
-jq = "1.7.1"
+jq = "1.8.1"
 yq = "4.50.1"
+"github:BurntSushi/ripgrep" = "15.1.0"
 "github:aquasecurity/trivy" = "0.68.2"
 "github:google/yamlfmt" = "0.21.0"
 "github:koalaman/shellcheck" = "0.11.0"
-"github:astral-sh/uv" = "0.9.24"
+"github:astral-sh/uv" = "0.9.26"
+"github:cargo-bins/cargo-binstall" = "1.16.6"
 
-# Node - pnpm is installed via corepack using packageManager field in package.json
-node = "24.12.0"
+# Tools with non-standard version prefix
+[tools."github:nextest-rs/nextest"]
+version_prefix = "cargo-nextest-"
+version = "0.9.122"
 
-# Biome - unpacked binaries require bin for renaming after download
-[tools."github:biomejs/biome"]
-version_prefix = "@biomejs/biome@"
-version = "2.3.11"
-[tools."github:biomejs/biome".platforms]
-windows-x64 = { asset_pattern = "biome-win32-x64.exe", bin = "biome.exe" }
-windows-arm64 = { asset_pattern = "biome-win32-arm64.exe", bin = "biome.exe" }
-linux-x64 = { asset_pattern = "biome-linux-x64-musl", bin = "biome" }
-linux-arm64 = { asset_pattern = "biome-linux-arm64-musl", bin = "biome" }
-macos-x64 = { asset_pattern = "biome-darwin-x64", bin = "biome" }
-macos-arm64 = { asset_pattern = "biome-darwin-arm64", bin = "biome" }
+[tools."github:mstange/samply"]
+version_prefix = "samply-v"
+version = "0.13.1"
 
 # Tools with no Windows ARM64 binary available
 [tools."github:hadolint/hadolint"]
@@ -71,12 +68,24 @@ version = "0.19.0"
 os = ["linux", "macos"]
 
 [tools."github:crate-ci/typos"]
-version = "v1.42.0"
+version = "1.42.0"
 os = ["linux", "macos"]
 
 [tools."github:taiki-e/cargo-llvm-cov"]
 version = "0.6.23"
 os = ["linux", "macos"]
+
+# Unpacked binaries require bin to work
+[tools."github:biomejs/biome"]
+version_prefix = "@biomejs/biome@"
+version = "2.3.11"
+[tools."github:biomejs/biome".platforms]
+windows-x64 = { asset_pattern = "biome-win32-x64.exe", bin = "biome.exe" }
+windows-arm64 = { asset_pattern = "biome-win32-arm64.exe", bin = "biome.exe" }
+linux-x64 = { asset_pattern = "biome-linux-x64-musl", bin = "biome" }
+linux-arm64 = { asset_pattern = "biome-linux-arm64-musl", bin = "biome" }
+macos-x64 = { asset_pattern = "biome-darwin-x64", bin = "biome" }
+macos-arm64 = { asset_pattern = "biome-darwin-arm64", bin = "biome" }
 
 # Stick to 0.12.0 as 0.13.0 dropped support for macOS x86_64
 [tools."github:mozilla/sccache"]
@@ -105,23 +114,9 @@ hide = true
 env = { CI = "true", HUSKY = "1" }
 run = [
     "corepack enable pnpm",
-    "pnpm install --frozen-lockfile --prefer-offline",
-    { task = "setup:playwright" },
+    "pnpm install --frozen-lockfile",
 ]
 sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
-
-[tasks."setup:playwright"]
-description = "Install Playwright dependencies"
-hide = true
-usage = """
-arg "[env]" help="Environment name" env="MISE_ENV" default="native"
-"""
-run = """
-{%- if usage.env != "docker" -%}
-  playwright install-deps
-{%- endif -%}
-"""
-sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"]
 
 [tasks."setup:python"]
 description = "Setup Python environment with uv"
@@ -133,7 +128,7 @@ mise sync python --uv
 sources = ["pyproject.toml", "packages/**/pyproject.toml", "uv.lock"]
 
 [tasks.setup]
-description = "Install all tools and dependencies"
+description = "Install all dependencies"
 depends = ["setup:rust", "setup:pnpm", "setup:python"]
 
 # ============================================================================
@@ -378,7 +373,7 @@ sources = [
 [tasks."check:trivy-fs"]
 description = "Security scan filesystem with trivy"
 hide = true
-run = "trivy fs . --format table"
+run = "trivy fs . --include-dev-deps --format table"
 sources = ["*.{toml,lock,json,yaml,yml}", "packages/**/*.{toml,json}", "Dockerfile"]
 
 [tasks."fix:trivy-fs"]
@@ -386,9 +381,22 @@ description = "Scan filesystem with trivy (no auto-fix available)"
 hide = true
 run = [{ task = "check:trivy-fs" }]
 
+# --- pnpm-audit ---
+[tasks."check:pnpm-audit"]
+description = "Audit pnpm dependencies for security vulnerabilities"
+hide = true
+run = "pnpm audit --audit-level low"
+sources = ["pnpm-lock.yaml", "package.json", "pnpm-workspace.yaml"]
+
+[tasks."fix:pnpm-audit"]
+description = "Audit pnpm dependencies (no auto-fix available)"
+hide = true
+run = [{ task = "check:pnpm-audit" }]
+
 # --- Global check/fix tasks ---
 [tasks.check]
-description = "Run all checks"
+description = "Verify code quality"
+alias = "c"
 depends = [
     "check:ruff-lint",
     "check:ruff-format",
@@ -406,10 +414,12 @@ depends = [
     "check:zizmor",
     "check:semgrep",
     "check:trivy-fs",
+    "check:pnpm-audit",
 ]
 
 [tasks.fix]
-description = "Run all fixes"
+description = "Auto-fix code issues"
+alias = "f"
 depends = [
     "fix:ruff-lint",
     "fix:ruff-format",
@@ -427,6 +437,7 @@ depends = [
     "fix:zizmor",
     "fix:semgrep",
     "fix:trivy-fs",
+    "fix:pnpm-audit",
 ]
 
 # ============================================================================
@@ -460,39 +471,38 @@ docker system prune -af
 """
 
 [tasks.clean]
-description = "Run all cleanup tasks"
-hide = true
+description = "Free up disk space"
 depends = ["clean:pnpm", "clean:cargo", "clean:rustup", "clean:docker"]
 
 # ============================================================================
-# UPDATE CHECK TASKS - Check for available updates
+# UPDATE TASKS - Check for available updates
 # ============================================================================
 
-[tasks."check-updates:pnpm"]
+[tasks."update:pnpm"]
 description = "Check for pnpm updates"
 hide = true
-run = "(pnpm outdated --recursive --sort-by name || exit 0)"
+run = "pnpm outdated --recursive --sort-by name || exit 0"
 
-[tasks."check-updates:cargo"]
+[tasks."update:cargo"]
 description = "Check for cargo updates"
 hide = true
 run = "cargo update --breaking -Z unstable-options --dry-run"
 
-[tasks."check-updates:uv"]
+[tasks."update:uv"]
 description = "Check for uv/Python updates"
 hide = true
 run = "uv lock --upgrade --dry-run"
 
-[tasks.check-updates]
-description = "Check for all updates"
-hide = true
-depends = ["check-updates:pnpm", "check-updates:cargo", "check-updates:uv"]
+[tasks.update]
+description = "Show available updates"
+alias = "u"
+depends = ["update:pnpm", "update:cargo", "update:uv"]
 
 # ============================================================================
-# UPDATE TASKS - Apply updates
+# UPGRADE TASKS - Apply updates
 # ============================================================================
 
-[tasks."update:pnpm"]
+[tasks."upgrade:pnpm"]
 description = "Update pnpm dependencies"
 hide = true
 run = """
@@ -501,7 +511,7 @@ pnpm audit --fix
 pnpm install
 """
 
-[tasks."update:cargo"]
+[tasks."upgrade:cargo"]
 description = "Update cargo dependencies"
 hide = true
 run = """
@@ -510,15 +520,14 @@ cargo clean
 cargo update
 """
 
-[tasks."update:uv"]
+[tasks."upgrade:uv"]
 description = "Update uv/Python dependencies"
 hide = true
 run = "uv lock --upgrade"
 
-[tasks.update]
-description = "Run all updates"
-hide = true
-depends = ["update:pnpm", "update:cargo", "update:uv"]
+[tasks.upgrade]
+description = "Apply available updates"
+depends = ["upgrade:pnpm", "upgrade:cargo", "upgrade:uv"]
 
 # ============================================================================
 # DOCKER TASKS - Manage docker containers
@@ -557,7 +566,8 @@ run = """
 """
 
 [tasks.docker]
-description = "Enter docker dev environment"
+description = "Open Docker dev shell"
+alias = "d"
 usage = """
 arg "[mode]" help="Docker mode" default="proxied" { choices "transparent" "proxied" }
 """
@@ -604,6 +614,7 @@ sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build"]
 description = "Build all packages for CI"
+hide = true
 depends = ["ci-build:core", "ci-build:meta", "ci-build:node"]
 
 # --- CI Test tasks ---
@@ -630,6 +641,7 @@ sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test"]
 description = "Run all CI tests"
+hide = true
 depends = ["ci-test:core", "ci-test:meta", "ci-test:node"]
 
 # --- Build tasks ---
@@ -655,7 +667,8 @@ run = "pnpm --filter node-reqwest --if-present run build"
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.build]
-description = "Build all packages"
+description = "Compile all packages"
+alias = "b"
 depends = ["build:core", "build:meta", "build:node"]
 
 # --- Test tasks ---

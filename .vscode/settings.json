@@ -12,6 +12,9 @@
   "[toml]": {
     "editor.defaultFormatter": "tamasfe.even-better-toml"
   },
+  "evenBetterToml.schema.associations": {
+    "mise*.toml": "/Users/vadimpiven/Documents/Piven.TECH/mise/schema/mise.json"
+  },
   "[yaml]": {
     "editor.defaultFormatter": "redhat.vscode-yaml"
   },

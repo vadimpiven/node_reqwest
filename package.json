@@ -3,22 +3,35 @@
   "name": "workspace",
   "type": "module",
   "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
+  "engines": {
+    "node": ">=22.19.1",
+    "pnpm": ">=10.0.0"
+  },
   "devDependencies": {
     "@google/gemini-cli": "catalog:",
     "@playwright/test": "catalog:",
     "@taplo/cli": "catalog:",
     "@types/node": "catalog:",
     "husky": "catalog:",
+    "hono": "catalog:",
     "markdownlint-cli2": "catalog:",
     "fd-lock": "catalog:",
     "vitest": "catalog:"
   },
   "scripts": {
-    "prepare": "husky"
+    "preinstall": "npx only-allow pnpm && rustup show",
+    "postinstall": "node ./scripts/setup-playwright.ts",
+    "prepare": "husky",
+    "test": "pnpm --recursive --if-present run test"
   },
   "pnpm": {
     "overrides": {
-      "tar": "7.5.3"
+      "tar": "7.5.3",
+      "hono": "4.11.4",
+      "@hono/node-server>hono": "4.11.4",
+      "@hono/node-server": "1.19.9",
+      "diff": "8.0.3",
+      "undici": "7.18.2"
     },
     "onlyBuiltDependencies": [
       "electron",
