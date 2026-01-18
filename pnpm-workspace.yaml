@@ -32,4 +32,6 @@ catalog:
   vite-plugin-dts: ^4.5.4
   vitest: ^4.0.17
 
+minimumReleaseAge: 1440
+
 strictDepBuilds: true

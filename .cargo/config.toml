@@ -1,5 +1,4 @@
 [build]
-rustc-wrapper = "sccache"
 rustflags = ["-C", "force-frame-pointers=yes"]
 rustdocflags = ["-D", "warnings"]
 

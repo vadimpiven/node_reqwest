@@ -8,11 +8,14 @@ env_file = ".env"
 npm.package_manager = "pnpm"
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
+quiet = true
 
 [env]
 PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"
+RUSTC_WRAPPER = "sccache"
+MISE_ACTIVE = "1"
 
 # Cache directories
 CARGO_HOME = "{{ config_root }}/.cache/native/cargo"
@@ -107,23 +110,9 @@ hide = true
 env = { CI = "true", HUSKY = "1" }
 run = [
     "corepack enable pnpm",
-    "pnpm install --frozen-lockfile --prefer-offline",
-    { task = "setup:playwright" },
+    "pnpm install --frozen-lockfile",
 ]
 sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
-
-[tasks."setup:playwright"]
-description = "Install Playwright dependencies"
-hide = true
-usage = """
-arg "[env]" help="Environment name" env="MISE_ENV" default="native"
-"""
-run = """
-{%- if usage.env != "docker" -%}
-  playwright install-deps
-{%- endif -%}
-"""
-sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"]
 
 [tasks."setup:python"]
 description = "Setup Python environment with uv"
@@ -135,7 +124,7 @@ mise sync python --uv
 sources = ["pyproject.toml", "packages/**/pyproject.toml", "uv.lock"]
 
 [tasks.setup]
-description = "Install all tools and dependencies"
+description = "Install all dependencies"
 depends = ["setup:rust", "setup:pnpm", "setup:python"]
 
 # ============================================================================
@@ -402,7 +391,7 @@ run = [{ task = "check:pnpm-audit" }]
 
 # --- Global check/fix tasks ---
 [tasks.check]
-description = "Run all checks"
+description = "Verify code quality"
 alias = "c"
 depends = [
     "check:ruff-lint",
@@ -425,7 +414,7 @@ depends = [
 ]
 
 [tasks.fix]
-description = "Run all fixes"
+description = "Auto-fix code issues"
 alias = "f"
 depends = [
     "fix:ruff-lint",
@@ -478,7 +467,7 @@ docker system prune -af
 """
 
 [tasks.clean]
-description = "Run all cleanup tasks"
+description = "Free up disk space"
 depends = ["clean:pnpm", "clean:cargo", "clean:rustup", "clean:docker"]
 
 # ============================================================================
@@ -501,7 +490,7 @@ hide = true
 run = "uv lock --upgrade --dry-run"
 
 [tasks.update]
-description = "Check for all updates"
+description = "Show available updates"
 alias = "u"
 depends = ["update:pnpm", "update:cargo", "update:uv"]
 
@@ -533,7 +522,7 @@ hide = true
 run = "uv lock --upgrade"
 
 [tasks.upgrade]
-description = "Apply all updates"
+description = "Apply available updates"
 depends = ["upgrade:pnpm", "upgrade:cargo", "upgrade:uv"]
 
 # ============================================================================
@@ -573,7 +562,7 @@ run = """
 """
 
 [tasks.docker]
-description = "Enter docker dev environment"
+description = "Open Docker dev shell"
 alias = "d"
 usage = """
 arg "[mode]" help="Docker mode" default="proxied" { choices "transparent" "proxied" }
@@ -674,7 +663,7 @@ run = "pnpm --filter node-reqwest --if-present run build"
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.build]
-description = "Build all packages"
+description = "Compile all packages"
 alias = "b"
 depends = ["build:core", "build:meta", "build:node"]
 

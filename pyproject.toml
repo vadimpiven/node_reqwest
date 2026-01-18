@@ -4,6 +4,7 @@ version = "0.0.0"
 
 [tool.uv]
 required-version = ">=0.9.21"
+exclude-newer = "1 day"
 
 [tool.uv.workspace]
 members = ["packages/node/tests/mitmproxy"]

@@ -11,11 +11,19 @@ import { ensureError, runScript } from './helpers/run-script.ts';
 const packageDir: string = process.cwd();
 const projectRoot: string = join(dirname(fileURLToPath(import.meta.url)), '..');
 
+// Check if running under mise (with cargo-nextest and cargo-llvm-cov available)
+const miseActive: boolean = process.env.MISE_ACTIVE === '1';
+
 // Linux binaries require new GLIBC, and there is no support for Windows ARM64
 const skipCoverage: boolean = ['linux', 'win32'].includes(process.platform);
 
 runScript('Nextest execution', async () => {
   const args = process.argv.slice(2);
+
+  // If mise is not active, fall back to plain cargo test
+  if (!miseActive) {
+    return await runCommand('cargo', ['test', ...args]);
+  }
 
   // Ensure lock file exists
   const lockPath: string = join(projectRoot, 'target', '.test-nextest.lock');

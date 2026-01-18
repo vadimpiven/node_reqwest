@@ -2,9 +2,8 @@
 
 ## Development Basics
 
-- **Task Runner**: Use **mise** for all tasks. Use `mise run --list` to see available tasks.
+- **Task Runner**: Use **mise** for all tasks. Use `mise run` to see available tasks.
 - **Testing**: Use `mise run test` to run all checks (unit tests, doctests, and linter).
-- **Package Manager**: Use **pnpm** for Node.js dependencies. Do not use `npm` or `yarn`.
 
 ## Dependency Management
 
@@ -32,5 +31,5 @@ Keep all dependencies in the workspace root.
 Before submitting a pull request, ensure your code passes the project checks:
 
 ```bash
-mise run check
+mise run --force test
 ```
