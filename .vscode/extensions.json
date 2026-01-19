@@ -1,8 +1,10 @@
 {
   "recommendations": [
     "hverlin.mise-vscode",
+    "editorconfig.editorconfig",
     "natqe.reload",
     "streetsidesoftware.code-spell-checker",
+    "davidanson.vscode-markdownlint",
     "gruntfuggly.todo-tree",
     "fill-labs.dependi",
     "christian-kohler.npm-intellisense",
@@ -19,6 +21,8 @@
     "ms-python.python",
     "redhat.vscode-yaml",
     "timonwong.shellcheck",
+    "foxundermoon.shell-format",
+    "arahata.linter-actionlint",
     "ms-azuretools.vscode-containers",
     "docker.docker",
     "ms-vscode-remote.remote-containers"

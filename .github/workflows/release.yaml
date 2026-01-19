@@ -164,7 +164,7 @@ jobs:
         shell: "bash"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: "gh release download $GITHUB_REF_NAME --pattern package.tar.gz"
+        run: "gh release download \"$GITHUB_REF_NAME\" --pattern package.tar.gz"
       - name: "Publish to npmjs.org"
         shell: "bash"
         run: "npm publish package.tar.gz --access public --provenance"
@@ -189,6 +189,6 @@ jobs:
       - name: "Verify release installation"
         shell: "bash"
         run: |
-          cd $(mktemp -d)
+          cd "$(mktemp -d)"
           npm init -y
-          npm install node-reqwest@${GITHUB_REF_NAME#v}
+          npm install "node-reqwest@${GITHUB_REF_NAME#v}"
