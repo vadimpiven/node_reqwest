@@ -398,7 +398,7 @@ run = [{ task = "check:pnpm-audit" }]
 description = "Validate Renovate configuration"
 hide = true
 env = { LOG_LEVEL = "warn" }
-run = "pnpm exec renovate-config-validator .github/renovate.json"
+run = "pnpm exec renovate-config-validator --strict .github/renovate.json"
 sources = [".github/renovate.json"]
 
 [tasks."fix:renovate"]

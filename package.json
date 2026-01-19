@@ -36,9 +36,14 @@
     },
     "onlyBuiltDependencies": [
       "better-sqlite3",
+      "core-js-pure",
+      "dtrace-provider",
       "electron",
       "esbuild",
-      "re2"
+      "node-pty",
+      "protobufjs",
+      "re2",
+      "tree-sitter-bash"
     ]
   }
 }

@@ -4,8 +4,15 @@ packages:
   - packages/node
 
 allowBuilds:
+  better-sqlite3: true
+  core-js-pure: true
+  dtrace-provider: true
   electron: true
   esbuild: true
+  node-pty: true
+  protobufjs: true
+  re2: true
+  tree-sitter-bash: true
 
 blockExoticSubdeps: true
 
