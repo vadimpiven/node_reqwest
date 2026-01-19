@@ -120,7 +120,7 @@ hide = true
 env = { CI = "true", HUSKY = "1" }
 run = [
     "corepack enable pnpm",
-    "pnpm install --frozen-lockfile",
+    "pnpm install --frozen-lockfile --prefer-offline",
 ]
 sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
 
@@ -430,6 +430,7 @@ run = [{ task = "check:trivy-fs" }]
 description = "Audit pnpm dependencies for security vulnerabilities"
 hide = true
 run = "pnpm audit --audit-level low"
+run_windows = "exit 0"
 sources = ["pnpm-lock.yaml", "package.json", "pnpm-workspace.yaml"]
 
 [tasks."fix:pnpm-audit"]

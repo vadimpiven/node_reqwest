@@ -1,5 +1,6 @@
 {
-  "name": "Dev with Proxied Network",
+  // Extends the base devcontainer with mitm proxy
+  "name": "Proxied Network",
   "dockerComposeFile": ["../../docker-compose.yml", "../../docker-compose.proxied.yaml"],
   "service": "dev",
   "workspaceFolder": "/workspace",
