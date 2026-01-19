@@ -23,7 +23,7 @@
     },
     {
       "description": "Do not update sccache",
-      "matchPackageNames": ["mozilla/sccache", "sccache"],
+      "matchPackageNames": ["mozilla/sccache", "sccache", "github:mozilla/sccache"],
       "enabled": false
     },
     {
@@ -51,6 +51,7 @@
   "customManagers": [
     {
       "customType": "regex",
+      "description": "Update mise itself in .mise-version",
       "managerFilePatterns": ["/^\\.mise-version$/"],
       "matchStrings": ["(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "jdx/mise",
@@ -69,23 +70,15 @@
     },
     {
       "customType": "regex",
-      "description": "Update tools in mise.toml using github: shorthand",
-      "fileMatch": ["^mise\\.toml$"],
+      "description": "Update tools in mise.toml",
+      "managerFilePatterns": ["/^mise\\.toml$/"],
       "matchStrings": [
-        "\"github:(?<lookupName>[^/]+/[^\"@/\\s]+)\"\\s*=\\s*\"v?(?<currentValue>[^\"@\\s]+)\"",
-        "\\[tools\\.\"github:(?<lookupName>[^/]+/[^\"@/\\s]+)\"\\](?:(?:(?!version_prefix|version\\s*=)[\\s\\S])*?)version\\s*=\\s*\"v?(?<currentValue>[^\"@\\s]+)\""
+        "\"github:(?<packageName>[^/]+/[^\"@/\\s]+)\"\\s*=\\s*\"v?(?<currentValue>[^\"@\\s]+)\"",
+        "\\[tools\\.\"github:(?<packageName>[^/]+/[^\"@/\\s]+)\"\\][^[]*?(?:version_prefix\\s*=\\s*\"(?<versionPrefix>[^\"\\s]+)\"[^[]*?)?version\\s*=\\s*\"v?(?<currentValue>[^\"@\\s]+)\""
       ],
-      "datasourceTemplate": "github-releases"
-    },
-    {
-      "customType": "regex",
-      "description": "Update tools in mise.toml with version_prefix",
-      "fileMatch": ["^mise\\.toml$"],
-      "matchStrings": [
-        "\\[tools\\.\"github:(?<lookupName>[^/]+/[^\"@/\\s]+)\"\\](?:(?:(?!version\\s*=)[\\s\\S])*?)version_prefix\\s*=\\s*\"(?<versionPrefix>.*?)\"(?:(?:(?!version\\s*=)[\\s\\S])*?)version\\s*=\\s*\"(?<currentValue>.*?)\""
-      ],
+      "depNameTemplate": "github:{{packageName}}",
       "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^{{versionPrefix}}(?<version>.*)$"
+      "extractVersionTemplate": "^(?:{{versionPrefix}})?(?<version>.*)$"
     }
   ],
   "pinDigests": true,

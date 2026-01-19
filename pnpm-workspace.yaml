@@ -4,8 +4,15 @@ packages:
   - packages/node
 
 allowBuilds:
+  better-sqlite3: true
+  core-js-pure: true
+  dtrace-provider: true
   electron: true
   esbuild: true
+  node-pty: true
+  protobufjs: true
+  re2: true
+  tree-sitter-bash: true
 
 blockExoticSubdeps: true
 
@@ -23,6 +30,7 @@ catalog:
   husky: ^9.1.7
   markdownlint-cli2: ^0.20.0
   monocart-reporter: ^2.9.23
+  renovate: ^42.84.2
   rollup-plugin-node-externals: ^8.1.2
   rollup: ^4.55.1
   fd-lock: ^2.1.1

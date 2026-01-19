@@ -46,6 +46,8 @@ yq = "4.50.1"
 "github:aquasecurity/trivy" = "0.68.2"
 "github:google/yamlfmt" = "0.21.0"
 "github:koalaman/shellcheck" = "0.11.0"
+"github:zricethezav/gitleaks" = "8.27.2"
+"github:rhysd/actionlint" = "1.7.7"
 "github:astral-sh/uv" = "0.9.26"
 "github:cargo-bins/cargo-binstall" = "1.16.6"
 
@@ -73,6 +75,10 @@ os = ["linux", "macos"]
 
 [tools."github:taiki-e/cargo-llvm-cov"]
 version = "0.6.23"
+os = ["linux", "macos"]
+
+[tools.shfmt]
+version = "3.11.0"
 os = ["linux", "macos"]
 
 # Unpacked binaries require bin to work
@@ -321,6 +327,32 @@ description = "Check shell scripts (no auto-fix available)"
 hide = true
 run = [{ task = "check:shellcheck" }]
 
+# --- shfmt (shell formatting) ---
+[tasks."check:shfmt"]
+description = "Check shell script formatting"
+hide = true
+run = "shfmt -i 4 -d docker-entrypoint.sh"
+run_windows = "exit 0"
+sources = ["docker-entrypoint.sh"]
+
+[tasks."fix:shfmt"]
+description = "Format shell scripts with shfmt"
+hide = true
+run = "shfmt -i 4 -w docker-entrypoint.sh"
+run_windows = "exit 0"
+sources = ["docker-entrypoint.sh"]
+
+# --- gitleaks (secret detection) ---
+[tasks."check:gitleaks"]
+description = "Scan for secrets with gitleaks"
+hide = true
+run = "gitleaks detect --no-banner"
+
+[tasks."fix:gitleaks"]
+description = "Scan for secrets (no auto-fix available)"
+hide = true
+run = [{ task = "check:gitleaks" }]
+
 # --- hadolint (Dockerfile) ---
 [tasks."check:hadolint"]
 description = "Check Dockerfile with hadolint"
@@ -347,6 +379,18 @@ sources = [".github/**/*.{yaml,yml}"]
 description = "Check GitHub Actions (no auto-fix available)"
 hide = true
 run = [{ task = "check:zizmor" }]
+
+# --- actionlint (GitHub Actions syntax) ---
+[tasks."check:actionlint"]
+description = "Lint GitHub Actions workflows"
+hide = true
+run = "actionlint"
+sources = [".github/**/*.{yaml,yml}"]
+
+[tasks."fix:actionlint"]
+description = "Lint GitHub Actions (no auto-fix available)"
+hide = true
+run = [{ task = "check:actionlint" }]
 
 # --- semgrep ---
 [tasks."check:semgrep"]
@@ -393,6 +437,19 @@ description = "Audit pnpm dependencies (no auto-fix available)"
 hide = true
 run = [{ task = "check:pnpm-audit" }]
 
+# --- renovate ---
+[tasks."check:renovate"]
+description = "Validate Renovate configuration"
+hide = true
+env = { LOG_LEVEL = "warn" }
+run = "pnpm exec renovate-config-validator --strict .github/renovate.json"
+sources = [".github/renovate.json"]
+
+[tasks."fix:renovate"]
+description = "Validate Renovate configuration (no auto-fix available)"
+hide = true
+run = [{ task = "check:renovate" }]
+
 # --- Global check/fix tasks ---
 [tasks.check]
 description = "Verify code quality"
@@ -410,11 +467,15 @@ depends = [
     "check:cargo-deny",
     "check:typos",
     "check:shellcheck",
+    "check:shfmt",
+    "check:gitleaks",
     "check:hadolint",
     "check:zizmor",
+    "check:actionlint",
     "check:semgrep",
     "check:trivy-fs",
     "check:pnpm-audit",
+    "check:renovate",
 ]
 
 [tasks.fix]
@@ -433,11 +494,15 @@ depends = [
     "fix:cargo-deny",
     "fix:typos",
     "fix:shellcheck",
+    "fix:shfmt",
+    "fix:gitleaks",
     "fix:hadolint",
     "fix:zizmor",
+    "fix:actionlint",
     "fix:semgrep",
     "fix:trivy-fs",
     "fix:pnpm-audit",
+    "fix:renovate",
 ]
 
 # ============================================================================

@@ -19,7 +19,12 @@
     "editor.defaultFormatter": "redhat.vscode-yaml"
   },
   "[shellscript]": {
-    "editor.defaultFormatter": "timonwong.shellcheck"
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[markdown]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.markdownlint": "explicit"
+    }
   },
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
