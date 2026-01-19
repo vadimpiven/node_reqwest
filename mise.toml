@@ -393,6 +393,19 @@ description = "Audit pnpm dependencies (no auto-fix available)"
 hide = true
 run = [{ task = "check:pnpm-audit" }]
 
+# --- renovate ---
+[tasks."check:renovate"]
+description = "Validate Renovate configuration"
+hide = true
+env = { LOG_LEVEL = "warn" }
+run = "pnpm exec renovate-config-validator .github/renovate.json"
+sources = [".github/renovate.json"]
+
+[tasks."fix:renovate"]
+description = "Validate Renovate configuration (no auto-fix available)"
+hide = true
+run = [{ task = "check:renovate" }]
+
 # --- Global check/fix tasks ---
 [tasks.check]
 description = "Verify code quality"
@@ -415,6 +428,7 @@ depends = [
     "check:semgrep",
     "check:trivy-fs",
     "check:pnpm-audit",
+    "check:renovate",
 ]
 
 [tasks.fix]
@@ -438,6 +452,7 @@ depends = [
     "fix:semgrep",
     "fix:trivy-fs",
     "fix:pnpm-audit",
+    "fix:renovate",
 ]
 
 # ============================================================================
