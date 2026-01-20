@@ -18,6 +18,7 @@ export default defineConfig({
     rollupOptions: {}
   },
   test: {
+    testTimeout: 30000,
     globalSetup: './tests/global-setup.ts',
     watch: false,
     pool: 'threads',

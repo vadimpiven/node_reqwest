@@ -25,6 +25,7 @@
     "arahata.linter-actionlint",
     "ms-azuretools.vscode-containers",
     "docker.docker",
-    "ms-vscode-remote.remote-containers"
+    "ms-vscode-remote.remote-containers",
+    "ms-playwright.playwright"
   ]
 }

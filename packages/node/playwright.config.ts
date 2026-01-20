@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
+  timeout: 60000,
   globalSetup: './tests/global-setup.ts',
   testDir: './tests/playwright',
   reporter: [
