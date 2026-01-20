@@ -39,7 +39,7 @@ runs:
       if: "runner.os == 'Windows'"
       uses: "ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756" # v1.13.0
     - name: "Run mise install"
-      uses: "jdx/mise-action@c53b9236f0b3370f31520f8b142f141256d839c6" # v3.6.0
+      uses: "jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8" # v3.6.1
       with:
         version: "${{ inputs.mise-version }}"
         install: true
