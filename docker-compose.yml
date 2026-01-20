@@ -14,7 +14,8 @@ services:
     volumes:
       - .:/workspace:cached
     env_file:
-      - .env
+      - path: .env
+        required: false
     cap_add:
       - SYS_PTRACE
     security_opt:
