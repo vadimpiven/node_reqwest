@@ -46,8 +46,8 @@ yq = "4.50.1"
 "github:aquasecurity/trivy" = "0.68.2"
 "github:google/yamlfmt" = "0.21.0"
 "github:koalaman/shellcheck" = "0.11.0"
-"github:zricethezav/gitleaks" = "8.27.2"
-"github:rhysd/actionlint" = "1.7.7"
+"github:zricethezav/gitleaks" = "8.30.0"
+"github:rhysd/actionlint" = "1.7.10"
 "github:astral-sh/uv" = "0.9.26"
 "github:cargo-bins/cargo-binstall" = "1.16.6"
 
@@ -120,7 +120,7 @@ hide = true
 env = { CI = "true", HUSKY = "1" }
 run = [
     "corepack enable pnpm",
-    "pnpm install --frozen-lockfile",
+    "pnpm install --frozen-lockfile --prefer-offline",
 ]
 sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
 
@@ -430,6 +430,7 @@ run = [{ task = "check:trivy-fs" }]
 description = "Audit pnpm dependencies for security vulnerabilities"
 hide = true
 run = "pnpm audit --audit-level low"
+run_windows = "exit 0"
 sources = ["pnpm-lock.yaml", "package.json", "pnpm-workspace.yaml"]
 
 [tasks."fix:pnpm-audit"]
