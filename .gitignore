@@ -4,6 +4,7 @@
 !.env.example
 docker-compose.override.yml
 mise.local.toml
+mise.local.lock
 .DS_Store
 lcov.info
 package.tar.gz

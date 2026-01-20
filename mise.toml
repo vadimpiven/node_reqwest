@@ -10,6 +10,9 @@ npm.package_manager = "pnpm"
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
 quiet = true
+experimental = true
+lockfile = true
+# locked = true
 
 [env]
 _.file = ".env"
@@ -504,7 +507,14 @@ depends = [
     "fix:trivy-fs",
     "fix:pnpm-audit",
     "fix:renovate",
+    "fix:lock",
 ]
+
+[tasks."fix:lock"]
+description = "Update mise lockfile for all platforms"
+hide = true
+run = "mise lock"
+sources = ["mise.toml"]
 
 # ============================================================================
 # CLEAN TASKS - Cleanup caches and build artifacts

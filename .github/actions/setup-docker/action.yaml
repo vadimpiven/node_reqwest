@@ -26,7 +26,7 @@ runs:
       uses: "actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7" # v5.0.2
       with:
         path: ".cache/docker"
-        key: "${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml', 'Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
+        key: "${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock', 'Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
         restore-keys: |
           ${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-
     - name: "Login to GitHub Container Registry"
@@ -71,8 +71,3 @@ runs:
           docker-compose.yml
           docker-compose.proxied.yaml
         up-flags: "--no-build --wait"
-    - name: "Run mise install"
-      uses: "./.github/actions/shell-docker"
-      with:
-        docker-service: "${{ inputs.docker-service }}"
-        run: "mise install"

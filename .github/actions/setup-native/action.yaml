@@ -19,10 +19,8 @@ runs:
     - name: "Restore native caches"
       uses: "actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7" # v5.0.2
       with:
-        path: |
-          .cache/native
-          ~/.local/share/mise
-        key: "${{ inputs.cache-key }}-native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml', 'Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
+        path: ".cache/native"
+        key: "${{ inputs.cache-key }}-native-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
         restore-keys: |
           ${{ inputs.cache-key }}-native-${{ runner.os }}-${{ runner.arch }}-
     - name: "Update apt index"
@@ -42,7 +40,5 @@ runs:
       uses: "jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8" # v3.6.1
       with:
         version: "${{ inputs.mise-version }}"
-        install: true
-        cache: false
-      env:
-        GITHUB_TOKEN: "${{ inputs.github-token }}"
+        cache_key_prefix: "${{ inputs.cache-key }}-mise"
+        github_token: "${{ inputs.github-token }}"
