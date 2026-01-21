@@ -27,7 +27,7 @@
   },
   "pnpm": {
     "overrides": {
-      "tar": "7.5.3",
+      "tar": "7.5.4",
       "hono": "4.11.4",
       "@hono/node-server>hono": "4.11.4",
       "@hono/node-server": "1.19.9",
