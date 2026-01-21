@@ -74,6 +74,7 @@ grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
 
 mise run docker # Build, run and attach to the container
 
+mise install # Install build tools (inside the container)
 mise test # Run the tests (inside the container)
 
 exit # Exit and automatically stop the container

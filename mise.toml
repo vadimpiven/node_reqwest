@@ -6,18 +6,16 @@
 redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 
 [settings]
+env_file = ".env"
 npm.package_manager = "pnpm"
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
 quiet = true
 experimental = true
 lockfile = true
-# locked = true
+locked = true
 
 [env]
-_.file = ".env"
-GITHUB_TOKEN = { required = "Set GITHUB_TOKEN to avoid GitHub API rate limiting" }
-
 PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"
@@ -40,19 +38,18 @@ _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
 node = "24.13.0"
-
 rust.version = "nightly-2026-01-15"
 
-jq = "1.8.1"
-yq = "4.50.1"
-"github:BurntSushi/ripgrep" = "15.1.0"
-"github:aquasecurity/trivy" = "0.68.2"
-"github:google/yamlfmt" = "0.21.0"
-"github:koalaman/shellcheck" = "0.11.0"
-"github:zricethezav/gitleaks" = "8.30.0"
-"github:rhysd/actionlint" = "1.7.10"
-"github:astral-sh/uv" = "0.9.26"
-"github:cargo-bins/cargo-binstall" = "1.16.7"
+"aqua:jqlang/jq" = "1.8.1"
+"aqua:mikefarah/yq" = "4.50.1"
+"aqua:BurntSushi/ripgrep" = "15.1.0"
+"aqua:aquasecurity/trivy" = "0.68.2"
+"aqua:google/yamlfmt" = "0.21.0"
+"aqua:koalaman/shellcheck" = "0.11.0"
+"aqua:gitleaks/gitleaks" = "8.30.0"
+"aqua:rhysd/actionlint" = "1.7.10"
+"aqua:astral-sh/uv" = "0.9.26"
+"aqua:cargo-bins/cargo-binstall" = "1.16.7"
 
 # Tools with non-standard version prefix
 [tools."github:nextest-rs/nextest"]
@@ -64,7 +61,7 @@ version_prefix = "samply-v"
 version = "0.13.1"
 
 # Tools with no Windows ARM64 binary available
-[tools."github:hadolint/hadolint"]
+[tools."aqua:hadolint/hadolint"]
 version = "2.14.0"
 os = ["linux", "macos"]
 
@@ -72,7 +69,7 @@ os = ["linux", "macos"]
 version = "0.19.0"
 os = ["linux", "macos"]
 
-[tools."github:crate-ci/typos"]
+[tools."aqua:crate-ci/typos"]
 version = "1.42.1"
 os = ["linux", "macos"]
 
@@ -80,7 +77,7 @@ os = ["linux", "macos"]
 version = "0.6.23"
 os = ["linux", "macos"]
 
-[tools.shfmt]
+[tools."aqua:mvdan/sh"]
 version = "3.11.0"
 os = ["linux", "macos"]
 
@@ -446,6 +443,7 @@ run = [{ task = "check:pnpm-audit" }]
 description = "Validate Renovate configuration"
 hide = true
 env = { LOG_LEVEL = "warn" }
+depends = ["setup:pnpm"]
 run = "pnpm exec renovate-config-validator --strict .github/renovate.json"
 sources = [".github/renovate.json"]
 
@@ -513,7 +511,9 @@ depends = [
 [tasks."fix:lock"]
 description = "Update mise lockfile for all platforms"
 hide = true
-run = "mise lock"
+run = """
+mise lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64,windows-x64,windows-arm64
+"""
 sources = ["mise.toml"]
 
 # ============================================================================
