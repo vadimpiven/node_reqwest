@@ -131,16 +131,16 @@ backend = "aqua:mikefarah/yq"
 "platforms.windows-x64" = { checksum = "sha256:85c8c1b035c3e7cd10c503f1f00334b6edae18c9fd6b64a06b98d82449e20bf8", url = "https://github.com/mikefarah/yq/releases/download/v4.50.1/yq_windows_amd64.exe"}
 
 [[tools."aqua:mvdan/sh"]]
-version = "3.11.0"
+version = "3.12.0"
 backend = "aqua:mvdan/sh"
-"platforms.linux-arm64" = { checksum = "sha256:b3976121710fd4b12bf641b0a7fb2686da598fb0da9f148c641b61b54cfa3407", url = "https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_linux_arm64"}
-"platforms.linux-arm64-musl" = { checksum = "sha256:b3976121710fd4b12bf641b0a7fb2686da598fb0da9f148c641b61b54cfa3407", url = "https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_linux_arm64"}
-"platforms.linux-x64" = { checksum = "sha256:1904ec6bac715c1d05cd7f6612eec8f67a625c3749cb327e5bfb4127d09035ff", url = "https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_linux_amd64"}
-"platforms.linux-x64-musl" = { checksum = "sha256:1904ec6bac715c1d05cd7f6612eec8f67a625c3749cb327e5bfb4127d09035ff", url = "https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_linux_amd64"}
-"platforms.macos-arm64" = { checksum = "sha256:af206d234dff5d05d9ac355529b2b33a7a78e13fab9b59db777746aab3e72530", url = "https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_darwin_arm64"}
-"platforms.macos-x64" = { checksum = "sha256:810a76cb7c78351e021c8025f344b12149d8426ce51609a179af68109ed5698e", url = "https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_darwin_amd64"}
-"platforms.windows-arm64" = { checksum = "sha256:d11a0880588304496065110cb67ce2375cfcd5433e76dec505ce1fa21adf47cc", url = "https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_windows_amd64.exe"}
-"platforms.windows-x64" = { checksum = "sha256:d11a0880588304496065110cb67ce2375cfcd5433e76dec505ce1fa21adf47cc", url = "https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_windows_amd64.exe"}
+"platforms.linux-arm64" = { checksum = "sha256:5f3fe3fa6a9f766e6a182ba79a94bef8afedafc57db0b1ad32b0f67fae971ba4", url = "https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_linux_arm64"}
+"platforms.linux-arm64-musl" = { checksum = "sha256:5f3fe3fa6a9f766e6a182ba79a94bef8afedafc57db0b1ad32b0f67fae971ba4", url = "https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_linux_arm64"}
+"platforms.linux-x64" = { checksum = "sha256:d9fbb2a9c33d13f47e7618cf362a914d029d02a6df124064fff04fd688a745ea", url = "https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_linux_amd64"}
+"platforms.linux-x64-musl" = { checksum = "sha256:d9fbb2a9c33d13f47e7618cf362a914d029d02a6df124064fff04fd688a745ea", url = "https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_linux_amd64"}
+"platforms.macos-arm64" = { checksum = "sha256:d903802e0ce3ecbc82b98512f55ba370b0d37a93f3f78de394f5b657052b33dd", url = "https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_darwin_arm64"}
+"platforms.macos-x64" = { checksum = "sha256:c31548693de6584e6164b7ed5fbb7b4a083f2d937ca94b4e0ddf59aa461a85e4", url = "https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_darwin_amd64"}
+"platforms.windows-arm64" = { checksum = "sha256:c8bda517ba1c640ce4a715c0fa665439ddbe4357ba5e9b77b0e51e70e2b9c94b", url = "https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_windows_amd64.exe"}
+"platforms.windows-x64" = { checksum = "sha256:c8bda517ba1c640ce4a715c0fa665439ddbe4357ba5e9b77b0e51e70e2b9c94b", url = "https://github.com/mvdan/sh/releases/download/v3.12.0/shfmt_v3.12.0_windows_amd64.exe"}
 
 [[tools."aqua:rhysd/actionlint"]]
 version = "1.7.10"
@@ -255,8 +255,4 @@ backend = "npm:oxlint"
 
 [[tools.rust]]
 version = "nightly-2026-01-15"
-backend = "core:rust"
-
-[[tools.rust]]
-version = "nightly-2026-01-10"
 backend = "core:rust"

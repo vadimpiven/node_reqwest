@@ -59,9 +59,11 @@
     },
     {
       "customType": "regex",
-      "description": "Update Rust nightly toolchain in rust-toolchain.toml",
-      "managerFilePatterns": ["/^rust-toolchain\\.toml$/"],
-      "matchStrings": ["channel\\s*=\\s*\"(?<currentValue>nightly-\\d{4}-\\d{2}-\\d{2})\""],
+      "description": "Update Rust nightly toolchain",
+      "managerFilePatterns": ["/^rust-toolchain\\.toml$/", "/^mise\\.toml$/"],
+      "matchStrings": [
+        "(?:channel|rust\\.version)\\s*=\\s*\"(?<currentValue>nightly-\\d{4}-\\d{2}-\\d{2})\""
+      ],
       "depNameTemplate": "rustlang/rust",
       "datasourceTemplate": "docker",
       "versioningTemplate": "regex:^(?<compatibility>nightly-)(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})$"
