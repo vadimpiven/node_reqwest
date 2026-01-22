@@ -14,7 +14,6 @@ rust.rustup_home = ".cache/native/rustup"
 quiet = true
 experimental = true
 lockfile = true
-locked = true
 
 [env]
 PYTHONUTF8 = "1"
@@ -39,7 +38,7 @@ _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
 node = "24.13.0"
-rust = "latest"
+rust.version = "nightly-2026-01-15"
 
 "aqua:jqlang/jq" = "1.8.1"
 "aqua:mikefarah/yq" = "4.50.1"
@@ -79,7 +78,7 @@ version = "0.6.23"
 os = ["linux", "macos"]
 
 [tools."aqua:mvdan/sh"]
-version = "3.11.0"
+version = "3.12.0"
 os = ["linux", "macos"]
 
 # Stick to 0.12.0 as 0.13.0 dropped support for macOS x86_64
