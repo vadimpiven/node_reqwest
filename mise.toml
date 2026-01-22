@@ -8,6 +8,7 @@ redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 [settings]
 env_file = ".env"
 npm.package_manager = "pnpm"
+idiomatic_version_file_enable_tools = ["rust"]
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
 quiet = true
@@ -38,7 +39,7 @@ _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
 node = "24.13.0"
-rust.version = "nightly-2026-01-15"
+rust = "latest"
 
 "aqua:jqlang/jq" = "1.8.1"
 "aqua:mikefarah/yq" = "4.50.1"
@@ -193,14 +194,22 @@ description = "Check JS/TS/JSON with oxfmt"
 hide = true
 depends = ["setup:pnpm"]
 run = "pnpm exec oxfmt --check ."
-sources = ["*.{json,jsonc}", "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}"]
+sources = [
+    "*.{json,jsonc}",
+    "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}",
+    ".oxfmtrc.json",
+]
 
 [tasks."fix:oxfmt"]
 description = "Format JS/TS/JSON with oxfmt"
 hide = true
 depends = ["setup:pnpm"]
 run = "pnpm exec oxfmt --write ."
-sources = ["*.{json,jsonc}", "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}"]
+sources = [
+    "*.{json,jsonc}",
+    "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}",
+    ".oxfmtrc.json",
+]
 
 # --- taplo (TOML) ---
 [tasks."check:taplo"]

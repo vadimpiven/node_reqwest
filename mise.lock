@@ -256,3 +256,7 @@ backend = "npm:oxlint"
 [[tools.rust]]
 version = "nightly-2026-01-15"
 backend = "core:rust"
+
+[[tools.rust]]
+version = "nightly-2026-01-10"
+backend = "core:rust"
