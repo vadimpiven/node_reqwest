@@ -1,9 +1,6 @@
 name: "Setup (Docker)"
 description: "Build container image locally, warm registry cache"
 inputs:
-  env:
-    description: "Environment variables in JSON format"
-    required: true
   cache-key:
     description: "Cache key prefix"
     required: true
@@ -55,13 +52,6 @@ runs:
         build-args: |
           USER_UID=${{ steps.ids.outputs.uid }}
           USER_GID=${{ steps.ids.outputs.gid }}
-    - name: "Set environment variables"
-      shell: "bash"
-      env:
-        ENV: "${{ inputs.env }}"
-      run: |
-        printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> .env
-        printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> "$GITHUB_ENV"
     - name: "Start persistent container"
       uses: "hoverkraft-tech/compose-action@05da55b2bb8a5a759d1c4732095044bd9018c050" # v2.4.3
       env:

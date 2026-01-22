@@ -1,9 +1,6 @@
 name: "Setup (Native)"
 description: "Sets up the development environment with Node.js and Rust"
 inputs:
-  env:
-    description: "Additional environment variables in JSON format"
-    required: true
   cache-key:
     description: "Cache key prefix"
     required: true
@@ -27,12 +24,6 @@ runs:
       if: "runner.os == 'Linux'"
       shell: "bash"
       run: "sudo apt-get update"
-    - name: "Set environment variables"
-      shell: "bash"
-      env:
-        ENV: "${{ inputs.env }}"
-      run: | # zizmor: ignore[github-env]
-        printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> "$GITHUB_ENV"
     - name: "Setup MSVC developer command prompt"
       if: "runner.os == 'Windows'"
       uses: "ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756" # v1.13.0
