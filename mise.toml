@@ -81,18 +81,6 @@ os = ["linux", "macos"]
 version = "3.11.0"
 os = ["linux", "macos"]
 
-# Unpacked binaries require bin to work
-[tools."github:biomejs/biome"]
-version_prefix = "@biomejs/biome@"
-version = "2.3.11"
-[tools."github:biomejs/biome".platforms]
-windows-x64 = { asset_pattern = "biome-win32-x64.exe", bin = "biome.exe" }
-windows-arm64 = { asset_pattern = "biome-win32-arm64.exe", bin = "biome.exe" }
-linux-x64 = { asset_pattern = "biome-linux-x64-musl", bin = "biome" }
-linux-arm64 = { asset_pattern = "biome-linux-arm64-musl", bin = "biome" }
-macos-x64 = { asset_pattern = "biome-darwin-x64", bin = "biome" }
-macos-arm64 = { asset_pattern = "biome-darwin-arm64", bin = "biome" }
-
 # Stick to 0.12.0 as 0.13.0 dropped support for macOS x86_64
 [tools."github:mozilla/sccache"]
 version = "0.12.0"
@@ -118,10 +106,7 @@ sources = ["rust-toolchain.toml"]
 description = "Install pnpm dependencies"
 hide = true
 env = { CI = "true", HUSKY = "1" }
-run = [
-    "corepack enable pnpm",
-    "pnpm install --frozen-lockfile --prefer-offline",
-]
+run = ["corepack enable pnpm", "pnpm install --frozen-lockfile --prefer-offline"]
 sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
 
 [tasks."setup:python"]
@@ -187,24 +172,35 @@ run = "uv run --no-sync pyrefly check --remove-unused-ignores --all"
 run_windows = "exit 0"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
-# --- biome (JS/TS/JSON) ---
-[tasks."check:biome"]
-description = "Check JS/TS/JSON with Biome"
+# --- oxlint (JS/TS) ---
+[tasks."check:oxlint"]
+description = "Check JS/TS with oxlint"
 hide = true
-run = "biome check . --log-level warn"
-sources = [
-    "*.{json,jsonc}",
-    "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}",
-]
+depends = ["setup:pnpm"]
+run = "pnpm exec oxlint . --deny-warnings"
+sources = ["{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs}"]
 
-[tasks."fix:biome"]
-description = "Fix JS/TS/JSON with Biome"
+[tasks."fix:oxlint"]
+description = "Fix JS/TS with oxlint"
 hide = true
-run = "biome check . --log-level warn --fix"
-sources = [
-    "*.{json,jsonc}",
-    "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}",
-]
+depends = ["setup:pnpm"]
+run = "pnpm exec oxlint . --fix"
+sources = ["{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs}"]
+
+# --- oxfmt (JS/TS/JSON) ---
+[tasks."check:oxfmt"]
+description = "Check JS/TS/JSON with oxfmt"
+hide = true
+depends = ["setup:pnpm"]
+run = "pnpm exec oxfmt --check ."
+sources = ["*.{json,jsonc}", "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}"]
+
+[tasks."fix:oxfmt"]
+description = "Format JS/TS/JSON with oxfmt"
+hide = true
+depends = ["setup:pnpm"]
+run = "pnpm exec oxfmt --write ."
+sources = ["*.{json,jsonc}", "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}"]
 
 # --- taplo (TOML) ---
 [tasks."check:taplo"]
@@ -399,9 +395,7 @@ hide = true
 depends = ["setup:python"]
 run = "uv run --no-sync semgrep scan --error -q"
 run_windows = "exit 0"
-sources = [
-    "{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}",
-]
+sources = ["{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}"]
 
 [tasks."fix:semgrep"]
 description = "Fix semgrep issues"
@@ -409,14 +403,13 @@ hide = true
 depends = ["setup:python"]
 run = "uv run --no-sync semgrep scan --error -q --autofix"
 run_windows = "exit 0"
-sources = [
-    "{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}",
-]
+sources = ["{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}"]
 
 # --- trivy (filesystem) ---
 [tasks."check:trivy-fs"]
 description = "Security scan filesystem with trivy"
 hide = true
+depends = ["setup:pnpm"]
 run = "trivy fs . --include-dev-deps --format table"
 sources = ["*.{toml,lock,json,yaml,yml}", "packages/**/*.{toml,json}", "Dockerfile"]
 
@@ -460,7 +453,8 @@ depends = [
     "check:ruff-lint",
     "check:ruff-format",
     "check:pyrefly",
-    "check:biome",
+    "check:oxlint",
+    "check:oxfmt",
     "check:taplo",
     "check:markdownlint",
     "check:yamlfmt",
@@ -487,7 +481,8 @@ depends = [
     "fix:ruff-lint",
     "fix:ruff-format",
     "fix:pyrefly",
-    "fix:biome",
+    "fix:oxlint",
+    "fix:oxfmt",
     "fix:taplo",
     "fix:markdownlint",
     "fix:yamlfmt",
@@ -647,9 +642,7 @@ alias = "d"
 usage = """
 arg "[mode]" help="Docker mode" default="proxied" { choices "transparent" "proxied" }
 """
-run = [
-    "mise run docker:up {{usage.mode}}",
-    """
+run = ["mise run docker:up {{usage.mode}}", """
   {%- if env.COMPOSE_FILE -%}
     docker compose exec dev bash
   {%- elif usage.mode == "transparent" -%}
@@ -657,9 +650,7 @@ run = [
   {%- else -%}
     docker compose -f docker-compose.yml -f docker-compose.proxied.yaml exec dev bash
   {%- endif -%}
-  """,
-    "mise run docker:down {{usage.mode}}",
-]
+  """, "mise run docker:down {{usage.mode}}"]
 raw = true
 
 # ============================================================================

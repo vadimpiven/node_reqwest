@@ -186,220 +186,214 @@ pub use error::CoreError;
 ```typescript
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-const kUndiciError = Symbol.for('undici.error.UND_ERR');
+const kUndiciError = Symbol.for("undici.error.UND_ERR");
 
 export interface CoreErrorInfo {
-  code: string;
-  name: string;
-  message: string;
-  statusCode?: number;
+    code: string;
+    name: string;
+    message: string;
+    statusCode?: number;
 }
 
 export class UndiciError extends Error {
-  code: string;
+    code: string;
 
-  constructor(message: string, code: string) {
-    super(message);
-    this.name = 'UndiciError';
-    this.code = code;
-  }
+    constructor(message: string, code: string) {
+        super(message);
+        this.name = "UndiciError";
+        this.code = code;
+    }
 
-  static [Symbol.hasInstance](instance: unknown): boolean {
-    return (instance as Record<symbol, boolean>)?.[kUndiciError] === true;
-  }
+    static [Symbol.hasInstance](instance: unknown): boolean {
+        return (instance as Record<symbol, boolean>)?.[kUndiciError] === true;
+    }
 
-  get [kUndiciError](): boolean {
-    return true;
-  }
+    get [kUndiciError](): boolean {
+        return true;
+    }
 }
 
 // Macro-like pattern for error classes
 function defineError(code: string, defaultMessage: string, className: string) {
-  const kSymbol = Symbol.for(`undici.error.${code}`);
+    const kSymbol = Symbol.for(`undici.error.${code}`);
 
-  return class extends UndiciError {
-    constructor(message = defaultMessage) {
-      super(message, code);
-      this.name = className;
-    }
+    return class extends UndiciError {
+        constructor(message = defaultMessage) {
+            super(message, code);
+            this.name = className;
+        }
 
-    static [Symbol.hasInstance](instance: unknown): boolean {
-      return (instance as Record<symbol, boolean>)?.[kSymbol] === true;
-    }
+        static [Symbol.hasInstance](instance: unknown): boolean {
+            return (instance as Record<symbol, boolean>)?.[kSymbol] === true;
+        }
 
-    get [kSymbol](): boolean {
-      return true;
-    }
-  };
+        get [kSymbol](): boolean {
+            return true;
+        }
+    };
 }
 
-export const RequestAbortedError = defineError(
-  'UND_ERR_ABORTED',
-  'Request aborted',
-  'AbortError'
-);
+export const RequestAbortedError = defineError("UND_ERR_ABORTED", "Request aborted", "AbortError");
 
 export const ConnectTimeoutError = defineError(
-  'UND_ERR_CONNECT_TIMEOUT',
-  'Connect timeout',
-  'ConnectTimeoutError'
+    "UND_ERR_CONNECT_TIMEOUT",
+    "Connect timeout",
+    "ConnectTimeoutError",
 );
 
 export const HeadersTimeoutError = defineError(
-  'UND_ERR_HEADERS_TIMEOUT',
-  'Headers timeout',
-  'HeadersTimeoutError'
+    "UND_ERR_HEADERS_TIMEOUT",
+    "Headers timeout",
+    "HeadersTimeoutError",
 );
 
 export const BodyTimeoutError = defineError(
-  'UND_ERR_BODY_TIMEOUT',
-  'Body timeout',
-  'BodyTimeoutError'
+    "UND_ERR_BODY_TIMEOUT",
+    "Body timeout",
+    "BodyTimeoutError",
 );
 
-export const SocketError = defineError('UND_ERR_SOCKET', 'Socket error', 'SocketError');
+export const SocketError = defineError("UND_ERR_SOCKET", "Socket error", "SocketError");
 
 export const HeadersOverflowError = defineError(
-  'UND_ERR_HEADERS_OVERFLOW',
-  'Headers overflow',
-  'HeadersOverflowError'
+    "UND_ERR_HEADERS_OVERFLOW",
+    "Headers overflow",
+    "HeadersOverflowError",
 );
 
 export const InvalidArgumentError = defineError(
-  'UND_ERR_INVALID_ARG',
-  'Invalid argument',
-  'InvalidArgumentError'
+    "UND_ERR_INVALID_ARG",
+    "Invalid argument",
+    "InvalidArgumentError",
 );
 
 export const ClientDestroyedError = defineError(
-  'UND_ERR_DESTROYED',
-  'The client is destroyed',
-  'ClientDestroyedError'
+    "UND_ERR_DESTROYED",
+    "The client is destroyed",
+    "ClientDestroyedError",
 );
 
 export const ClientClosedError = defineError(
-  'UND_ERR_CLOSED',
-  'The client is closed',
-  'ClientClosedError'
+    "UND_ERR_CLOSED",
+    "The client is closed",
+    "ClientClosedError",
 );
 
 export const NotSupportedError = defineError(
-  'UND_ERR_NOT_SUPPORTED',
-  'Not supported',
-  'NotSupportedError'
+    "UND_ERR_NOT_SUPPORTED",
+    "Not supported",
+    "NotSupportedError",
 );
 
-
-
-const kResponseError = Symbol.for('undici.error.UND_ERR_RESPONSE');
+const kResponseError = Symbol.for("undici.error.UND_ERR_RESPONSE");
 
 export class ResponseError extends UndiciError {
-  statusCode: number;
+    statusCode: number;
 
-  constructor(message: string, statusCode: number) {
-    super(message, 'UND_ERR_RESPONSE');
-    this.name = 'ResponseError';
-    this.statusCode = statusCode;
-  }
+    constructor(message: string, statusCode: number) {
+        super(message, "UND_ERR_RESPONSE");
+        this.name = "ResponseError";
+        this.statusCode = statusCode;
+    }
 
-  static [Symbol.hasInstance](instance: unknown): boolean {
-    return (instance as Record<symbol, boolean>)?.[kResponseError] === true;
-  }
+    static [Symbol.hasInstance](instance: unknown): boolean {
+        return (instance as Record<symbol, boolean>)?.[kResponseError] === true;
+    }
 
-  get [kResponseError](): boolean {
-    return true;
-  }
+    get [kResponseError](): boolean {
+        return true;
+    }
 }
 
 export function createUndiciError(info: CoreErrorInfo): Error {
-  const { code, message, statusCode } = info;
-  switch (code) {
-    case 'UND_ERR_ABORTED':
-      return new RequestAbortedError(message);
-    case 'UND_ERR_CONNECT_TIMEOUT':
-      return new ConnectTimeoutError(message);
-    case 'UND_ERR_HEADERS_TIMEOUT':
-      return new HeadersTimeoutError(message);
-    case 'UND_ERR_BODY_TIMEOUT':
-      return new BodyTimeoutError(message);
-    case 'UND_ERR_SOCKET':
-      return new SocketError(message);
-    case 'UND_ERR_HEADERS_OVERFLOW':
-      return new HeadersOverflowError(message);
-    case 'UND_ERR_DESTROYED':
-      return new ClientDestroyedError(message);
-    case 'UND_ERR_CLOSED':
-      return new ClientClosedError(message);
-    case 'UND_ERR_INVALID_ARG':
-      return new InvalidArgumentError(message);
-    case 'UND_ERR_NOT_SUPPORTED':
-      return new NotSupportedError(message);
-    case 'UND_ERR_RESPONSE':
-      return new ResponseError(message, statusCode ?? 500);
-    default:
-      return new UndiciError(message, code);
-  }
+    const { code, message, statusCode } = info;
+    switch (code) {
+        case "UND_ERR_ABORTED":
+            return new RequestAbortedError(message);
+        case "UND_ERR_CONNECT_TIMEOUT":
+            return new ConnectTimeoutError(message);
+        case "UND_ERR_HEADERS_TIMEOUT":
+            return new HeadersTimeoutError(message);
+        case "UND_ERR_BODY_TIMEOUT":
+            return new BodyTimeoutError(message);
+        case "UND_ERR_SOCKET":
+            return new SocketError(message);
+        case "UND_ERR_HEADERS_OVERFLOW":
+            return new HeadersOverflowError(message);
+        case "UND_ERR_DESTROYED":
+            return new ClientDestroyedError(message);
+        case "UND_ERR_CLOSED":
+            return new ClientClosedError(message);
+        case "UND_ERR_INVALID_ARG":
+            return new InvalidArgumentError(message);
+        case "UND_ERR_NOT_SUPPORTED":
+            return new NotSupportedError(message);
+        case "UND_ERR_RESPONSE":
+            return new ResponseError(message, statusCode ?? 500);
+        default:
+            return new UndiciError(message, code);
+    }
 }
 ```
 
 ### packages/node/tests/vitest/errors.test.ts
 
 ```typescript
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
 import {
-  UndiciError,
-  RequestAbortedError,
-  ResponseError,
-  createUndiciError,
-  type CoreErrorInfo,
-} from '../../export/errors.ts';
+    UndiciError,
+    RequestAbortedError,
+    ResponseError,
+    createUndiciError,
+    type CoreErrorInfo,
+} from "../../export/errors.ts";
 
-describe('Undici Error Classes', () => {
-  it('creates correct error instances', () => {
-    const err = new RequestAbortedError();
-    expect(err.code).toBe('UND_ERR_ABORTED');
-    expect(err.name).toBe('AbortError');
-  });
+describe("Undici Error Classes", () => {
+    it("creates correct error instances", () => {
+        const err = new RequestAbortedError();
+        expect(err.code).toBe("UND_ERR_ABORTED");
+        expect(err.name).toBe("AbortError");
+    });
 
-  it('supports instanceof checks', () => {
-    const err = new RequestAbortedError();
-    expect(err instanceof RequestAbortedError).toBe(true);
-    expect(err instanceof UndiciError).toBe(true);
-    expect(err instanceof Error).toBe(true);
-  });
+    it("supports instanceof checks", () => {
+        const err = new RequestAbortedError();
+        expect(err instanceof RequestAbortedError).toBe(true);
+        expect(err instanceof UndiciError).toBe(true);
+        expect(err instanceof Error).toBe(true);
+    });
 
-  it('creates errors from CoreErrorInfo', () => {
-    const info: CoreErrorInfo = {
-      code: 'UND_ERR_ABORTED',
-      name: 'AbortError',
-      message: 'Request was aborted',
-    };
-    const err = createUndiciError(info);
-    expect(err instanceof RequestAbortedError).toBe(true);
-  });
+    it("creates errors from CoreErrorInfo", () => {
+        const info: CoreErrorInfo = {
+            code: "UND_ERR_ABORTED",
+            name: "AbortError",
+            message: "Request was aborted",
+        };
+        const err = createUndiciError(info);
+        expect(err instanceof RequestAbortedError).toBe(true);
+    });
 
-  it('handles ResponseError with status code', () => {
-    const info: CoreErrorInfo = {
-      code: 'UND_ERR_RESPONSE',
-      name: 'ResponseError',
-      message: 'Bad request',
-      statusCode: 400,
-    };
-    const err = createUndiciError(info) as ResponseError;
-    expect(err instanceof ResponseError).toBe(true);
-    expect(err.statusCode).toBe(400);
-  });
+    it("handles ResponseError with status code", () => {
+        const info: CoreErrorInfo = {
+            code: "UND_ERR_RESPONSE",
+            name: "ResponseError",
+            message: "Bad request",
+            statusCode: 400,
+        };
+        const err = createUndiciError(info) as ResponseError;
+        expect(err instanceof ResponseError).toBe(true);
+        expect(err.statusCode).toBe(400);
+    });
 });
 ```
 
 ## Tables
 
-| Metric | Value |
-| :--- | :--- |
+| Metric              | Value                          |
+| :------------------ | :----------------------------- |
 | **Rust Dependency** | `thiserror = "2.0"`, `reqwest` |
-| **Error Classes** | 11 (10 specific + 1 base) |
-| **Est. Time** | 1.5 hours |
+| **Error Classes**   | 11 (10 specific + 1 base)      |
+| **Est. Time**       | 1.5 hours                      |
 
 **Note:** `SecureProxyConnectionError` is not implemented as reqwest doesn't
 distinguish proxy TLS errors from general socket errors.

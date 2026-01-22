@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import type { ReadableStreamBYOBReader } from 'node:stream/web';
+import type { ReadableStreamBYOBReader } from "node:stream/web";
 
 export type AgentCreationOptions = {
   allowH2: boolean;
@@ -10,9 +10,9 @@ export type AgentCreationOptions = {
   localAddress: string | null;
   maxCachedSessions: number;
   proxy:
-    | { type: 'no-proxy' | 'system' }
+    | { type: "no-proxy" | "system" }
     | {
-        type: 'custom';
+        type: "custom";
         uri: string;
         headers: Record<string, string>;
         token: string | null;

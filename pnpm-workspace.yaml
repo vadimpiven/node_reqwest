@@ -30,6 +30,8 @@ catalog:
   husky: ^9.1.7
   markdownlint-cli2: ^0.20.0
   monocart-reporter: ^2.9.23
+  oxfmt: ^0.26.0
+  oxlint: ^1.41.0
   renovate: ^42.86.0
   rollup-plugin-node-externals: ^8.1.2
   rollup: ^4.55.2

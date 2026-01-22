@@ -14,43 +14,43 @@ Closes the dispatcher and gracefully waits for enqueued requests to complete bef
 
 Arguments:
 
-* **callback** `(error: Error | null, data: null) => void` (optional)
+- **callback** `(error: Error | null, data: null) => void` (optional)
 
 Returns: `void | Promise<null>` - Only returns a `Promise` if no `callback` argument was passed
 
 ```js
-dispatcher.close() // -> Promise
-dispatcher.close(() => {}) // -> void
+dispatcher.close(); // -> Promise
+dispatcher.close(() => {}); // -> void
 ```
 
 #### Example - Request resolves before Client closes
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  response.end('undici')
-}).listen()
+    response.end("undici");
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
 try {
-  const { body } = await client.request({
-      path: '/',
-      method: 'GET'
-  })
-  body.setEncoding('utf8')
-  body.on('data', console.log)
+    const { body } = await client.request({
+        path: "/",
+        method: "GET",
+    });
+    body.setEncoding("utf8");
+    body.on("data", console.log);
 } catch (error) {}
 
-await client.close()
+await client.close();
 
-console.log('Client closed')
-server.close()
+console.log("Client closed");
+server.close();
 ```
 
 ### `Dispatcher.connect(options[, callback])`
@@ -59,68 +59,70 @@ Starts two-way communications with the requested resource using [HTTP CONNECT](h
 
 Arguments:
 
-* **options** `ConnectOptions`
-* **callback** `(err: Error | null, data: ConnectData | null) => void` (optional)
+- **options** `ConnectOptions`
+- **callback** `(err: Error | null, data: ConnectData | null) => void` (optional)
 
 Returns: `void | Promise<ConnectData>` - Only returns a `Promise` if no `callback` argument was passed
 
 #### Parameter: `ConnectOptions`
 
-* **path** `string`
-* **headers** `UndiciHeaders` (optional) - Default: `null`
-* **signal** `AbortSignal | events.EventEmitter | null` (optional) - Default: `null`
-* **opaque** `unknown` (optional) - This argument parameter is passed through to `ConnectData`
+- **path** `string`
+- **headers** `UndiciHeaders` (optional) - Default: `null`
+- **signal** `AbortSignal | events.EventEmitter | null` (optional) - Default: `null`
+- **opaque** `unknown` (optional) - This argument parameter is passed through to `ConnectData`
 
 #### Parameter: `ConnectData`
 
-* **statusCode** `number`
-* **headers** `Record<string, string | string[] | undefined>`
-* **socket** `stream.Duplex`
-* **opaque** `unknown`
+- **statusCode** `number`
+- **headers** `Record<string, string | string[] | undefined>`
+- **socket** `stream.Duplex`
+- **opaque** `unknown`
 
 #### Example - Connect request with echo
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  throw Error('should never get here')
-}).listen()
+    throw Error("should never get here");
+}).listen();
 
-server.on('connect', (req, socket, head) => {
-  socket.write('HTTP/1.1 200 Connection established\r\n\r\n')
+server.on("connect", (req, socket, head) => {
+    socket.write("HTTP/1.1 200 Connection established\r\n\r\n");
 
-  let data = head.toString()
-  socket.on('data', (buf) => {
-    data += buf.toString()
-  })
+    let data = head.toString();
+    socket.on("data", (buf) => {
+        data += buf.toString();
+    });
 
-  socket.on('end', () => {
-    socket.end(data)
-  })
-})
+    socket.on("end", () => {
+        socket.end(data);
+    });
+});
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
 try {
-  const { socket } = await client.connect({
-    path: '/'
-  })
-  const wanted = 'Body'
-  let data = ''
-  socket.on('data', d => { data += d })
-  socket.on('end', () => {
-    console.log(`Data received: ${data.toString()} | Data wanted: ${wanted}`)
-    client.close()
-    server.close()
-  })
-  socket.write(wanted)
-  socket.end()
-} catch (error) { }
+    const { socket } = await client.connect({
+        path: "/",
+    });
+    const wanted = "Body";
+    let data = "";
+    socket.on("data", (d) => {
+        data += d;
+    });
+    socket.on("end", () => {
+        console.log(`Data received: ${data.toString()} | Data wanted: ${wanted}`);
+        client.close();
+        server.close();
+    });
+    socket.write(wanted);
+    socket.end();
+} catch (error) {}
 ```
 
 ### `Dispatcher.destroy([error, callback]): Promise`
@@ -131,46 +133,45 @@ Both arguments are optional; the method can be called in four different ways:
 
 Arguments:
 
-* **error** `Error | null` (optional)
-* **callback** `(error: Error | null, data: null) => void` (optional)
+- **error** `Error | null` (optional)
+- **callback** `(error: Error | null, data: null) => void` (optional)
 
 Returns: `void | Promise<void>` - Only returns a `Promise` if no `callback` argument was passed
 
 ```js
-dispatcher.destroy() // -> Promise
-dispatcher.destroy(new Error()) // -> Promise
-dispatcher.destroy(() => {}) // -> void
-dispatcher.destroy(new Error(), () => {}) // -> void
+dispatcher.destroy(); // -> Promise
+dispatcher.destroy(new Error()); // -> Promise
+dispatcher.destroy(() => {}); // -> void
+dispatcher.destroy(new Error(), () => {}); // -> void
 ```
 
 #### Example - Request is aborted when Client is destroyed
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  response.end()
-}).listen()
+    response.end();
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
 try {
-  const request = client.request({
-    path: '/',
-    method: 'GET'
-  })
-  client.destroy()
-    .then(() => {
-      console.log('Client destroyed')
-      server.close()
-    })
-  await request
+    const request = client.request({
+        path: "/",
+        method: "GET",
+    });
+    client.destroy().then(() => {
+        console.log("Client destroyed");
+        server.close();
+    });
+    await request;
 } catch (error) {
-  console.error(error)
+    console.error(error);
 }
 ```
 
@@ -182,184 +183,193 @@ It is primarily intended for library developers who implement higher level APIs 
 
 Arguments:
 
-* **options** `DispatchOptions`
-* **handler** `DispatchHandler`
+- **options** `DispatchOptions`
+- **handler** `DispatchHandler`
 
 Returns: `Boolean` - `false` if dispatcher is busy and further dispatch calls won't make any progress until the `'drain'` event has been emitted.
 
 #### Parameter: `DispatchOptions`
 
-* **origin** `string | URL`
-* **path** `string`
-* **method** `string`
-* **reset** `boolean` (optional) - Default: `false` - If `false`, the request will attempt to create a long-living connection by sending the `connection: keep-alive` header,otherwise will attempt to close it immediately after response by sending `connection: close` within the request and closing the socket afterwards.
-* **body** `string | Buffer | Uint8Array | stream.Readable | Iterable | AsyncIterable | null` (optional) - Default: `null`
-* **headers** `UndiciHeaders` (optional) - Default: `null`.
-* **query** `Record<string, any> | null` (optional) - Default: `null` - Query string params to be embedded in the request URL. Note that both keys and values of query are encoded using `encodeURIComponent`. If for some reason you need to send them unencoded, embed query params into path directly instead.
-* **idempotent** `boolean` (optional) - Default: `true` if `method` is `'HEAD'` or `'GET'` - Whether the requests can be safely retried or not. If `false` the request won't be sent until all preceding requests in the pipeline has completed.
-* **blocking** `boolean` (optional) - Default: `method !== 'HEAD'` - Whether the response is expected to take a long time and would end up blocking the pipeline. When this is set to `true` further pipelining will be avoided on the same connection until headers have been received.
-* **upgrade** `string | null` (optional) - Default: `null` - Upgrade the request. Should be used to specify the kind of upgrade i.e. `'Websocket'`.
-* **bodyTimeout** `number | null` (optional) - The timeout after which a request will time out, in milliseconds. Monitors time between receiving body data. Use `0` to disable it entirely. Defaults to 300 seconds.
-* **headersTimeout** `number | null` (optional) - The amount of time, in milliseconds, the parser will wait to receive the complete HTTP headers while not sending the request. Defaults to 300 seconds.
-* **expectContinue** `boolean` (optional) - Default: `false` - For H2, it appends the expect: 100-continue header, and halts the request body until a 100-continue is received from the remote server
+- **origin** `string | URL`
+- **path** `string`
+- **method** `string`
+- **reset** `boolean` (optional) - Default: `false` - If `false`, the request will attempt to create a long-living connection by sending the `connection: keep-alive` header,otherwise will attempt to close it immediately after response by sending `connection: close` within the request and closing the socket afterwards.
+- **body** `string | Buffer | Uint8Array | stream.Readable | Iterable | AsyncIterable | null` (optional) - Default: `null`
+- **headers** `UndiciHeaders` (optional) - Default: `null`.
+- **query** `Record<string, any> | null` (optional) - Default: `null` - Query string params to be embedded in the request URL. Note that both keys and values of query are encoded using `encodeURIComponent`. If for some reason you need to send them unencoded, embed query params into path directly instead.
+- **idempotent** `boolean` (optional) - Default: `true` if `method` is `'HEAD'` or `'GET'` - Whether the requests can be safely retried or not. If `false` the request won't be sent until all preceding requests in the pipeline has completed.
+- **blocking** `boolean` (optional) - Default: `method !== 'HEAD'` - Whether the response is expected to take a long time and would end up blocking the pipeline. When this is set to `true` further pipelining will be avoided on the same connection until headers have been received.
+- **upgrade** `string | null` (optional) - Default: `null` - Upgrade the request. Should be used to specify the kind of upgrade i.e. `'Websocket'`.
+- **bodyTimeout** `number | null` (optional) - The timeout after which a request will time out, in milliseconds. Monitors time between receiving body data. Use `0` to disable it entirely. Defaults to 300 seconds.
+- **headersTimeout** `number | null` (optional) - The amount of time, in milliseconds, the parser will wait to receive the complete HTTP headers while not sending the request. Defaults to 300 seconds.
+- **expectContinue** `boolean` (optional) - Default: `false` - For H2, it appends the expect: 100-continue header, and halts the request body until a 100-continue is received from the remote server
 
 #### Parameter: `DispatchHandler`
 
-* **onRequestStart** `(controller: DispatchController, context: object) => void` - Invoked before request is dispatched on socket. May be invoked multiple times when a request is retried when the request at the head of the pipeline fails.
-* **onRequestUpgrade** `(controller: DispatchController, statusCode: number, headers: Record<string, string | string[]>, socket: Duplex) => void` (optional) - Invoked when request is upgraded. Required if `DispatchOptions.upgrade` is defined or `DispatchOptions.method === 'CONNECT'`.
-* **onResponseStart** `(controller: DispatchController, statusCode: number, headers: Record<string, string | string []>, statusMessage?: string) => void` - Invoked when statusCode and headers have been received. May be invoked multiple times due to 1xx informational headers. Not required for `upgrade` requests.
-* **onResponseData** `(controller: DispatchController, chunk: Buffer) => void` - Invoked when response payload data is received. Not required for `upgrade` requests.
-* **onResponseEnd** `(controller: DispatchController, trailers: Record<string, string | string[]>) => void` - Invoked when response payload and trailers have been received and the request has completed. Not required for `upgrade` requests.
-* **onResponseError** `(controller: DispatchController, error: Error) => void` - Invoked when an error has occurred. May not throw.
+- **onRequestStart** `(controller: DispatchController, context: object) => void` - Invoked before request is dispatched on socket. May be invoked multiple times when a request is retried when the request at the head of the pipeline fails.
+- **onRequestUpgrade** `(controller: DispatchController, statusCode: number, headers: Record<string, string | string[]>, socket: Duplex) => void` (optional) - Invoked when request is upgraded. Required if `DispatchOptions.upgrade` is defined or `DispatchOptions.method === 'CONNECT'`.
+- **onResponseStart** `(controller: DispatchController, statusCode: number, headers: Record<string, string | string []>, statusMessage?: string) => void` - Invoked when statusCode and headers have been received. May be invoked multiple times due to 1xx informational headers. Not required for `upgrade` requests.
+- **onResponseData** `(controller: DispatchController, chunk: Buffer) => void` - Invoked when response payload data is received. Not required for `upgrade` requests.
+- **onResponseEnd** `(controller: DispatchController, trailers: Record<string, string | string[]>) => void` - Invoked when response payload and trailers have been received and the request has completed. Not required for `upgrade` requests.
+- **onResponseError** `(controller: DispatchController, error: Error) => void` - Invoked when an error has occurred. May not throw.
 
 #### Example 1 - Dispatch GET request
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  response.end('Hello, World!')
-}).listen()
+    response.end("Hello, World!");
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
-const data = []
+const data = [];
 
-client.dispatch({
-  path: '/',
-  method: 'GET',
-  headers: {
-    'x-foo': 'bar'
-  }
-}, {
-  onConnect: () => {
-    console.log('Connected!')
-  },
-  onError: (error) => {
-    console.error(error)
-  },
-  onHeaders: (statusCode, headers) => {
-    console.log(`onHeaders | statusCode: ${statusCode} | headers: ${headers}`)
-  },
-  onData: (chunk) => {
-    console.log('onData: chunk received')
-    data.push(chunk)
-  },
-  onComplete: (trailers) => {
-    console.log(`onComplete | trailers: ${trailers}`)
-    const res = Buffer.concat(data).toString('utf8')
-    console.log(`Data: ${res}`)
-    client.close()
-    server.close()
-  }
-})
+client.dispatch(
+    {
+        path: "/",
+        method: "GET",
+        headers: {
+            "x-foo": "bar",
+        },
+    },
+    {
+        onConnect: () => {
+            console.log("Connected!");
+        },
+        onError: (error) => {
+            console.error(error);
+        },
+        onHeaders: (statusCode, headers) => {
+            console.log(`onHeaders | statusCode: ${statusCode} | headers: ${headers}`);
+        },
+        onData: (chunk) => {
+            console.log("onData: chunk received");
+            data.push(chunk);
+        },
+        onComplete: (trailers) => {
+            console.log(`onComplete | trailers: ${trailers}`);
+            const res = Buffer.concat(data).toString("utf8");
+            console.log(`Data: ${res}`);
+            client.close();
+            server.close();
+        },
+    },
+);
 ```
 
 #### Example 2 - Dispatch Upgrade Request
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  response.end()
-}).listen()
+    response.end();
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-server.on('upgrade', (request, socket, head) => {
-  console.log('Node.js Server - upgrade event')
-  socket.write('HTTP/1.1 101 Web Socket Protocol Handshake\r\n')
-  socket.write('Upgrade: WebSocket\r\n')
-  socket.write('Connection: Upgrade\r\n')
-  socket.write('\r\n')
-  socket.end()
-})
+server.on("upgrade", (request, socket, head) => {
+    console.log("Node.js Server - upgrade event");
+    socket.write("HTTP/1.1 101 Web Socket Protocol Handshake\r\n");
+    socket.write("Upgrade: WebSocket\r\n");
+    socket.write("Connection: Upgrade\r\n");
+    socket.write("\r\n");
+    socket.end();
+});
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
-client.dispatch({
-  path: '/',
-  method: 'GET',
-  upgrade: 'websocket'
-}, {
-  onConnect: () => {
-    console.log('Undici Client - onConnect')
-  },
-  onError: (error) => {
-    console.log('onError') // shouldn't print
-  },
-  onUpgrade: (statusCode, headers, socket) => {
-    console.log('Undici Client - onUpgrade')
-    console.log(`onUpgrade Headers: ${headers}`)
-    socket.on('data', buffer => {
-      console.log(buffer.toString('utf8'))
-    })
-    socket.on('end', () => {
-      client.close()
-      server.close()
-    })
-    socket.end()
-  }
-})
+client.dispatch(
+    {
+        path: "/",
+        method: "GET",
+        upgrade: "websocket",
+    },
+    {
+        onConnect: () => {
+            console.log("Undici Client - onConnect");
+        },
+        onError: (error) => {
+            console.log("onError"); // shouldn't print
+        },
+        onUpgrade: (statusCode, headers, socket) => {
+            console.log("Undici Client - onUpgrade");
+            console.log(`onUpgrade Headers: ${headers}`);
+            socket.on("data", (buffer) => {
+                console.log(buffer.toString("utf8"));
+            });
+            socket.on("end", () => {
+                client.close();
+                server.close();
+            });
+            socket.end();
+        },
+    },
+);
 ```
 
 #### Example 3 - Dispatch POST request
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  request.on('data', (data) => {
-    console.log(`Request Data: ${data.toString('utf8')}`)
-    const body = JSON.parse(data)
-    body.message = 'World'
-    response.end(JSON.stringify(body))
-  })
-}).listen()
+    request.on("data", (data) => {
+        console.log(`Request Data: ${data.toString("utf8")}`);
+        const body = JSON.parse(data);
+        body.message = "World";
+        response.end(JSON.stringify(body));
+    });
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
-const data = []
+const data = [];
 
-client.dispatch({
-  path: '/',
-  method: 'POST',
-  headers: {
-    'content-type': 'application/json'
-  },
-  body: JSON.stringify({ message: 'Hello' })
-}, {
-  onConnect: () => {
-    console.log('Connected!')
-  },
-  onError: (error) => {
-    console.error(error)
-  },
-  onHeaders: (statusCode, headers) => {
-    console.log(`onHeaders | statusCode: ${statusCode} | headers: ${headers}`)
-  },
-  onData: (chunk) => {
-    console.log('onData: chunk received')
-    data.push(chunk)
-  },
-  onComplete: (trailers) => {
-    console.log(`onComplete | trailers: ${trailers}`)
-    const res = Buffer.concat(data).toString('utf8')
-    console.log(`Response Data: ${res}`)
-    client.close()
-    server.close()
-  }
-})
+client.dispatch(
+    {
+        path: "/",
+        method: "POST",
+        headers: {
+            "content-type": "application/json",
+        },
+        body: JSON.stringify({ message: "Hello" }),
+    },
+    {
+        onConnect: () => {
+            console.log("Connected!");
+        },
+        onError: (error) => {
+            console.error(error);
+        },
+        onHeaders: (statusCode, headers) => {
+            console.log(`onHeaders | statusCode: ${statusCode} | headers: ${headers}`);
+        },
+        onData: (chunk) => {
+            console.log("onData: chunk received");
+            data.push(chunk);
+        },
+        onComplete: (trailers) => {
+            console.log(`onComplete | trailers: ${trailers}`);
+            const res = Buffer.concat(data).toString("utf8");
+            console.log(`Response Data: ${res}`);
+            client.close();
+            server.close();
+        },
+    },
+);
 ```
 
 ### `Dispatcher.pipeline(options, handler)`
@@ -368,8 +378,8 @@ For easy use with [stream.pipeline](https://nodejs.org/api/stream.html#stream_st
 
 Arguments:
 
-* **options** `PipelineOptions`
-* **handler** `(data: PipelineHandlerData) => stream.Readable`
+- **options** `PipelineOptions`
+- **handler** `(data: PipelineHandlerData) => stream.Readable`
 
 Returns: `stream.Duplex`
 
@@ -377,69 +387,72 @@ Returns: `stream.Duplex`
 
 Extends: [`RequestOptions`](/docs/docs/api/Dispatcher.md#parameter-requestoptions)
 
-* **objectMode** `boolean` (optional) - Default: `false` - Set to `true` if the `handler` will return an object stream.
+- **objectMode** `boolean` (optional) - Default: `false` - Set to `true` if the `handler` will return an object stream.
 
 #### Parameter: PipelineHandlerData
 
-* **statusCode** `number`
-* **headers** `Record<string, string | string[] | undefined>`
-* **opaque** `unknown`
-* **body** `stream.Readable`
-* **context** `object`
-* **onInfo** `({statusCode: number, headers: Record<string, string | string[]>}) => void | null` (optional) - Default: `null` - Callback collecting all the info headers (HTTP 100-199) received.
+- **statusCode** `number`
+- **headers** `Record<string, string | string[] | undefined>`
+- **opaque** `unknown`
+- **body** `stream.Readable`
+- **context** `object`
+- **onInfo** `({statusCode: number, headers: Record<string, string | string[]>}) => void | null` (optional) - Default: `null` - Callback collecting all the info headers (HTTP 100-199) received.
 
 #### Example 1 - Pipeline Echo
 
 ```js
-import { Readable, Writable, PassThrough, pipeline } from 'stream'
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { Readable, Writable, PassThrough, pipeline } from "stream";
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  request.pipe(response)
-}).listen()
+    request.pipe(response);
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
-let res = ''
+let res = "";
 
 pipeline(
-  new Readable({
-    read () {
-      this.push(Buffer.from('undici'))
-      this.push(null)
-    }
-  }),
-  client.pipeline({
-    path: '/',
-    method: 'GET'
-  }, ({ statusCode, headers, body }) => {
-    console.log(`response received ${statusCode}`)
-    console.log('headers', headers)
-    return pipeline(body, new PassThrough(), () => {})
-  }),
-  new Writable({
-    write (chunk, _, callback) {
-      res += chunk.toString()
-      callback()
-    },
-    final (callback) {
-      console.log(`Response pipelined to writable: ${res}`)
-      callback()
-    }
-  }),
-  error => {
-    if (error) {
-      console.error(error)
-    }
+    new Readable({
+        read() {
+            this.push(Buffer.from("undici"));
+            this.push(null);
+        },
+    }),
+    client.pipeline(
+        {
+            path: "/",
+            method: "GET",
+        },
+        ({ statusCode, headers, body }) => {
+            console.log(`response received ${statusCode}`);
+            console.log("headers", headers);
+            return pipeline(body, new PassThrough(), () => {});
+        },
+    ),
+    new Writable({
+        write(chunk, _, callback) {
+            res += chunk.toString();
+            callback();
+        },
+        final(callback) {
+            console.log(`Response pipelined to writable: ${res}`);
+            callback();
+        },
+    }),
+    (error) => {
+        if (error) {
+            console.error(error);
+        }
 
-    client.close()
-    server.close()
-  }
-)
+        client.close();
+        server.close();
+    },
+);
 ```
 
 ### `Dispatcher.request(options[, callback])`
@@ -458,8 +471,8 @@ All response bodies must always be fully consumed or destroyed.
 
 Arguments:
 
-* **options** `RequestOptions`
-* **callback** `(error: Error | null, data: ResponseData) => void` (optional)
+- **options** `RequestOptions`
+- **callback** `(error: Error | null, data: ResponseData) => void` (optional)
 
 Returns: `void | Promise<ResponseData>` - Only returns a `Promise` if no `callback` argument was passed.
 
@@ -467,73 +480,73 @@ Returns: `void | Promise<ResponseData>` - Only returns a `Promise` if no `callba
 
 Extends: [`DispatchOptions`](/docs/docs/api/Dispatcher.md#parameter-dispatchoptions)
 
-* **opaque** `unknown` (optional) - Default: `null` - Used for passing through context to `ResponseData`.
-* **signal** `AbortSignal | events.EventEmitter | null` (optional) - Default: `null`.
-* **onInfo** `({statusCode: number, headers: Record<string, string | string[]>}) => void | null` (optional) - Default: `null` - Callback collecting all the info headers (HTTP 100-199) received.
+- **opaque** `unknown` (optional) - Default: `null` - Used for passing through context to `ResponseData`.
+- **signal** `AbortSignal | events.EventEmitter | null` (optional) - Default: `null`.
+- **onInfo** `({statusCode: number, headers: Record<string, string | string[]>}) => void | null` (optional) - Default: `null` - Callback collecting all the info headers (HTTP 100-199) received.
 
 The `RequestOptions.method` property should not be value `'CONNECT'`.
 
 #### Parameter: `ResponseData`
 
-* **statusCode** `number`
-* **headers** `Record<string, string | string[]>` - Note that all header keys are lower-cased, e.g. `content-type`.
-* **body** `stream.Readable` which also implements [the body mixin from the Fetch Standard](https://fetch.spec.whatwg.org/#body-mixin).
-* **trailers** `Record<string, string>` - This object starts out
+- **statusCode** `number`
+- **headers** `Record<string, string | string[]>` - Note that all header keys are lower-cased, e.g. `content-type`.
+- **body** `stream.Readable` which also implements [the body mixin from the Fetch Standard](https://fetch.spec.whatwg.org/#body-mixin).
+- **trailers** `Record<string, string>` - This object starts out
   as empty and will be mutated to contain trailers after `body` has emitted `'end'`.
-* **opaque** `unknown`
-* **context** `object`
+- **opaque** `unknown`
+- **context** `object`
 
 `body` contains the following additional [body mixin](https://fetch.spec.whatwg.org/#body-mixin) methods and properties:
 
-* [`.arrayBuffer()`](https://fetch.spec.whatwg.org/#dom-body-arraybuffer)
-* [`.blob()`](https://fetch.spec.whatwg.org/#dom-body-blob)
-* [`.bytes()`](https://fetch.spec.whatwg.org/#dom-body-bytes)
-* [`.json()`](https://fetch.spec.whatwg.org/#dom-body-json)
-* [`.text()`](https://fetch.spec.whatwg.org/#dom-body-text)
-* `body`
-* `bodyUsed`
+- [`.arrayBuffer()`](https://fetch.spec.whatwg.org/#dom-body-arraybuffer)
+- [`.blob()`](https://fetch.spec.whatwg.org/#dom-body-blob)
+- [`.bytes()`](https://fetch.spec.whatwg.org/#dom-body-bytes)
+- [`.json()`](https://fetch.spec.whatwg.org/#dom-body-json)
+- [`.text()`](https://fetch.spec.whatwg.org/#dom-body-text)
+- `body`
+- `bodyUsed`
 
 `body` can not be consumed twice. For example, calling `text()` after `json()` throws `TypeError`.
 
 `body` contains the following additional extensions:
 
-* `dump({ limit: Integer })`, dump the response by reading up to `limit` bytes without killing the socket (optional) - Default: 262144.
+- `dump({ limit: Integer })`, dump the response by reading up to `limit` bytes without killing the socket (optional) - Default: 262144.
 
 Note that body will still be a `Readable` even if it is empty, but attempting to deserialize it with `json()` will result in an exception. Recommended way to ensure there is a body to deserialize is to check if status code is not 204, and `content-type` header starts with `application/json`.
 
 #### Example 1 - Basic GET Request
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  response.end('Hello, World!')
-}).listen()
+    response.end("Hello, World!");
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
 try {
-  const { body, headers, statusCode, trailers } = await client.request({
-    path: '/',
-    method: 'GET'
-  })
-  console.log(`response received ${statusCode}`)
-  console.log('headers', headers)
-  body.setEncoding('utf8')
-  body.on('data', console.log)
-  body.on('error', console.error)
-  body.on('end', () => {
-    console.log('trailers', trailers)
-  })
+    const { body, headers, statusCode, trailers } = await client.request({
+        path: "/",
+        method: "GET",
+    });
+    console.log(`response received ${statusCode}`);
+    console.log("headers", headers);
+    body.setEncoding("utf8");
+    body.on("data", console.log);
+    body.on("error", console.error);
+    body.on("end", () => {
+        console.log("trailers", trailers);
+    });
 
-  client.close()
-  server.close()
+    client.close();
+    server.close();
 } catch (error) {
-  console.error(error)
+    console.error(error);
 }
 ```
 
@@ -542,90 +555,90 @@ try {
 > Node.js v15+ is required to run this example
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  response.end('Hello, World!')
-}).listen()
+    response.end("Hello, World!");
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
-const abortController = new AbortController()
+const client = new Client(`http://localhost:${server.address().port}`);
+const abortController = new AbortController();
 
 try {
-  client.request({
-    path: '/',
-    method: 'GET',
-    signal: abortController.signal
-  })
+    client.request({
+        path: "/",
+        method: "GET",
+        signal: abortController.signal,
+    });
 } catch (error) {
-  console.error(error) // should print an RequestAbortedError
-  client.close()
-  server.close()
+    console.error(error); // should print an RequestAbortedError
+    client.close();
+    server.close();
 }
 
-abortController.abort()
+abortController.abort();
 ```
 
 Alternatively, any `EventEmitter` that emits an `'abort'` event may be used as an abort controller:
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import EventEmitter, { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import EventEmitter, { once } from "events";
 
 const server = createServer((request, response) => {
-  response.end('Hello, World!')
-}).listen()
+    response.end("Hello, World!");
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
-const ee = new EventEmitter()
+const client = new Client(`http://localhost:${server.address().port}`);
+const ee = new EventEmitter();
 
 try {
-  client.request({
-    path: '/',
-    method: 'GET',
-    signal: ee
-  })
+    client.request({
+        path: "/",
+        method: "GET",
+        signal: ee,
+    });
 } catch (error) {
-  console.error(error) // should print an RequestAbortedError
-  client.close()
-  server.close()
+    console.error(error); // should print an RequestAbortedError
+    client.close();
+    server.close();
 }
 
-ee.emit('abort')
+ee.emit("abort");
 ```
 
 Destroying the request or response body will have the same effect.
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  response.end('Hello, World!')
-}).listen()
+    response.end("Hello, World!");
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
 try {
-  const { body } = await client.request({
-    path: '/',
-    method: 'GET'
-  })
-  body.destroy()
+    const { body } = await client.request({
+        path: "/",
+        method: "GET",
+    });
+    body.destroy();
 } catch (error) {
-  console.error(error) // should print an RequestAbortedError
-  client.close()
-  server.close()
+    console.error(error); // should print an RequestAbortedError
+    client.close();
+    server.close();
 }
 ```
 
@@ -635,17 +648,17 @@ Remember to fully consume the body even in the case when it is not read.
 
 ```js
 const { body, statusCode } = await client.request({
-  path: '/',
-  method: 'GET'
-})
+    path: "/",
+    method: "GET",
+});
 
 if (statusCode === 200) {
-  return await body.arrayBuffer()
+    return await body.arrayBuffer();
 }
 
-await body.dump()
+await body.dump();
 
-return null
+return null;
 ```
 
 ### `Dispatcher.stream(options, factory[, callback])`
@@ -656,65 +669,68 @@ As demonstrated in [Example 1 - Basic GET stream request](/docs/docs/api/Dispatc
 
 Arguments:
 
-* **options** `RequestOptions`
-* **factory** `(data: StreamFactoryData) => stream.Writable`
-* **callback** `(error: Error | null, data: StreamData) => void` (optional)
+- **options** `RequestOptions`
+- **factory** `(data: StreamFactoryData) => stream.Writable`
+- **callback** `(error: Error | null, data: StreamData) => void` (optional)
 
 Returns: `void | Promise<StreamData>` - Only returns a `Promise` if no `callback` argument was passed
 
 #### Parameter: `StreamFactoryData`
 
-* **statusCode** `number`
-* **headers** `Record<string, string | string[] | undefined>`
-* **opaque** `unknown`
-* **onInfo** `({statusCode: number, headers: Record<string, string | string[]>}) => void | null` (optional) - Default: `null` - Callback collecting all the info headers (HTTP 100-199) received.
+- **statusCode** `number`
+- **headers** `Record<string, string | string[] | undefined>`
+- **opaque** `unknown`
+- **onInfo** `({statusCode: number, headers: Record<string, string | string[]>}) => void | null` (optional) - Default: `null` - Callback collecting all the info headers (HTTP 100-199) received.
 
 #### Parameter: `StreamData`
 
-* **opaque** `unknown`
-* **trailers** `Record<string, string>`
-* **context** `object`
+- **opaque** `unknown`
+- **trailers** `Record<string, string>`
+- **context** `object`
 
 #### Example 1 - Basic GET stream request
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
-import { Writable } from 'stream'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
+import { Writable } from "stream";
 
 const server = createServer((request, response) => {
-  response.end('Hello, World!')
-}).listen()
+    response.end("Hello, World!");
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
-const bufs = []
+const bufs = [];
 
 try {
-  await client.stream({
-    path: '/',
-    method: 'GET',
-    opaque: { bufs }
-  }, ({ statusCode, headers, opaque: { bufs } }) => {
-    console.log(`response received ${statusCode}`)
-    console.log('headers', headers)
-    return new Writable({
-      write (chunk, encoding, callback) {
-        bufs.push(chunk)
-        callback()
-      }
-    })
-  })
+    await client.stream(
+        {
+            path: "/",
+            method: "GET",
+            opaque: { bufs },
+        },
+        ({ statusCode, headers, opaque: { bufs } }) => {
+            console.log(`response received ${statusCode}`);
+            console.log("headers", headers);
+            return new Writable({
+                write(chunk, encoding, callback) {
+                    bufs.push(chunk);
+                    callback();
+                },
+            });
+        },
+    );
 
-  console.log(Buffer.concat(bufs).toString('utf-8'))
+    console.log(Buffer.concat(bufs).toString("utf-8"));
 
-  client.close()
-  server.close()
+    client.close();
+    server.close();
 } catch (error) {
-  console.error(error)
+    console.error(error);
 }
 ```
 
@@ -723,56 +739,61 @@ try {
 In this example, a (fake) request is made to the fastify server using `fastify.inject()`. This request then executes the fastify route handler which makes a subsequent request to the raw Node.js http server using `undici.dispatcher.stream()`. The fastify response is passed to the `opaque` option so that undici can tap into the underlying writable stream using `response.raw`. This methodology demonstrates how one could use undici and fastify together to create fast-as-possible requests from one backend server to another.
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
-import fastify from 'fastify'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
+import fastify from "fastify";
 
 const nodeServer = createServer((request, response) => {
-  response.end('Hello, World! From Node.js HTTP Server')
-}).listen()
+    response.end("Hello, World! From Node.js HTTP Server");
+}).listen();
 
-await once(nodeServer, 'listening')
+await once(nodeServer, "listening");
 
-console.log('Node Server listening')
+console.log("Node Server listening");
 
-const nodeServerUndiciClient = new Client(`http://localhost:${nodeServer.address().port}`)
+const nodeServerUndiciClient = new Client(`http://localhost:${nodeServer.address().port}`);
 
-const fastifyServer = fastify()
+const fastifyServer = fastify();
 
 fastifyServer.route({
-  url: '/',
-  method: 'GET',
-  handler: (request, response) => {
-    nodeServerUndiciClient.stream({
-      path: '/',
-      method: 'GET',
-      opaque: response
-    }, ({ opaque }) => opaque.raw)
-  }
-})
+    url: "/",
+    method: "GET",
+    handler: (request, response) => {
+        nodeServerUndiciClient.stream(
+            {
+                path: "/",
+                method: "GET",
+                opaque: response,
+            },
+            ({ opaque }) => opaque.raw,
+        );
+    },
+});
 
-await fastifyServer.listen()
+await fastifyServer.listen();
 
-console.log('Fastify Server listening')
+console.log("Fastify Server listening");
 
-const fastifyServerUndiciClient = new Client(`http://localhost:${fastifyServer.server.address().port}`)
+const fastifyServerUndiciClient = new Client(
+    `http://localhost:${fastifyServer.server.address().port}`,
+);
 
 try {
-  const { statusCode, body } = await fastifyServerUndiciClient.request({
-    path: '/',
-    method: 'GET'
-  })
+    const { statusCode, body } = await fastifyServerUndiciClient.request({
+        path: "/",
+        method: "GET",
+    });
 
-  console.log(`response received ${statusCode}`)
-  body.setEncoding('utf8')
-  body.on('data', console.log)
+    console.log(`response received ${statusCode}`);
+    body.setEncoding("utf8");
+    body.on("data", console.log);
 
-  nodeServerUndiciClient.close()
-  fastifyServerUndiciClient.close()
-  fastifyServer.close()
-  nodeServer.close()
-} catch (error) { }
+    nodeServerUndiciClient.close();
+    fastifyServerUndiciClient.close();
+    fastifyServer.close();
+    nodeServer.close();
+} catch (error) {}
 ```
 
 ### `Dispatcher.upgrade(options[, callback])`
@@ -781,58 +802,58 @@ Upgrade to a different protocol. Visit [MDN - HTTP - Protocol upgrade mechanism]
 
 Arguments:
 
-* **options** `UpgradeOptions`
+- **options** `UpgradeOptions`
 
-* **callback** `(error: Error | null, data: UpgradeData) => void` (optional)
+- **callback** `(error: Error | null, data: UpgradeData) => void` (optional)
 
 Returns: `void | Promise<UpgradeData>` - Only returns a `Promise` if no `callback` argument was passed
 
 #### Parameter: `UpgradeOptions`
 
-* **path** `string`
-* **method** `string` (optional) - Default: `'GET'`
-* **headers** `UndiciHeaders` (optional) - Default: `null`
-* **protocol** `string` (optional) - Default: `'Websocket'` - A string of comma separated protocols, in descending preference order.
-* **signal** `AbortSignal | EventEmitter | null` (optional) - Default: `null`
+- **path** `string`
+- **method** `string` (optional) - Default: `'GET'`
+- **headers** `UndiciHeaders` (optional) - Default: `null`
+- **protocol** `string` (optional) - Default: `'Websocket'` - A string of comma separated protocols, in descending preference order.
+- **signal** `AbortSignal | EventEmitter | null` (optional) - Default: `null`
 
 #### Parameter: `UpgradeData`
 
-* **headers** `http.IncomingHeaders`
-* **socket** `stream.Duplex`
-* **opaque** `unknown`
+- **headers** `http.IncomingHeaders`
+- **socket** `stream.Duplex`
+- **opaque** `unknown`
 
 #### Example 1 - Basic Upgrade Request
 
 ```js
-import { createServer } from 'http'
-import { Client } from 'undici'
-import { once } from 'events'
+import { createServer } from "http";
+import { Client } from "undici";
+import { once } from "events";
 
 const server = createServer((request, response) => {
-  response.statusCode = 101
-  response.setHeader('connection', 'upgrade')
-  response.setHeader('upgrade', request.headers.upgrade)
-  response.end()
-}).listen()
+    response.statusCode = 101;
+    response.setHeader("connection", "upgrade");
+    response.setHeader("upgrade", request.headers.upgrade);
+    response.end();
+}).listen();
 
-await once(server, 'listening')
+await once(server, "listening");
 
-const client = new Client(`http://localhost:${server.address().port}`)
+const client = new Client(`http://localhost:${server.address().port}`);
 
 try {
-  const { headers, socket } = await client.upgrade({
-    path: '/',
-  })
-  socket.on('end', () => {
-    console.log(`upgrade: ${headers.upgrade}`) // upgrade: Websocket
-    client.close()
-    server.close()
-  })
-  socket.end()
+    const { headers, socket } = await client.upgrade({
+        path: "/",
+    });
+    socket.on("end", () => {
+        console.log(`upgrade: ${headers.upgrade}`); // upgrade: Websocket
+        client.close();
+        server.close();
+    });
+    socket.end();
 } catch (error) {
-  console.error(error)
-  client.close()
-  server.close()
+    console.error(error);
+    client.close();
+    server.close();
 }
 ```
 
@@ -842,9 +863,9 @@ Compose a new dispatcher from the current dispatcher and the given interceptors.
 
 > _Notes_:
 >
-> * The order of the interceptors matters. The last interceptor will be the first to be called.
-> * It is important to note that the `interceptor` function should return a function that follows the `Dispatcher.dispatch` signature.
-> * Any fork of the chain of `interceptors` can lead to unexpected results.
+> - The order of the interceptors matters. The last interceptor will be the first to be called.
+> - It is important to note that the `interceptor` function should return a function that follows the `Dispatcher.dispatch` signature.
+> - Any fork of the chain of `interceptors` can lead to unexpected results.
 >
 > **Interceptor Stack Visualization:**
 >
@@ -868,7 +889,7 @@ Compose a new dispatcher from the current dispatcher and the given interceptors.
 
 Arguments:
 
-* **interceptors** `Interceptor[interceptor[]]`: It is an array of `Interceptor` functions passed as only argument, or several interceptors passed as separate arguments.
+- **interceptors** `Interceptor[interceptor[]]`: It is an array of `Interceptor` functions passed as only argument, or several interceptors passed as separate arguments.
 
 Returns: `Dispatcher`.
 
@@ -879,74 +900,63 @@ A function that takes a `dispatch` method and returns a `dispatch`-like function
 #### Example 1 - Basic Compose
 
 ```js
-const { Client, RedirectHandler } = require('undici')
+const { Client, RedirectHandler } = require("undici");
 
-const redirectInterceptor = dispatch => {
+const redirectInterceptor = (dispatch) => {
     return (opts, handler) => {
-      const { maxRedirections } = opts
+        const { maxRedirections } = opts;
 
-      if (!maxRedirections) {
-        return dispatch(opts, handler)
-      }
+        if (!maxRedirections) {
+            return dispatch(opts, handler);
+        }
 
-      const redirectHandler = new RedirectHandler(
-        dispatch,
-        maxRedirections,
-        opts,
-        handler
-      )
-      opts = { ...opts, maxRedirections: 0 } // Stop sub dispatcher from also redirecting.
-      return dispatch(opts, redirectHandler)
-    }
-}
+        const redirectHandler = new RedirectHandler(dispatch, maxRedirections, opts, handler);
+        opts = { ...opts, maxRedirections: 0 }; // Stop sub dispatcher from also redirecting.
+        return dispatch(opts, redirectHandler);
+    };
+};
 
-const client = new Client('http://localhost:3000')
-  .compose(redirectInterceptor)
+const client = new Client("http://localhost:3000").compose(redirectInterceptor);
 
-await client.request({ path: '/', method: 'GET' })
+await client.request({ path: "/", method: "GET" });
 ```
 
 #### Example 2 - Chained Compose
 
 ```js
-const { Client, RedirectHandler, RetryHandler } = require('undici')
+const { Client, RedirectHandler, RetryHandler } = require("undici");
 
-const redirectInterceptor = dispatch => {
+const redirectInterceptor = (dispatch) => {
     return (opts, handler) => {
-      const { maxRedirections } = opts
+        const { maxRedirections } = opts;
 
-      if (!maxRedirections) {
-        return dispatch(opts, handler)
-      }
+        if (!maxRedirections) {
+            return dispatch(opts, handler);
+        }
 
-      const redirectHandler = new RedirectHandler(
-        dispatch,
-        maxRedirections,
-        opts,
-        handler
-      )
-      opts = { ...opts, maxRedirections: 0 }
-      return dispatch(opts, redirectHandler)
-    }
-}
+        const redirectHandler = new RedirectHandler(dispatch, maxRedirections, opts, handler);
+        opts = { ...opts, maxRedirections: 0 };
+        return dispatch(opts, redirectHandler);
+    };
+};
 
-const retryInterceptor = dispatch => {
-  return function retryInterceptor (opts, handler) {
-    return dispatch(
-      opts,
-      new RetryHandler(opts, {
-        handler,
-        dispatch
-      })
-    )
-  }
-}
+const retryInterceptor = (dispatch) => {
+    return function retryInterceptor(opts, handler) {
+        return dispatch(
+            opts,
+            new RetryHandler(opts, {
+                handler,
+                dispatch,
+            }),
+        );
+    };
+};
 
-const client = new Client('http://localhost:3000')
-  .compose(redirectInterceptor)
-  .compose(retryInterceptor)
+const client = new Client("http://localhost:3000")
+    .compose(redirectInterceptor)
+    .compose(retryInterceptor);
 
-await client.request({ path: '/', method: 'GET' })
+await client.request({ path: "/", method: "GET" });
 ```
 
 #### Pre-built interceptors
@@ -964,9 +974,9 @@ const { Client, interceptors } = require("undici");
 const { redirect } = interceptors;
 
 const client = new Client("http://example.com").compose(
-  redirect({ maxRedirections: 3, throwOnMaxRedirects: true })
+    redirect({ maxRedirections: 3, throwOnMaxRedirects: true }),
 );
-client.request({ path: "/" })
+client.request({ path: "/" });
 ```
 
 ##### `retry`
@@ -982,13 +992,13 @@ const { Client, interceptors } = require("undici");
 const { retry } = interceptors;
 
 const client = new Client("http://example.com").compose(
-  retry({
-    maxRetries: 3,
-    minTimeout: 1000,
-    maxTimeout: 10000,
-    timeoutFactor: 2,
-    retryAfter: true,
-  })
+    retry({
+        maxRetries: 3,
+        minTimeout: 1000,
+        maxTimeout: 10000,
+        timeoutFactor: 2,
+        retryAfter: true,
+    }),
 );
 ```
 
@@ -997,7 +1007,8 @@ const client = new Client("http://example.com").compose(
 The `dump` interceptor enables you to dump the response body from a request upon a given limit.
 
 **Options**
-* `maxSize` - The maximum size (in bytes) of the response body to dump. If the size of the request's body exceeds this value then the connection will be closed. Default: `1048576`.
+
+- `maxSize` - The maximum size (in bytes) of the response body to dump. If the size of the request's body exceeds this value then the connection will be closed. Default: `1048576`.
 
 > The `Dispatcher#options` also gets extended with the options `dumpMaxSize`, `abortOnDumped`, and `waitForTrailers` which can be used to configure the interceptor at a request-per-request basis.
 
@@ -1008,19 +1019,19 @@ const { Client, interceptors } = require("undici");
 const { dump } = interceptors;
 
 const client = new Client("http://example.com").compose(
-  dump({
-    maxSize: 1024,
-  })
+    dump({
+        maxSize: 1024,
+    }),
 );
 
 // or
 client.dispatch(
-  {
-    path: "/",
-    method: "GET",
-    dumpMaxSize: 1024,
-  },
-  handler
+    {
+        path: "/",
+        method: "GET",
+        dumpMaxSize: 1024,
+    },
+    handler,
 );
 ```
 
@@ -1028,35 +1039,38 @@ client.dispatch(
 
 The `dns` interceptor enables you to cache DNS lookups for a given duration, per origin.
 
->It is well suited for scenarios where you want to cache DNS lookups to avoid the overhead of resolving the same domain multiple times
+> It is well suited for scenarios where you want to cache DNS lookups to avoid the overhead of resolving the same domain multiple times
 
 **Options**
-* `maxTTL` - The maximum time-to-live (in milliseconds) of the DNS cache. It should be a positive integer. Default: `10000`.
-  * Set `0` to disable TTL.
-* `maxItems` - The maximum number of items to cache. It should be a positive integer. Default: `Infinity`.
-* `dualStack` - Whether to resolve both IPv4 and IPv6 addresses. Default: `true`.
-  * It will also attempt a happy-eyeballs-like approach to connect to the available addresses in case of a connection failure.
-* `affinity` - Whether to use IPv4 or IPv6 addresses. Default: `4`.
-  * It can be either `'4` or `6`.
-  * It will only take effect if `dualStack` is `false`.
-* `lookup: (hostname: string, options: LookupOptions, callback: (err: NodeJS.ErrnoException | null, addresses: DNSInterceptorRecord[]) => void) => void` - Custom lookup function. Default: `dns.lookup`.
-  * For more info see [dns.lookup](https://nodejs.org/api/dns.html#dns_dns_lookup_hostname_options_callback).
-* `pick: (origin: URL, records: DNSInterceptorRecords, affinity: 4 | 6) => DNSInterceptorRecord` - Custom pick function. Default: `RoundRobin`.
-  * The function should return a single record from the records array.
-  * By default a simplified version of Round Robin is used.
-  * The `records` property can be mutated to store the state of the balancing algorithm.
+
+- `maxTTL` - The maximum time-to-live (in milliseconds) of the DNS cache. It should be a positive integer. Default: `10000`.
+    - Set `0` to disable TTL.
+- `maxItems` - The maximum number of items to cache. It should be a positive integer. Default: `Infinity`.
+- `dualStack` - Whether to resolve both IPv4 and IPv6 addresses. Default: `true`.
+    - It will also attempt a happy-eyeballs-like approach to connect to the available addresses in case of a connection failure.
+- `affinity` - Whether to use IPv4 or IPv6 addresses. Default: `4`.
+    - It can be either `'4` or `6`.
+    - It will only take effect if `dualStack` is `false`.
+- `lookup: (hostname: string, options: LookupOptions, callback: (err: NodeJS.ErrnoException | null, addresses: DNSInterceptorRecord[]) => void) => void` - Custom lookup function. Default: `dns.lookup`.
+    - For more info see [dns.lookup](https://nodejs.org/api/dns.html#dns_dns_lookup_hostname_options_callback).
+- `pick: (origin: URL, records: DNSInterceptorRecords, affinity: 4 | 6) => DNSInterceptorRecord` - Custom pick function. Default: `RoundRobin`.
+    - The function should return a single record from the records array.
+    - By default a simplified version of Round Robin is used.
+    - The `records` property can be mutated to store the state of the balancing algorithm.
 
 > The `Dispatcher#options` also gets extended with the options `dns.affinity`, `dns.dualStack`, `dns.lookup` and `dns.pick` which can be used to configure the interceptor at a request-per-request basis.
 
 **DNSInterceptorRecord**
 It represents a DNS record.
-* `family` - (`number`) The IP family of the address. It can be either `4` or `6`.
-* `address` - (`string`) The IP address.
+
+- `family` - (`number`) The IP family of the address. It can be either `4` or `6`.
+- `address` - (`string`) The IP address.
 
 **DNSInterceptorOriginRecords**
 It represents a map of DNS IP addresses records for a single origin.
-* `4.ips` - (`DNSInterceptorRecord[] | null`) The IPv4 addresses.
-* `6.ips` - (`DNSInterceptorRecord[] | null`) The IPv6 addresses.
+
+- `4.ips` - (`DNSInterceptorRecord[] | null`) The IPv4 addresses.
+- `6.ips` - (`DNSInterceptorRecord[] | null`) The IPv6 addresses.
 
 **Example - Basic DNS Interceptor**
 
@@ -1064,14 +1078,12 @@ It represents a map of DNS IP addresses records for a single origin.
 const { Client, interceptors } = require("undici");
 const { dns } = interceptors;
 
-const client = new Agent().compose([
-  dns({ ...opts })
-])
+const client = new Agent().compose([dns({ ...opts })]);
 
 const response = await client.request({
-  origin: `http://localhost:3030`,
-  ...requestOpts
-})
+    origin: `http://localhost:3030`,
+    ...requestOpts,
+});
 ```
 
 ##### `responseError`
@@ -1084,14 +1096,12 @@ The `responseError` interceptor throws an error for responses with status code e
 const { Client, interceptors } = require("undici");
 const { responseError } = interceptors;
 
-const client = new Client("http://example.com").compose(
-  responseError()
-);
+const client = new Client("http://example.com").compose(responseError());
 
 // Will throw a ResponseError for status codes >= 400
 await client.request({
-  method: "GET",
-  path: "/"
+    method: "GET",
+    path: "/",
 });
 ```
 
@@ -1103,8 +1113,8 @@ The `decompress` interceptor automatically decompresses response bodies that are
 
 **Options**
 
-* `skipErrorResponses` - Whether to skip decompression for error responses (status codes >= 400). Default: `true`.
-* `skipStatusCodes` - Array of status codes to skip decompression for. Default: `[204, 304]`.
+- `skipErrorResponses` - Whether to skip decompression for error responses (status codes >= 400). Default: `true`.
+- `skipStatusCodes` - Array of status codes to skip decompression for. Default: `[204, 304]`.
 
 **Example - Basic Decompress Interceptor**
 
@@ -1112,14 +1122,12 @@ The `decompress` interceptor automatically decompresses response bodies that are
 const { Client, interceptors } = require("undici");
 const { decompress } = interceptors;
 
-const client = new Client("http://example.com").compose(
-  decompress()
-);
+const client = new Client("http://example.com").compose(decompress());
 
 // Automatically decompresses gzip/deflate/brotli/zstd responses
 const response = await client.request({
-  method: "GET",
-  path: "/"
+    method: "GET",
+    path: "/",
 });
 ```
 
@@ -1130,29 +1138,29 @@ const { Client, interceptors } = require("undici");
 const { decompress } = interceptors;
 
 const client = new Client("http://example.com").compose(
-  decompress({
-    skipErrorResponses: false, // Decompress 5xx responses
-    skipStatusCodes: [204, 304, 201] // Skip these status codes
-  })
+    decompress({
+        skipErrorResponses: false, // Decompress 5xx responses
+        skipStatusCodes: [204, 304, 201], // Skip these status codes
+    }),
 );
 ```
 
 **Supported Encodings**
 
-* `gzip` / `x-gzip` - GZIP compression
-* `deflate` / `x-compress` - DEFLATE compression  
-* `br` - Brotli compression
-* `zstd` - Zstandard compression
-* Multiple encodings (e.g., `gzip, deflate`) are supported per RFC-9110
+- `gzip` / `x-gzip` - GZIP compression
+- `deflate` / `x-compress` - DEFLATE compression
+- `br` - Brotli compression
+- `zstd` - Zstandard compression
+- Multiple encodings (e.g., `gzip, deflate`) are supported per RFC-9110
 
 **Behavior**
 
-* Skips decompression for status codes < 200 or >= 400 (configurable)
-* Skips decompression for 204 No Content and 304 Not Modified by default
-* Removes `content-encoding` and `content-length` headers when decompressing
-* Passes through unsupported encodings unchanged
-* Handles case-insensitive encoding names
-* Supports streaming decompression without buffering
+- Skips decompression for status codes < 200 or >= 400 (configurable)
+- Skips decompression for 204 No Content and 304 Not Modified by default
+- Removes `content-encoding` and `content-length` headers when decompressing
+- Passes through unsupported encodings unchanged
+- Handles case-insensitive encoding names
+- Supports streaming decompression without buffering
 
 ##### `Cache Interceptor`
 
@@ -1161,10 +1169,10 @@ The `cache` interceptor implements client-side response caching as described in
 
 **Options**
 
-* `store` - The [`CacheStore`](/docs/docs/api/CacheStore.md) to store and retrieve responses from. Default is [`MemoryCacheStore`](/docs/docs/api/CacheStore.md#memorycachestore).
-* `methods` - The [**safe** HTTP methods](https://www.rfc-editor.org/rfc/rfc9110#section-9.2.1) to cache the response of.
-* `cacheByDefault` - The default expiration time to cache responses by if they don't have an explicit expiration and cannot have an heuristic expiry computed. If this isn't present, responses neither with an explicit expiration nor heuristically cacheable will not be cached. Default `undefined`.
-* `type` - The [type of cache](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#types_of_caches) for Undici to act as. Can be `shared` or `private`. Default `shared`. `private` implies privately cacheable responses will be cached and potentially shared with other users of your application.
+- `store` - The [`CacheStore`](/docs/docs/api/CacheStore.md) to store and retrieve responses from. Default is [`MemoryCacheStore`](/docs/docs/api/CacheStore.md#memorycachestore).
+- `methods` - The [**safe** HTTP methods](https://www.rfc-editor.org/rfc/rfc9110#section-9.2.1) to cache the response of.
+- `cacheByDefault` - The default expiration time to cache responses by if they don't have an explicit expiration and cannot have an heuristic expiry computed. If this isn't present, responses neither with an explicit expiration nor heuristically cacheable will not be cached. Default `undefined`.
+- `type` - The [type of cache](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching#types_of_caches) for Undici to act as. Can be `shared` or `private`. Default `shared`. `private` implies privately cacheable responses will be cached and potentially shared with other users of your application.
 
 ## Instance Events
 
@@ -1172,16 +1180,16 @@ The `cache` interceptor implements client-side response caching as described in
 
 Parameters:
 
-* **origin** `URL`
-* **targets** `Array<Dispatcher>`
+- **origin** `URL`
+- **targets** `Array<Dispatcher>`
 
 ### Event: `'disconnect'`
 
 Parameters:
 
-* **origin** `URL`
-* **targets** `Array<Dispatcher>`
-* **error** `Error`
+- **origin** `URL`
+- **targets** `Array<Dispatcher>`
+- **error** `Error`
 
 Emitted when the dispatcher has been disconnected from the origin.
 
@@ -1193,9 +1201,9 @@ Emitted when the dispatcher has been disconnected from the origin.
 
 Parameters:
 
-* **origin** `URL`
-* **targets** `Array<Dispatcher>`
-* **error** `Error`
+- **origin** `URL`
+- **targets** `Array<Dispatcher>`
+- **error** `Error`
 
 Emitted when dispatcher fails to connect to
 origin.
@@ -1204,20 +1212,20 @@ origin.
 
 Parameters:
 
-* **origin** `URL`
+- **origin** `URL`
 
 Emitted when dispatcher is no longer busy.
 
 ## Parameter: `UndiciHeaders`
 
-* `Record<string, string | string[] | undefined> | string[] | Iterable<[string, string | string[] | undefined]> | null`
+- `Record<string, string | string[] | undefined> | string[] | Iterable<[string, string | string[] | undefined]> | null`
 
 Header arguments such as `options.headers` in [`Client.dispatch`](/docs/docs/api/Client.md#clientdispatchoptions-handlers) can be specified in three forms:
 
-* As an object specified by the `Record<string, string | string[] | undefined>` (`IncomingHttpHeaders`) type.
-* As an array of strings. An array representation of a header list must have an even length, or an `InvalidArgumentError` will be thrown.
-* As an iterable that can encompass `Headers`, `Map`, or a custom iterator returning key-value pairs.
-Keys are lowercase and values are not modified.
+- As an object specified by the `Record<string, string | string[] | undefined>` (`IncomingHttpHeaders`) type.
+- As an array of strings. An array representation of a header list must have an even length, or an `InvalidArgumentError` will be thrown.
+- As an iterable that can encompass `Headers`, `Map`, or a custom iterator returning key-value pairs.
+  Keys are lowercase and values are not modified.
 
 Response headers will derive a `host` from the `url` of the [Client](/docs/docs/api/Client.md#class-client) instance if no `host` header was previously specified.
 
@@ -1237,36 +1245,41 @@ Response headers will derive a `host` from the `url` of the [Client](/docs/docs/
 
 ```js
 [
-  'content-length', '123',
-  'content-type', 'text/plain',
-  'connection', 'keep-alive',
-  'host', 'mysite.com',
-  'accept', '*/*'
-]
+    "content-length",
+    "123",
+    "content-type",
+    "text/plain",
+    "connection",
+    "keep-alive",
+    "host",
+    "mysite.com",
+    "accept",
+    "*/*",
+];
 ```
 
 ### Example 3 - Iterable
 
 ```js
 new Headers({
-  'content-length': '123',
-  'content-type': 'text/plain',
-  connection: 'keep-alive',
-  host: 'mysite.com',
-  accept: '*/*'
-})
+    "content-length": "123",
+    "content-type": "text/plain",
+    connection: "keep-alive",
+    host: "mysite.com",
+    accept: "*/*",
+});
 ```
 
 or
 
 ```js
 new Map([
-  ['content-length', '123'],
-  ['content-type', 'text/plain'],
-  ['connection', 'keep-alive'],
-  ['host', 'mysite.com'],
-  ['accept', '*/*']
-])
+    ["content-length", "123"],
+    ["content-type", "text/plain"],
+    ["connection", "keep-alive"],
+    ["host", "mysite.com"],
+    ["accept", "*/*"],
+]);
 ```
 
 or

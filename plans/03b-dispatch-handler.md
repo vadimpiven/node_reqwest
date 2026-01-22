@@ -38,7 +38,7 @@ JavaScript Handler
 
 ### packages/node/src/handler.rs
 
-```rust
+````rust
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! JsDispatchHandler bridges Rust async trait to JS callbacks via Neon Channel.
@@ -234,11 +234,11 @@ impl DispatchHandler for JsDispatchHandler {
         });
     }
 }
-```
+````
 
 ### packages/node/src/body.rs
 
-```rust
+````rust
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Request body streaming from JS ReadableStreamBYOBReader.
@@ -429,7 +429,7 @@ impl Drop for JsBodyReader {
         }
     }
 }
-```
+````
 
 ### packages/node/src/dispatch.rs
 
@@ -539,18 +539,18 @@ fn hello<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsString> {
 
 ## Tables
 
-| Metric | Value |
-| :--- | :--- |
-| **Communication** | `neon::event::Channel` (non-blocking) |
-| **Request Body** | `reqwest::Body` (Bytes or streaming via JsBodyReader) |
-| **Request Body Stream** | Pull-based via `tokio::sync::oneshot` |
-| **Response Data** | Sync-ack via `tokio::sync::oneshot` in Channel closure |
-| **Backpressure** | Natural - Rust controls read pace, waits for JS callback |
-| **Memory Bounds** | 1 chunk in flight (request or response) |
-| **JS Event Loop** | Never blocked |
-| **Data Copy** | 1 copy per chunk (Electron compatible) |
-| **Thread Safety** | Arc-wrapped JS function roots |
-| **Cleanup on Abort** | Drop cancels stream + releases JS reader via Channel |
+| Metric                  | Value                                                    |
+| :---------------------- | :------------------------------------------------------- |
+| **Communication**       | `neon::event::Channel` (non-blocking)                    |
+| **Request Body**        | `reqwest::Body` (Bytes or streaming via JsBodyReader)    |
+| **Request Body Stream** | Pull-based via `tokio::sync::oneshot`                    |
+| **Response Data**       | Sync-ack via `tokio::sync::oneshot` in Channel closure   |
+| **Backpressure**        | Natural - Rust controls read pace, waits for JS callback |
+| **Memory Bounds**       | 1 chunk in flight (request or response)                  |
+| **JS Event Loop**       | Never blocked                                            |
+| **Data Copy**           | 1 copy per chunk (Electron compatible)                   |
+| **Thread Safety**       | Arc-wrapped JS function roots                            |
+| **Cleanup on Abort**    | Drop cancels stream + releases JS reader via Channel     |
 
 ## File Structure
 

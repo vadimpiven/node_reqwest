@@ -442,12 +442,12 @@ pub use error::CoreError;
 
 ## Tables
 
-| Metric | Value |
-| :--- | :--- |
-| **Dependencies** | `reqwest`, `tokio`, `tokio-util`, `async-trait`, `bytes` |
-| **Pause State** | `tokio::sync::watch` (race-condition-free) |
-| **Thread Safety** | All types are `Send + Sync` |
-| **Tests** | 5 unit tests |
+| Metric            | Value                                                    |
+| :---------------- | :------------------------------------------------------- |
+| **Dependencies**  | `reqwest`, `tokio`, `tokio-util`, `async-trait`, `bytes` |
+| **Pause State**   | `tokio::sync::watch` (race-condition-free)               |
+| **Thread Safety** | All types are `Send + Sync`                              |
+| **Tests**         | 5 unit tests                                             |
 
 ## File Structure
 

@@ -1,4 +1,4 @@
-declare module 'fd-lock' {
+declare module "fd-lock" {
   export interface FdLockOptions {
     wait?: boolean;
     retry?: number;

@@ -50,12 +50,7 @@ allowed_blank_lines = 1
 crlf = false
 
 [[rule]]
-keys = [
-    "build-dependencies",
-    "dependencies",
-    "dev-dependencies",
-    "workspace.dependencies",
-]
+keys = ["build-dependencies", "dependencies", "dev-dependencies", "workspace.dependencies"]
 formatting = { reorder_keys = true }
 
 [[rule]]

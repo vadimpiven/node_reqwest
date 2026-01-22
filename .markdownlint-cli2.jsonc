@@ -4,23 +4,23 @@
     "MD013": {
       "line_length": 100,
       "code_blocks": false,
-      "tables": false
+      "tables": false,
     },
     "MD024": {
-      "siblings_only": true
+      "siblings_only": true,
     },
     "MD029": {
-      "style": "ordered"
+      "style": "ordered",
     },
     "MD033": {
-      "allowed_elements": ["br", "details", "summary"]
+      "allowed_elements": ["br", "details", "summary"],
     },
     "MD041": false,
     "MD048": {
-      "style": "backtick"
-    }
+      "style": "backtick",
+    },
   },
   "globs": ["*.md", "packages/**/*.md", "plans/*.md"],
   "ignores": ["**/*_REFERENCE.md"],
-  "gitignore": ".gitignore"
+  "gitignore": ".gitignore",
 }

@@ -8,7 +8,7 @@
     "gruntfuggly.todo-tree",
     "fill-labs.dependi",
     "christian-kohler.npm-intellisense",
-    "biomejs.biome",
+    "oxc.oxc-vscode",
     "ryanluker.vscode-coverage-gutters",
     "dustypomerleau.rust-syntax",
     "rust-lang.rust-analyzer",

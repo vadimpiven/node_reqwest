@@ -1,6 +1,6 @@
 {
-  "private": true,
   "name": "core",
+  "private": true,
   "scripts": {
     "test:nextest": "node ../../scripts/test-nextest.ts",
     "test:doctest": "cargo test --doc",

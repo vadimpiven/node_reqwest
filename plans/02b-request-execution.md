@@ -771,13 +771,13 @@ async fn test_destroy_cancels_pending() {
 
 ## Tables
 
-| Metric | Value |
-| :--- | :--- |
-| **Test Dependency** | `wiremock = "0.6"` |
-| **Concurrency** | `tokio::spawn` for non-blocking dispatch |
-| **Backpressure** | `select!` + `wait_if_paused()` |
+| Metric                  | Value                                                |
+| :---------------------- | :--------------------------------------------------- |
+| **Test Dependency**     | `wiremock = "0.6"`                                   |
+| **Concurrency**         | `tokio::spawn` for non-blocking dispatch             |
+| **Backpressure**        | `select!` + `wait_if_paused()`                       |
 | **Per-request timeout** | `tokio::time::timeout` wrapping send and body phases |
-| **Tests** | 8 integration tests |
+| **Tests**               | 8 integration tests                                  |
 
 ## File Structure
 

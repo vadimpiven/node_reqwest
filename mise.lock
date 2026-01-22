@@ -245,6 +245,14 @@ backend = "core:node"
 "platforms.windows-arm64" = { checksum = "sha256:92b9f9b0c0c123e11e4afc535f0ec19cd987465eea506427553a49971364158a", url = "https://nodejs.org/dist/v24.13.0/node-v24.13.0-win-arm64.zip"}
 "platforms.windows-x64" = { checksum = "sha256:ca2742695be8de44027d71b3f53a4bdb36009b95575fe1ae6f7f0b5ce091cb88", url = "https://nodejs.org/dist/v24.13.0/node-v24.13.0-win-x64.zip"}
 
+[[tools."npm:oxfmt"]]
+version = "0.26.0"
+backend = "npm:oxfmt"
+
+[[tools."npm:oxlint"]]
+version = "1.41.0"
+backend = "npm:oxlint"
+
 [[tools.rust]]
 version = "nightly-2026-01-15"
 backend = "core:rust"

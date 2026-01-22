@@ -1,16 +1,15 @@
 [![CI status][status-badge]][status-dashboard]
 [![Test coverage][coverage-badge]][coverage-dashboard]
 
-[status-badge]: <https://img.shields.io/github/checks-status/vadimpiven/node_reqwest/main>
-[status-dashboard]: <https://github.com/vadimpiven/node_reqwest/actions?query=branch%3Amain>
-
-[coverage-badge]: <https://img.shields.io/codecov/c/github/vadimpiven/node_reqwest/main>
-[coverage-dashboard]: <https://app.codecov.io/gh/vadimpiven/node_reqwest/tree/main>
+[status-badge]: https://img.shields.io/github/checks-status/vadimpiven/node_reqwest/main
+[status-dashboard]: https://github.com/vadimpiven/node_reqwest/actions?query=branch%3Amain
+[coverage-badge]: https://img.shields.io/codecov/c/github/vadimpiven/node_reqwest/main
+[coverage-dashboard]: https://app.codecov.io/gh/vadimpiven/node_reqwest/tree/main
 
 [![Open in GitHub Codespaces][codespace-badge]][codespace-action]
 
-[codespace-badge]: <https://github.com/codespaces/badge.svg>
-[codespace-action]: <https://codespaces.new/vadimpiven/node_reqwest?quickstart=1>
+[codespace-badge]: https://github.com/codespaces/badge.svg
+[codespace-action]: https://codespaces.new/vadimpiven/node_reqwest?quickstart=1
 
 # node-reqwest
 

@@ -1,11 +1,12 @@
 {
-  "private": true,
   "name": "workspace",
+  "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.28.1+sha512.7d7dbbca9e99447b7c3bf7a73286afaaf6be99251eb9498baefa7d406892f67b879adb3a1d7e687fc4ccc1a388c7175fbaae567a26ab44d1067b54fcb0d6a316",
-  "engines": {
-    "node": "^22.18.0 || ^24.11.0",
-    "pnpm": "^10.26.0"
+  "scripts": {
+    "preinstall": "npx only-allow pnpm && rustup show",
+    "postinstall": "node ./scripts/setup-playwright.ts",
+    "prepare": "husky",
+    "test": "pnpm --recursive --if-present run test"
   },
   "devDependencies": {
     "@google/gemini-cli": "catalog:",
@@ -16,15 +17,16 @@
     "hono": "catalog:",
     "husky": "catalog:",
     "markdownlint-cli2": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
     "renovate": "catalog:",
     "vitest": "catalog:"
   },
-  "scripts": {
-    "preinstall": "npx only-allow pnpm && rustup show",
-    "postinstall": "node ./scripts/setup-playwright.ts",
-    "prepare": "husky",
-    "test": "pnpm --recursive --if-present run test"
+  "engines": {
+    "node": "^22.18.0 || ^24.11.0",
+    "pnpm": "^10.26.0"
   },
+  "packageManager": "pnpm@10.28.1+sha512.7d7dbbca9e99447b7c3bf7a73286afaaf6be99251eb9498baefa7d406892f67b879adb3a1d7e687fc4ccc1a388c7175fbaae567a26ab44d1067b54fcb0d6a316",
   "pnpm": {
     "overrides": {
       "tar": "7.5.4",
@@ -32,7 +34,8 @@
       "@hono/node-server>hono": "4.11.4",
       "@hono/node-server": "1.19.9",
       "diff": "8.0.3",
-      "undici": "7.18.2"
+      "undici": "7.18.2",
+      "lodash@>=4.0.0 <=4.17.22": ">=4.17.23"
     },
     "onlyBuiltDependencies": [
       "better-sqlite3",

@@ -49,82 +49,82 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 
 ### Phase 1: Core Rust (01 → 02a → 02b)
 
-| Chunk | Purpose | Depends On | Testable Result |
-| :--- | :--- | :--- | :--- |
-| **01-errors.md** | Error types with undici codes | - | Rust unit tests pass |
-| **02a-core-types.md** | Types, traits, backpressure primitives | 01 | Unit tests for PauseState, RequestController |
-| **02b-request-execution.md** | Agent::dispatch with timeout/abort | 02a | Integration tests with wiremock |
+| Chunk                        | Purpose                                | Depends On | Testable Result                              |
+| :--------------------------- | :------------------------------------- | :--------- | :------------------------------------------- |
+| **01-errors.md**             | Error types with undici codes          | -          | Rust unit tests pass                         |
+| **02a-core-types.md**        | Types, traits, backpressure primitives | 01         | Unit tests for PauseState, RequestController |
+| **02b-request-execution.md** | Agent::dispatch with timeout/abort     | 02a        | Integration tests with wiremock              |
 
 ### Phase 2: FFI Bridge (03a → 03b → 03c)
 
-| Chunk | Purpose | Depends On | Testable Result |
-| :--- | :--- | :--- | :--- |
-| **03a-ffi-types.md** | Neon setup, addon-def.ts | 02b | `pnpm build` succeeds, hello() works |
-| **03b-dispatch-handler.md** | JsDispatchHandler + body streaming | 03a | Callbacks receive events |
-| **03c-request-handles.md** | agentDispatch + control bindings | 03b | Smoke tests for dispatch/abort/pause |
+| Chunk                       | Purpose                            | Depends On | Testable Result                      |
+| :-------------------------- | :--------------------------------- | :--------- | :----------------------------------- |
+| **03a-ffi-types.md**        | Neon setup, addon-def.ts           | 02b        | `pnpm build` succeeds, hello() works |
+| **03b-dispatch-handler.md** | JsDispatchHandler + body streaming | 03a        | Callbacks receive events             |
+| **03c-request-handles.md**  | agentDispatch + control bindings   | 03b        | Smoke tests for dispatch/abort/pause |
 
 ### Phase 3: TypeScript Integration (04a → 04b)
 
-| Chunk | Purpose | Depends On | Testable Result |
-| :--- | :--- | :--- | :--- |
-| **04a-dispatch-controller.md** | DispatchControllerImpl | 03c | Controller state tests |
-| **04b-agent-integration.md** | Agent class + E2E tests | 04a | Real HTTP requests complete |
+| Chunk                          | Purpose                 | Depends On | Testable Result             |
+| :----------------------------- | :---------------------- | :--------- | :-------------------------- |
+| **04a-dispatch-controller.md** | DispatchControllerImpl  | 03c        | Controller state tests      |
+| **04b-agent-integration.md**   | Agent class + E2E tests | 04a        | Real HTTP requests complete |
 
 ### Phase 4: Performance Verification (05a → 05b)
 
-| Chunk | Purpose | Depends On | Testable Result |
-| :--- | :--- | :--- | :--- |
-| **05a-benchmark-infrastructure.md** | Test servers + utilities | 04b | Servers start, respond |
-| **05b-benchmarks-ci.md** | Comparison + CI workflow | 05a | ≥95% of undici performance |
+| Chunk                               | Purpose                  | Depends On | Testable Result            |
+| :---------------------------------- | :----------------------- | :--------- | :------------------------- |
+| **05a-benchmark-infrastructure.md** | Test servers + utilities | 04b        | Servers start, respond     |
+| **05b-benchmarks-ci.md**            | Comparison + CI workflow | 05a        | ≥95% of undici performance |
 
 ## Design Decisions
 
-| Decision | Choice | Rationale |
-| :--- | :--- | :--- |
-| Request body | reqwest::Body (Bytes or Stream) | Supports both materialized and streaming bodies |
-| Request body stream | Pull-based via oneshot channels | JS never blocked, Rust polls when ready |
-| Response data | Sync-ack via oneshot in Channel closure | Rust waits for JS callback execution per chunk |
-| Response body on error | Drop without consuming | Avoids useless FFI copying; connection may close |
-| Handler API | New controller API only | Undici wraps legacy handlers |
-| WebSocket/Upgrade | NotSupportedError | Post-undici-compliance |
-| Tokio runtime | Neon's global shared runtime | Single runtime, no custom init |
-| Error types | CoreError + from_reqwest() | Unified mapping to undici codes |
-| User pause/resume | PauseState + watch channel | Manual backpressure control |
-| Request body cleanup | Drop cancels stream + releases Root | Proper abort handling, no resource leaks |
-| dispatch() return | Always true | No internal queue limit |
-| Events | connect (per-origin), disconnect, connectionError | Per undici Dispatcher spec |
-| throwOnError | ResponseError for 4xx/5xx | Matches undici behavior |
-| AbortSignal | Handled in dispatch(), triggers controller.abort() | Matches undici abort semantics |
-| Lifecycle (close/destroy) | Rust trait with request tracking | Graceful shutdown + request cancellation |
-| expectContinue | Not exposed | reqwest handles internally for H2 |
+| Decision                  | Choice                                             | Rationale                                        |
+| :------------------------ | :------------------------------------------------- | :----------------------------------------------- |
+| Request body              | reqwest::Body (Bytes or Stream)                    | Supports both materialized and streaming bodies  |
+| Request body stream       | Pull-based via oneshot channels                    | JS never blocked, Rust polls when ready          |
+| Response data             | Sync-ack via oneshot in Channel closure            | Rust waits for JS callback execution per chunk   |
+| Response body on error    | Drop without consuming                             | Avoids useless FFI copying; connection may close |
+| Handler API               | New controller API only                            | Undici wraps legacy handlers                     |
+| WebSocket/Upgrade         | NotSupportedError                                  | Post-undici-compliance                           |
+| Tokio runtime             | Neon's global shared runtime                       | Single runtime, no custom init                   |
+| Error types               | CoreError + from_reqwest()                         | Unified mapping to undici codes                  |
+| User pause/resume         | PauseState + watch channel                         | Manual backpressure control                      |
+| Request body cleanup      | Drop cancels stream + releases Root                | Proper abort handling, no resource leaks         |
+| dispatch() return         | Always true                                        | No internal queue limit                          |
+| Events                    | connect (per-origin), disconnect, connectionError  | Per undici Dispatcher spec                       |
+| throwOnError              | ResponseError for 4xx/5xx                          | Matches undici behavior                          |
+| AbortSignal               | Handled in dispatch(), triggers controller.abort() | Matches undici abort semantics                   |
+| Lifecycle (close/destroy) | Rust trait with request tracking                   | Graceful shutdown + request cancellation         |
+| expectContinue            | Not exposed                                        | reqwest handles internally for H2                |
 
 ## Undici Dispatcher Compliance Checklist
 
-| Feature | Status | Notes |
-| :--- | :--- | :--- |
-| dispatch() method | ✅ | Core functionality |
-| DispatchOptions | ✅ | All fields mapped |
-| DispatchHandler callbacks | ✅ | onRequestStart, onResponseStart, etc. |
-| DispatchController | ✅ | abort(), pause(), resume() |
-| Error codes (UND_ERR_*) | ✅ | Symbol.for instanceof |
-| close() / destroy() | ✅ | Lifecycle trait with request tracking |
-| connect event | ✅ | Per-origin, on first successful response |
-| disconnect event | ✅ | On connection loss after established |
-| connectionError event | ✅ | On initial connection failure |
-| throwOnError | ✅ | ResponseError for 4xx/5xx status codes |
-| drain event | ⚠️ | Not emitted (dispatch always returns true) |
-| CONNECT method | ❌ | NotSupportedError |
-| Upgrade requests | ❌ | NotSupportedError |
-| HTTP trailers | ❌ | reqwest doesn't expose |
+| Feature                   | Status | Notes                                      |
+| :------------------------ | :----- | :----------------------------------------- |
+| dispatch() method         | ✅     | Core functionality                         |
+| DispatchOptions           | ✅     | All fields mapped                          |
+| DispatchHandler callbacks | ✅     | onRequestStart, onResponseStart, etc.      |
+| DispatchController        | ✅     | abort(), pause(), resume()                 |
+| Error codes (UND*ERR*\*)  | ✅     | Symbol.for instanceof                      |
+| close() / destroy()       | ✅     | Lifecycle trait with request tracking      |
+| connect event             | ✅     | Per-origin, on first successful response   |
+| disconnect event          | ✅     | On connection loss after established       |
+| connectionError event     | ✅     | On initial connection failure              |
+| throwOnError              | ✅     | ResponseError for 4xx/5xx status codes     |
+| drain event               | ⚠️     | Not emitted (dispatch always returns true) |
+| CONNECT method            | ❌     | NotSupportedError                          |
+| Upgrade requests          | ❌     | NotSupportedError                          |
+| HTTP trailers             | ❌     | reqwest doesn't expose                     |
 
 ## Tables
 
-| Configuration | Value |
-| :--- | :--- |
-| **Target Runtime** | Node.js 20+ |
-| **Rust Version** | 1.75+ |
+| Configuration       | Value        |
+| :------------------ | :----------- |
+| **Target Runtime**  | Node.js 20+  |
+| **Rust Version**    | 1.75+        |
 | **Total Est. Time** | ~16-20 hours |
-| **Total Tests** | ~40 |
+| **Total Tests**     | ~40          |
 
 ## File Structure (Final)
 
