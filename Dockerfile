@@ -9,6 +9,7 @@ ARG USER_GID=$USER_UID
 
 # Container environment variables
 ENV MISE_ENV=docker
+ENV MISE_TRUSTED_CONFIG_PATHS=/workspace
 ENV MISE_DATA_DIR=/workspace/.cache/docker/mise
 ENV READY_MARKER=/home/${USERNAME}/.container-ready
 

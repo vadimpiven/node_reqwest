@@ -1,9 +1,6 @@
 name: "Setup (Docker)"
 description: "Build container image locally, warm registry cache"
 inputs:
-  env:
-    description: "Environment variables in JSON format"
-    required: true
   cache-key:
     description: "Cache key prefix"
     required: true
@@ -26,7 +23,7 @@ runs:
       uses: "actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7" # v5.0.2
       with:
         path: ".cache/docker"
-        key: "${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml', 'Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
+        key: "${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock', 'Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
         restore-keys: |
           ${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-
     - name: "Login to GitHub Container Registry"
@@ -55,13 +52,6 @@ runs:
         build-args: |
           USER_UID=${{ steps.ids.outputs.uid }}
           USER_GID=${{ steps.ids.outputs.gid }}
-    - name: "Set environment variables"
-      shell: "bash"
-      env:
-        ENV: "${{ inputs.env }}"
-      run: |
-        printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> .env
-        printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> "$GITHUB_ENV"
     - name: "Start persistent container"
       uses: "hoverkraft-tech/compose-action@05da55b2bb8a5a759d1c4732095044bd9018c050" # v2.4.3
       env:
@@ -75,4 +65,4 @@ runs:
       uses: "./.github/actions/shell-docker"
       with:
         docker-service: "${{ inputs.docker-service }}"
-        run: "mise install"
+        run: "mise install --yes"

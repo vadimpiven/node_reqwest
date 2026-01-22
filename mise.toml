@@ -6,15 +6,17 @@
 redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 
 [settings]
+env_file = ".env"
 npm.package_manager = "pnpm"
+idiomatic_version_file_enable_tools = ["rust"]
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
 quiet = true
+experimental = true
+lockfile = true
+locked = true
 
 [env]
-_.file = ".env"
-GITHUB_TOKEN = { required = "Set GITHUB_TOKEN to avoid GitHub API rate limiting" }
-
 PYTHONUTF8 = "1"
 PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"
@@ -37,19 +39,18 @@ _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
 node = "24.13.0"
+rust = "latest"
 
-rust.version = "nightly-2026-01-15"
-
-jq = "1.8.1"
-yq = "4.50.1"
-"github:BurntSushi/ripgrep" = "15.1.0"
-"github:aquasecurity/trivy" = "0.68.2"
-"github:google/yamlfmt" = "0.21.0"
-"github:koalaman/shellcheck" = "0.11.0"
-"github:zricethezav/gitleaks" = "8.30.0"
-"github:rhysd/actionlint" = "1.7.10"
-"github:astral-sh/uv" = "0.9.26"
-"github:cargo-bins/cargo-binstall" = "1.16.6"
+"aqua:jqlang/jq" = "1.8.1"
+"aqua:mikefarah/yq" = "4.50.1"
+"aqua:BurntSushi/ripgrep" = "15.1.0"
+"aqua:aquasecurity/trivy" = "0.68.2"
+"aqua:google/yamlfmt" = "0.21.0"
+"aqua:koalaman/shellcheck" = "0.11.0"
+"aqua:gitleaks/gitleaks" = "8.30.0"
+"aqua:rhysd/actionlint" = "1.7.10"
+"aqua:astral-sh/uv" = "0.9.26"
+"aqua:cargo-bins/cargo-binstall" = "1.16.7"
 
 # Tools with non-standard version prefix
 [tools."github:nextest-rs/nextest"]
@@ -61,7 +62,7 @@ version_prefix = "samply-v"
 version = "0.13.1"
 
 # Tools with no Windows ARM64 binary available
-[tools."github:hadolint/hadolint"]
+[tools."aqua:hadolint/hadolint"]
 version = "2.14.0"
 os = ["linux", "macos"]
 
@@ -69,29 +70,17 @@ os = ["linux", "macos"]
 version = "0.19.0"
 os = ["linux", "macos"]
 
-[tools."github:crate-ci/typos"]
-version = "1.42.0"
+[tools."aqua:crate-ci/typos"]
+version = "1.42.1"
 os = ["linux", "macos"]
 
 [tools."github:taiki-e/cargo-llvm-cov"]
 version = "0.6.23"
 os = ["linux", "macos"]
 
-[tools.shfmt]
+[tools."aqua:mvdan/sh"]
 version = "3.11.0"
 os = ["linux", "macos"]
-
-# Unpacked binaries require bin to work
-[tools."github:biomejs/biome"]
-version_prefix = "@biomejs/biome@"
-version = "2.3.11"
-[tools."github:biomejs/biome".platforms]
-windows-x64 = { asset_pattern = "biome-win32-x64.exe", bin = "biome.exe" }
-windows-arm64 = { asset_pattern = "biome-win32-arm64.exe", bin = "biome.exe" }
-linux-x64 = { asset_pattern = "biome-linux-x64-musl", bin = "biome" }
-linux-arm64 = { asset_pattern = "biome-linux-arm64-musl", bin = "biome" }
-macos-x64 = { asset_pattern = "biome-darwin-x64", bin = "biome" }
-macos-arm64 = { asset_pattern = "biome-darwin-arm64", bin = "biome" }
 
 # Stick to 0.12.0 as 0.13.0 dropped support for macOS x86_64
 [tools."github:mozilla/sccache"]
@@ -118,10 +107,7 @@ sources = ["rust-toolchain.toml"]
 description = "Install pnpm dependencies"
 hide = true
 env = { CI = "true", HUSKY = "1" }
-run = [
-    "corepack enable pnpm",
-    "pnpm install --frozen-lockfile --prefer-offline",
-]
+run = ["corepack enable pnpm", "pnpm install --frozen-lockfile --prefer-offline"]
 sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
 
 [tasks."setup:python"]
@@ -187,23 +173,42 @@ run = "uv run --no-sync pyrefly check --remove-unused-ignores --all"
 run_windows = "exit 0"
 sources = ["packages/**/*.py", "pyproject.toml"]
 
-# --- biome (JS/TS/JSON) ---
-[tasks."check:biome"]
-description = "Check JS/TS/JSON with Biome"
+# --- oxlint (JS/TS) ---
+[tasks."check:oxlint"]
+description = "Check JS/TS with oxlint"
 hide = true
-run = "biome check . --log-level warn"
+depends = ["setup:pnpm"]
+run = "pnpm exec oxlint . --deny-warnings"
+sources = ["{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs}"]
+
+[tasks."fix:oxlint"]
+description = "Fix JS/TS with oxlint"
+hide = true
+depends = ["setup:pnpm"]
+run = "pnpm exec oxlint . --fix"
+sources = ["{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs}"]
+
+# --- oxfmt (JS/TS/JSON) ---
+[tasks."check:oxfmt"]
+description = "Check JS/TS/JSON with oxfmt"
+hide = true
+depends = ["setup:pnpm"]
+run = "pnpm exec oxfmt --check ."
 sources = [
     "*.{json,jsonc}",
     "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}",
+    ".oxfmtrc.json",
 ]
 
-[tasks."fix:biome"]
-description = "Fix JS/TS/JSON with Biome"
+[tasks."fix:oxfmt"]
+description = "Format JS/TS/JSON with oxfmt"
 hide = true
-run = "biome check . --log-level warn --fix"
+depends = ["setup:pnpm"]
+run = "pnpm exec oxfmt --write ."
 sources = [
     "*.{json,jsonc}",
     "{.vscode,packages,scripts}/**/*.{ts,js,mts,mjs,json,jsonc}",
+    ".oxfmtrc.json",
 ]
 
 # --- taplo (TOML) ---
@@ -399,9 +404,7 @@ hide = true
 depends = ["setup:python"]
 run = "uv run --no-sync semgrep scan --error -q"
 run_windows = "exit 0"
-sources = [
-    "{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}",
-]
+sources = ["{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}"]
 
 [tasks."fix:semgrep"]
 description = "Fix semgrep issues"
@@ -409,14 +412,13 @@ hide = true
 depends = ["setup:python"]
 run = "uv run --no-sync semgrep scan --error -q --autofix"
 run_windows = "exit 0"
-sources = [
-    "{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}",
-]
+sources = ["{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,yml}"]
 
 # --- trivy (filesystem) ---
 [tasks."check:trivy-fs"]
 description = "Security scan filesystem with trivy"
 hide = true
+depends = ["setup:pnpm"]
 run = "trivy fs . --include-dev-deps --format table"
 sources = ["*.{toml,lock,json,yaml,yml}", "packages/**/*.{toml,json}", "Dockerfile"]
 
@@ -443,6 +445,7 @@ run = [{ task = "check:pnpm-audit" }]
 description = "Validate Renovate configuration"
 hide = true
 env = { LOG_LEVEL = "warn" }
+depends = ["setup:pnpm"]
 run = "pnpm exec renovate-config-validator --strict .github/renovate.json"
 sources = [".github/renovate.json"]
 
@@ -459,7 +462,8 @@ depends = [
     "check:ruff-lint",
     "check:ruff-format",
     "check:pyrefly",
-    "check:biome",
+    "check:oxlint",
+    "check:oxfmt",
     "check:taplo",
     "check:markdownlint",
     "check:yamlfmt",
@@ -486,7 +490,8 @@ depends = [
     "fix:ruff-lint",
     "fix:ruff-format",
     "fix:pyrefly",
-    "fix:biome",
+    "fix:oxlint",
+    "fix:oxfmt",
     "fix:taplo",
     "fix:markdownlint",
     "fix:yamlfmt",
@@ -504,7 +509,16 @@ depends = [
     "fix:trivy-fs",
     "fix:pnpm-audit",
     "fix:renovate",
+    "fix:lock",
 ]
+
+[tasks."fix:lock"]
+description = "Update mise lockfile for all platforms"
+hide = true
+run = """
+mise lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64,windows-x64,windows-arm64
+"""
+sources = ["mise.toml"]
 
 # ============================================================================
 # CLEAN TASKS - Cleanup caches and build artifacts
@@ -637,9 +651,7 @@ alias = "d"
 usage = """
 arg "[mode]" help="Docker mode" default="proxied" { choices "transparent" "proxied" }
 """
-run = [
-    "mise run docker:up {{usage.mode}}",
-    """
+run = ["mise run docker:up {{usage.mode}}", """
   {%- if env.COMPOSE_FILE -%}
     docker compose exec dev bash
   {%- elif usage.mode == "transparent" -%}
@@ -647,9 +659,7 @@ run = [
   {%- else -%}
     docker compose -f docker-compose.yml -f docker-compose.proxied.yaml exec dev bash
   {%- endif -%}
-  """,
-    "mise run docker:down {{usage.mode}}",
-]
+  """, "mise run docker:down {{usage.mode}}"]
 raw = true
 
 # ============================================================================

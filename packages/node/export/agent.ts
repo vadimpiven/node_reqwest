@@ -1,8 +1,8 @@
-import type Stream from 'node:stream';
-import { Dispatcher, type FormData, Response } from 'undici';
-import { Addon } from './addon.ts';
-import type { AgentCreationOptions, AgentDispatchOptions, AgentInstance } from './addon-def.ts';
-import type { Agent as AgentDef, AgentOptions } from './agent-def.ts';
+import type Stream from "node:stream";
+import { Dispatcher, type FormData, Response } from "undici";
+import { Addon } from "./addon.ts";
+import type { AgentCreationOptions, AgentDispatchOptions, AgentInstance } from "./addon-def.ts";
+import type { Agent as AgentDef, AgentOptions } from "./agent-def.ts";
 
 function normalizePem(pem?: string | Buffer | (string | Buffer)[]): string[] {
   if (!pem) {
@@ -21,7 +21,7 @@ function normalizeHeaders(
     | Record<string, string | string[] | undefined>
     | Iterable<[string, string | string[] | undefined]>
     | string[]
-    | null
+    | null,
 ): Record<string, string> {
   if (!headers) {
     return {};
@@ -33,7 +33,7 @@ function normalizeHeaders(
       return;
     }
     const k = key.toLowerCase();
-    const v = Array.isArray(value) ? value.join(', ') : value;
+    const v = Array.isArray(value) ? value.join(", ") : value;
     const existing = result[k];
     result[k] = existing ? `${existing}, ${v}` : v;
   };
@@ -59,7 +59,7 @@ function normalizeHeaders(
 }
 
 function normalizeBody(
-  body?: string | Buffer | Uint8Array | FormData | Stream.Readable | null
+  body?: string | Buffer | Uint8Array | FormData | Stream.Readable | null,
 ): ReadableStreamBYOBReader | null {
   if (!body) {
     return null;
@@ -70,7 +70,7 @@ function normalizeBody(
     return null;
   }
 
-  return response.body.getReader({ mode: 'byob' });
+  return response.body.getReader({ mode: "byob" });
 }
 
 class AgentImpl extends Dispatcher {
@@ -86,47 +86,47 @@ class AgentImpl extends Dispatcher {
       localAddress: options?.connection?.localAddress ?? null,
       maxCachedSessions: options?.connection?.maxCachedSessions ?? 100,
       proxy: options?.proxy
-        ? typeof options.proxy === 'string'
+        ? typeof options.proxy === "string"
           ? { type: options.proxy }
           : {
-              type: 'custom',
+              type: "custom",
               uri: options.proxy.uri,
               headers: normalizeHeaders(options.proxy.headers),
-              token: options.proxy.token ?? null
+              token: options.proxy.token ?? null,
             }
-        : { type: 'system' },
+        : { type: "system" },
       rejectInvalidHostnames:
         options?.connection?.rejectInvalidHostnames ??
         options?.connection?.rejectUnauthorized ??
         true,
       rejectUnauthorized: options?.connection?.rejectUnauthorized ?? true,
-      timeout: options?.connection?.timeout ?? 10000
+      timeout: options?.connection?.timeout ?? 10000,
     };
     this.#agent = Addon.agentCreate(creationOptions);
   }
 
   dispatch(options: Dispatcher.DispatchOptions, _handler: Dispatcher.DispatchHandler): boolean {
     const dispatchOptions: AgentDispatchOptions = {
-      blocking: options.blocking ?? options.method !== 'HEAD',
+      blocking: options.blocking ?? options.method !== "HEAD",
       body: normalizeBody(options.body),
       bodyTimeout: options.bodyTimeout ?? 300000,
       expectContinue: options.expectContinue ?? false,
       headers: normalizeHeaders(options.headers),
       headersTimeout: options.headersTimeout ?? 300000,
-      idempotent: options.idempotent ?? (options.method === 'GET' || options.method === 'HEAD'),
+      idempotent: options.idempotent ?? (options.method === "GET" || options.method === "HEAD"),
       method: options.method,
-      origin: String(options.origin ?? ''),
+      origin: String(options.origin ?? ""),
       path: options.path,
-      query: new URLSearchParams(options.query ?? '').toString(),
+      query: new URLSearchParams(options.query ?? "").toString(),
       reset: options.reset ?? false,
       throwOnError: options.throwOnError ?? false,
       upgrade: options.upgrade
-        ? options.method === 'CONNECT'
+        ? options.method === "CONNECT"
           ? null
           : options.upgrade === true
-            ? 'Websocket'
+            ? "Websocket"
             : options.upgrade
-        : null
+        : null,
     };
     return Addon.agentDispatch(this.#agent, dispatchOptions);
   }

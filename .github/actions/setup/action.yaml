@@ -30,17 +30,18 @@ runs:
       with:
         path: ".cache/shared"
         key: "${{ inputs.cache-key }}-shared-${{ runner.os }}-${{ runner.arch }}"
-    - name: "Write GITHUB_TOKEN to .env"
+    - name: "Setup .env file"
       shell: "bash"
       env:
         GITHUB_TOKEN: "${{ inputs.github-token }}"
+        ENV: "${{ inputs.env }}"
       run: |
-        printf "GITHUB_TOKEN=%s\n" "$GITHUB_TOKEN" >> .env
+        printf "GITHUB_TOKEN=%s\n" "$GITHUB_TOKEN" > .env
+        printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> .env
     - name: "Setup (Docker)"
       if: "runner.os == 'Linux'"
       uses: "./.github/actions/setup-docker"
       with:
-        env: "${{ inputs.env }}"
         cache-key: "${{ inputs.cache-key }}"
         docker-image: "${{ inputs.docker-image }}"
         docker-cache: "${{ inputs.docker-cache }}"
@@ -50,7 +51,6 @@ runs:
       if: "runner.os != 'Linux'"
       uses: "./.github/actions/setup-native"
       with:
-        env: "${{ inputs.env }}"
         cache-key: "${{ inputs.cache-key }}"
         github-token: "${{ inputs.github-token }}"
         mise-version: "${{ inputs.mise-version }}"

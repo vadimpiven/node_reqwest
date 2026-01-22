@@ -193,158 +193,158 @@ fn request_handle_resume<'cx>(
 ### packages/node/tests/vitest/addon-smoke.test.ts (Complete)
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from "vitest";
 
-import { Addon } from '../../export/addon.ts';
+import { Addon } from "../../export/addon.ts";
 
-describe('Addon Smoke Tests', () => {
-  it('should load the addon', () => {
-    expect(Addon).toBeDefined();
-    expect(Addon.hello).toBeInstanceOf(Function);
-  });
-
-  it('should call hello() and return greeting', () => {
-    const result = Addon.hello();
-    expect(result).toBe('hello');
-  });
-
-  it('should create an agent instance', () => {
-    const agent = Addon.agentCreate({
-      allowH2: true,
-      ca: [],
-      keepAliveTimeout: 4000,
-      localAddress: null,
-      proxy: { type: 'system' },
-      rejectInvalidHostnames: true,
-      rejectUnauthorized: true,
-      timeout: 10000,
-    });
-    expect(agent).toBeDefined();
-  });
-
-  it('should dispatch and return a handle', () => {
-    const agent = Addon.agentCreate({
-      allowH2: true,
-      ca: [],
-      keepAliveTimeout: 4000,
-      localAddress: null,
-      proxy: { type: 'system' },
-      rejectInvalidHostnames: true,
-      rejectUnauthorized: true,
-      timeout: 10000,
+describe("Addon Smoke Tests", () => {
+    it("should load the addon", () => {
+        expect(Addon).toBeDefined();
+        expect(Addon.hello).toBeInstanceOf(Function);
     });
 
-    const handle = Addon.agentDispatch(
-      agent,
-      {
-        blocking: false,
-        body: null,
-        bodyTimeout: 300000,
-        headers: {},
-        headersTimeout: 300000,
-        idempotent: true,
-        method: 'GET',
-        origin: 'http://localhost:9999',
-        path: '/',
-        query: '',
-        reset: false,
-        throwOnError: false,
-      },
-      {
-        onResponseStart: vi.fn(),
-        onResponseData: vi.fn(),
-        onResponseEnd: vi.fn(),
-        onResponseError: vi.fn(),
-      }
-    );
-
-    expect(handle).toBeDefined();
-    Addon.requestHandleAbort(handle);
-  });
-
-  it('should support pause and resume', () => {
-    const agent = Addon.agentCreate({
-      allowH2: true,
-      ca: [],
-      keepAliveTimeout: 4000,
-      localAddress: null,
-      proxy: { type: 'system' },
-      rejectInvalidHostnames: true,
-      rejectUnauthorized: true,
-      timeout: 10000,
+    it("should call hello() and return greeting", () => {
+        const result = Addon.hello();
+        expect(result).toBe("hello");
     });
 
-    const handle = Addon.agentDispatch(
-      agent,
-      {
-        blocking: false,
-        body: null,
-        bodyTimeout: 300000,
-        headers: {},
-        headersTimeout: 300000,
-        idempotent: true,
-        method: 'GET',
-        origin: 'http://localhost:9999',
-        path: '/',
-        query: '',
-        reset: false,
-        throwOnError: false,
-      },
-      {
-        onResponseStart: vi.fn(),
-        onResponseData: vi.fn(),
-        onResponseEnd: vi.fn(),
-        onResponseError: vi.fn(),
-      }
-    );
-
-    // Should not throw
-    Addon.requestHandlePause(handle);
-    Addon.requestHandleResume(handle);
-    Addon.requestHandleAbort(handle);
-  });
-
-  it('should close agent gracefully', async () => {
-    const agent = Addon.agentCreate({
-      allowH2: true,
-      ca: [],
-      keepAliveTimeout: 4000,
-      localAddress: null,
-      proxy: { type: 'system' },
-      rejectInvalidHostnames: true,
-      rejectUnauthorized: true,
-      timeout: 10000,
+    it("should create an agent instance", () => {
+        const agent = Addon.agentCreate({
+            allowH2: true,
+            ca: [],
+            keepAliveTimeout: 4000,
+            localAddress: null,
+            proxy: { type: "system" },
+            rejectInvalidHostnames: true,
+            rejectUnauthorized: true,
+            timeout: 10000,
+        });
+        expect(agent).toBeDefined();
     });
 
-    await Addon.agentClose(agent);
-  });
+    it("should dispatch and return a handle", () => {
+        const agent = Addon.agentCreate({
+            allowH2: true,
+            ca: [],
+            keepAliveTimeout: 4000,
+            localAddress: null,
+            proxy: { type: "system" },
+            rejectInvalidHostnames: true,
+            rejectUnauthorized: true,
+            timeout: 10000,
+        });
 
-  it('should destroy agent', async () => {
-    const agent = Addon.agentCreate({
-      allowH2: true,
-      ca: [],
-      keepAliveTimeout: 4000,
-      localAddress: null,
-      proxy: { type: 'system' },
-      rejectInvalidHostnames: true,
-      rejectUnauthorized: true,
-      timeout: 10000,
+        const handle = Addon.agentDispatch(
+            agent,
+            {
+                blocking: false,
+                body: null,
+                bodyTimeout: 300000,
+                headers: {},
+                headersTimeout: 300000,
+                idempotent: true,
+                method: "GET",
+                origin: "http://localhost:9999",
+                path: "/",
+                query: "",
+                reset: false,
+                throwOnError: false,
+            },
+            {
+                onResponseStart: vi.fn(),
+                onResponseData: vi.fn(),
+                onResponseEnd: vi.fn(),
+                onResponseError: vi.fn(),
+            },
+        );
+
+        expect(handle).toBeDefined();
+        Addon.requestHandleAbort(handle);
     });
 
-    await Addon.agentDestroy(agent);
-  });
+    it("should support pause and resume", () => {
+        const agent = Addon.agentCreate({
+            allowH2: true,
+            ca: [],
+            keepAliveTimeout: 4000,
+            localAddress: null,
+            proxy: { type: "system" },
+            rejectInvalidHostnames: true,
+            rejectUnauthorized: true,
+            timeout: 10000,
+        });
+
+        const handle = Addon.agentDispatch(
+            agent,
+            {
+                blocking: false,
+                body: null,
+                bodyTimeout: 300000,
+                headers: {},
+                headersTimeout: 300000,
+                idempotent: true,
+                method: "GET",
+                origin: "http://localhost:9999",
+                path: "/",
+                query: "",
+                reset: false,
+                throwOnError: false,
+            },
+            {
+                onResponseStart: vi.fn(),
+                onResponseData: vi.fn(),
+                onResponseEnd: vi.fn(),
+                onResponseError: vi.fn(),
+            },
+        );
+
+        // Should not throw
+        Addon.requestHandlePause(handle);
+        Addon.requestHandleResume(handle);
+        Addon.requestHandleAbort(handle);
+    });
+
+    it("should close agent gracefully", async () => {
+        const agent = Addon.agentCreate({
+            allowH2: true,
+            ca: [],
+            keepAliveTimeout: 4000,
+            localAddress: null,
+            proxy: { type: "system" },
+            rejectInvalidHostnames: true,
+            rejectUnauthorized: true,
+            timeout: 10000,
+        });
+
+        await Addon.agentClose(agent);
+    });
+
+    it("should destroy agent", async () => {
+        const agent = Addon.agentCreate({
+            allowH2: true,
+            ca: [],
+            keepAliveTimeout: 4000,
+            localAddress: null,
+            proxy: { type: "system" },
+            rejectInvalidHostnames: true,
+            rejectUnauthorized: true,
+            timeout: 10000,
+        });
+
+        await Addon.agentDestroy(agent);
+    });
 });
 ```
 
 ## Tables
 
-| Metric | Value |
-| :--- | :--- |
-| **Control Types** | Abort, Pause, Resume |
+| Metric               | Value                               |
+| :------------------- | :---------------------------------- |
+| **Control Types**    | Abort, Pause, Resume                |
 | **Handle Lifecycle** | JS garbage collected via `Finalize` |
-| **Runtime Access** | `tokio::runtime::Handle::current()` |
-| **Lifecycle** | close/destroy via Lifecycle trait |
-| **Tests** | 7 smoke tests |
+| **Runtime Access**   | `tokio::runtime::Handle::current()` |
+| **Lifecycle**        | close/destroy via Lifecycle trait   |
+| **Tests**            | 7 smoke tests                       |
 
 ## File Structure
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import { spawn } from 'node:child_process';
-import process from 'node:process';
-import { ensureError } from './run-script.ts';
+import { spawn } from "node:child_process";
+import process from "node:process";
+import { ensureError } from "./run-script.ts";
 
 /**
  * Executes a command asynchronously, logs it, and handles errors/exit status.
@@ -10,24 +10,24 @@ import { ensureError } from './run-script.ts';
 export async function runCommand(
   command: string,
   args: string[],
-  options: { env?: NodeJS.ProcessEnv } = {}
+  options: { env?: NodeJS.ProcessEnv } = {},
 ): Promise<void> {
-  console.log('> %s %s', command, args.join(' '));
+  console.log("> %s %s", command, args.join(" "));
 
   return new Promise((resolve, reject) => {
     // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true, javascript.lang.security.detect-child-process.detect-child-process
     const child = spawn(command, args, {
-      stdio: 'inherit',
-      shell: process.platform === 'win32',
-      env: { ...process.env, ...options.env }
+      stdio: "inherit",
+      shell: process.platform === "win32",
+      env: { ...process.env, ...options.env },
     });
 
-    child.on('error', (err: unknown) => {
+    child.on("error", (err: unknown) => {
       const error = ensureError(err);
       reject(new Error(`Failed to start ${command}: ${error.message}`));
     });
 
-    child.on('close', (code) => {
+    child.on("close", (code) => {
       if (code !== 0 && code !== null) {
         reject(new Error(`${command} failed with exit code ${code}`));
       } else {
