@@ -30,14 +30,24 @@ runs:
       with:
         path: ".cache/shared"
         key: "${{ inputs.cache-key }}-shared-${{ runner.os }}-${{ runner.arch }}"
-    - name: "Setup .env file"
+    - name: "Prepare .env content"
+      id: "env-content"
       shell: "bash"
       env:
         GITHUB_TOKEN: "${{ inputs.github-token }}"
         ENV: "${{ inputs.env }}"
       run: |
-        printf "GITHUB_TOKEN=%s\n" "$GITHUB_TOKEN" > .env
-        printf "%s" "$ENV" | jq -er "to_entries[] | \"\(.key)=\(.value)\"" >> .env
+        {
+          echo "text<<EOF"
+          printf "GITHUB_TOKEN=%s\n" "$GITHUB_TOKEN"
+          printf "%s" "$ENV" | jq -er 'to_entries[] | "\(.key)=\(.value)"'
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+    - name: "Setup .env file"
+      uses: "./.github/actions/setup-secret"
+      with:
+        file_path: ".env"
+        file_text: "${{ steps.env-content.outputs.text }}"
     - name: "Setup (Docker)"
       if: "runner.os == 'Linux'"
       uses: "./.github/actions/setup-docker"

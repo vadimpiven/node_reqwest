@@ -1,0 +1,13 @@
+name: "Setup secrets file"
+description: "Creates a secrets file and removes it in post action"
+inputs:
+  file_path:
+    description: "Path to the file to create"
+    required: true
+  file_text:
+    description: "Text content to write to the file"
+    required: true
+runs:
+  using: "node24"
+  main: "main.ts"
+  post: "post.ts"
