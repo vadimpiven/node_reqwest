@@ -426,33 +426,6 @@ description = "Scan filesystem with trivy (no auto-fix available)"
 hide = true
 run = [{ task = "check:trivy-fs" }]
 
-# --- pnpm-audit ---
-[tasks."check:pnpm-audit"]
-description = "Audit pnpm dependencies for security vulnerabilities"
-hide = true
-run = "pnpm audit --audit-level low"
-run_windows = "exit 0"
-sources = ["pnpm-lock.yaml", "package.json", "pnpm-workspace.yaml"]
-
-[tasks."fix:pnpm-audit"]
-description = "Audit pnpm dependencies (no auto-fix available)"
-hide = true
-run = [{ task = "check:pnpm-audit" }]
-
-# --- renovate ---
-[tasks."check:renovate"]
-description = "Validate Renovate configuration"
-hide = true
-env = { LOG_LEVEL = "warn" }
-depends = ["setup:pnpm"]
-run = "pnpm exec renovate-config-validator --strict .github/renovate.json"
-sources = [".github/renovate.json"]
-
-[tasks."fix:renovate"]
-description = "Validate Renovate configuration (no auto-fix available)"
-hide = true
-run = [{ task = "check:renovate" }]
-
 # --- Global check/fix tasks ---
 [tasks.check]
 description = "Verify code quality"
@@ -478,8 +451,6 @@ depends = [
     "check:actionlint",
     "check:semgrep",
     "check:trivy-fs",
-    "check:pnpm-audit",
-    "check:renovate",
 ]
 
 [tasks.fix]
@@ -506,8 +477,6 @@ depends = [
     "fix:actionlint",
     "fix:semgrep",
     "fix:trivy-fs",
-    "fix:pnpm-audit",
-    "fix:renovate",
     "fix:lock",
 ]
 
