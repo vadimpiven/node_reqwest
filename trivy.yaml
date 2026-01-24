@@ -16,15 +16,12 @@ scanners:
   - misconfig
   - secret
 # Report options
-format: sarif
-output: trivy-results.sarif
 severity:
   - UNKNOWN
   - LOW
   - MEDIUM
   - HIGH
   - CRITICAL
-ignore-unfixed: true
 exit-code: 1
 # Cache options
 cache-dir: .cache/shared/trivy
