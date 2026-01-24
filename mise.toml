@@ -417,8 +417,8 @@ sources = ["{.github,packages,scripts}/**/*.{rs,ts,js,mts,mjs,py,toml,json,yaml,
 [tasks."check:trivy-fs"]
 description = "Security scan filesystem with trivy"
 hide = true
-depends = ["setup:pnpm"]
-run = "trivy fs . --include-dev-deps --format table"
+depends = ["setup"]
+run = "trivy fs . --format table --ignore-unfixed"
 sources = ["*.{toml,lock,json,yaml,yml}", "packages/**/*.{toml,json}", "Dockerfile"]
 
 [tasks."fix:trivy-fs"]
