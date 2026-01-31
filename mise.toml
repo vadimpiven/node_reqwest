@@ -41,7 +41,7 @@ node = "24.13.0"
 rust.version = "nightly-2026-01-15"
 
 "aqua:jqlang/jq" = "1.8.1"
-"aqua:mikefarah/yq" = "4.50.1"
+"aqua:mikefarah/yq" = "4.52.1"
 "aqua:BurntSushi/ripgrep" = "15.1.0"
 "aqua:aquasecurity/trivy" = "0.69.0"
 "aqua:google/yamlfmt" = "0.21.0"
@@ -54,7 +54,7 @@ rust.version = "nightly-2026-01-15"
 # Tools with non-standard version prefix
 [tools."github:nextest-rs/nextest"]
 version_prefix = "cargo-nextest-"
-version = "0.9.123"
+version = "0.9.124"
 
 [tools."github:mstange/samply"]
 version_prefix = "samply-v"
@@ -74,7 +74,7 @@ version = "1.42.1"
 os = ["linux", "macos"]
 
 [tools."github:taiki-e/cargo-llvm-cov"]
-version = "0.6.24"
+version = "0.8.2"
 os = ["linux", "macos"]
 
 [tools."aqua:mvdan/sh"]
