@@ -54,7 +54,7 @@ rust.version = "nightly-2026-01-15"
 # Tools with non-standard version prefix
 [tools."github:nextest-rs/nextest"]
 version_prefix = "cargo-nextest-"
-version = "0.9.122"
+version = "0.9.123"
 
 [tools."github:mstange/samply"]
 version_prefix = "samply-v"
