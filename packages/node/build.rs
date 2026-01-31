@@ -3,13 +3,14 @@
 //! Module with build instructions to set npm package version to equal git tag.
 
 use anyhow::Result;
-use meta::{SEMVER, cdylib_win_rc};
+use meta::SEMVER;
+use meta::cdylib_win_rc;
 use neon_build::Setup;
 
 fn main() -> Result<()> {
     const FILENAME: &str = "node_reqwest.node";
     Setup::options()
-        .output_dir("dist/napi-v8")
+        .output_dir("dist")
         .output_file(FILENAME)
         .setup();
 

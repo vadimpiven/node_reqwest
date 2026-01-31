@@ -4,11 +4,14 @@
 
 use core::fmt;
 use std::env::var;
-use std::fs::{read_to_string, write};
+use std::fs::read_to_string;
+use std::fs::write;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use chrono::Datelike;
-use tauri_winres::{VersionInfo, WindowsResource};
+use tauri_winres::VersionInfo;
+use tauri_winres::WindowsResource;
 
 /// Git tag (release build) or commit hash (dev build), or "undefined" when no git context available.
 pub const VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version.txt"));

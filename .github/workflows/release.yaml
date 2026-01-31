@@ -72,7 +72,7 @@ jobs:
       - name: "Sign and notarize"
         uses: "./.github/actions/sign-notarize"
         with:
-          binary-path: "${{ github.workspace }}/packages/node/dist/napi-v8/node_reqwest.node"
+          binary-path: "${{ github.workspace }}/packages/node/dist/node_reqwest.node"
       - name: "Pack node addon"
         uses: "./.github/actions/shell"
         with:
@@ -81,11 +81,11 @@ jobs:
       - name: "Attest build provenance"
         uses: "actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8" # v3.1.0
         with:
-          subject-path: "packages/node/build/stage/**/*.tar.gz"
+          subject-path: "packages/node/dist/*.gz"
       - name: "Upload node addon"
         uses: "softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b" # v2.5.0
         with:
-          files: "packages/node/build/stage/**/*.tar.gz"
+          files: "packages/node/dist/*.gz"
           draft: true
   build-package:
     name: "Build package"
