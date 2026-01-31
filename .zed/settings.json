@@ -1,4 +1,28 @@
 {
+  "auto_install_extensions": {
+    // Language support
+    "html": true,
+    "toml": true,
+    "dockerfile": true,
+    "docker-compose": true,
+    "yaml": true,
+    "basher": true,
+    // Tools & linting
+    "editorconfig": true,
+    "markdownlint": true,
+    "ruff": true,
+    "github-actions": true,
+    // Spell checking (equivalent to code-spell-checker)
+    "typos": true,
+    // Dependency management (equivalent to dependi)
+    "crates-lsp": true,
+    "deputy": true
+  },
+  "read_only_files": [
+    "**/.cargo/registry/src/**/*.rs",
+    "**/.cargo/git/checkouts/**/*.rs",
+    "**/lib/rustlib/src/rust/library/**/*.rs"
+  ],
   "languages": {
     "Python": {
       "formatter": {
@@ -6,6 +30,26 @@
           "command": "ruff",
           "arguments": ["format", "-"]
         }
+      }
+    },
+    "JavaScript": {
+      "prettier": {
+        "allowed": false
+      }
+    },
+    "TypeScript": {
+      "prettier": {
+        "allowed": false
+      }
+    },
+    "JSON": {
+      "prettier": {
+        "allowed": false
+      }
+    },
+    "JSONC": {
+      "prettier": {
+        "allowed": false
       }
     }
   },
