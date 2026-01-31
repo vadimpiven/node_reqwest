@@ -2,12 +2,15 @@
 
 //! Tests for `npm_version` binary.
 
-use std::fs::{File, read_to_string};
+use std::fs::File;
+use std::fs::read_to_string;
 use std::io::Write;
 use std::process::Command;
 
-use anyhow::{Context, Result};
-use indoc::{formatdoc, indoc};
+use anyhow::Context;
+use anyhow::Result;
+use indoc::formatdoc;
+use indoc::indoc;
 use meta::SEMVER;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;

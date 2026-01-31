@@ -3,7 +3,8 @@
 //! Standalone binary to update package.json version from git tag.
 
 use anyhow::Result;
-use meta::{SEMVER, npm_version};
+use meta::SEMVER;
+use meta::npm_version;
 
 fn main() -> Result<()> {
     let version = SEMVER.unwrap_or_default();

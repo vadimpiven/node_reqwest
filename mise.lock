@@ -11,16 +11,16 @@ backend = "aqua:BurntSushi/ripgrep"
 "platforms.windows-x64" = { checksum = "sha256:124510b94b6baa3380d051fdf4650eaa80a302c876d611e9dba0b2e18d87493a", url = "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-pc-windows-msvc.zip"}
 
 [[tools."aqua:aquasecurity/trivy"]]
-version = "0.68.2"
+version = "0.69.0"
 backend = "aqua:aquasecurity/trivy"
-"platforms.linux-arm64" = { checksum = "sha256:33c87995fd0c3d1559086c3e18fd3148051296dfd0ca2a67583eb64f89998c91", url = "https://github.com/aquasecurity/trivy/releases/download/v0.68.2/trivy_0.68.2_Linux-ARM64.tar.gz"}
-"platforms.linux-arm64-musl" = { checksum = "sha256:33c87995fd0c3d1559086c3e18fd3148051296dfd0ca2a67583eb64f89998c91", url = "https://github.com/aquasecurity/trivy/releases/download/v0.68.2/trivy_0.68.2_Linux-ARM64.tar.gz"}
-"platforms.linux-x64" = { checksum = "sha256:3d933bbc3685f95ec15280f620583d05d97ee3affb66944d14481d5d6d567064", url = "https://github.com/aquasecurity/trivy/releases/download/v0.68.2/trivy_0.68.2_Linux-64bit.tar.gz"}
-"platforms.linux-x64-musl" = { checksum = "sha256:3d933bbc3685f95ec15280f620583d05d97ee3affb66944d14481d5d6d567064", url = "https://github.com/aquasecurity/trivy/releases/download/v0.68.2/trivy_0.68.2_Linux-64bit.tar.gz"}
-"platforms.macos-arm64" = { checksum = "sha256:dfbe15ffe47426dad9fd3e0d52aeacf3dbbb25ca5dbc66049f5920834435988d", url = "https://github.com/aquasecurity/trivy/releases/download/v0.68.2/trivy_0.68.2_macOS-ARM64.tar.gz"}
-"platforms.macos-x64" = { checksum = "sha256:c0790530cd717b6bdd02ed437be0710f5c7043078fafaf6841be7c865bf251ce", url = "https://github.com/aquasecurity/trivy/releases/download/v0.68.2/trivy_0.68.2_macOS-64bit.tar.gz"}
-"platforms.windows-arm64" = { checksum = "sha256:2aaa0ce06f9f2221a6bb21e1fc0e0ecc6aeb56362bc5c9463e9fd7b06983c3c3", url = "https://github.com/aquasecurity/trivy/releases/download/v0.68.2/trivy_0.68.2_windows-64bit.zip"}
-"platforms.windows-x64" = { checksum = "sha256:2aaa0ce06f9f2221a6bb21e1fc0e0ecc6aeb56362bc5c9463e9fd7b06983c3c3", url = "https://github.com/aquasecurity/trivy/releases/download/v0.68.2/trivy_0.68.2_windows-64bit.zip"}
+"platforms.linux-arm64" = { checksum = "sha256:425e883f37cad0b512478df2803f58532e7d235267303375a3d0f97e4790a1ca", url = "https://github.com/aquasecurity/trivy/releases/download/v0.69.0/trivy_0.69.0_Linux-ARM64.tar.gz"}
+"platforms.linux-arm64-musl" = { checksum = "sha256:425e883f37cad0b512478df2803f58532e7d235267303375a3d0f97e4790a1ca", url = "https://github.com/aquasecurity/trivy/releases/download/v0.69.0/trivy_0.69.0_Linux-ARM64.tar.gz"}
+"platforms.linux-x64" = { checksum = "sha256:fff5813d6888fa6f8bd40042a08c4f072b3e65aec9f13dd9ab1d7b26146ad046", url = "https://github.com/aquasecurity/trivy/releases/download/v0.69.0/trivy_0.69.0_Linux-64bit.tar.gz"}
+"platforms.linux-x64-musl" = { checksum = "sha256:fff5813d6888fa6f8bd40042a08c4f072b3e65aec9f13dd9ab1d7b26146ad046", url = "https://github.com/aquasecurity/trivy/releases/download/v0.69.0/trivy_0.69.0_Linux-64bit.tar.gz"}
+"platforms.macos-arm64" = { checksum = "sha256:bd35348d963d3f661ff4d7d138e65a75fedbfade0378689f3a349c824c6e5b75", url = "https://github.com/aquasecurity/trivy/releases/download/v0.69.0/trivy_0.69.0_macOS-ARM64.tar.gz"}
+"platforms.macos-x64" = { checksum = "sha256:4264e4fcc73259de36a68c112a586d65bf6cd488ef2aea857f37d00d8cb5c4e6", url = "https://github.com/aquasecurity/trivy/releases/download/v0.69.0/trivy_0.69.0_macOS-64bit.tar.gz"}
+"platforms.windows-arm64" = { checksum = "sha256:4b34440f0a854428e846b1d2329eede3f0663bec8eff865ae2dffca42542a076", url = "https://github.com/aquasecurity/trivy/releases/download/v0.69.0/trivy_0.69.0_windows-64bit.zip"}
+"platforms.windows-x64" = { checksum = "sha256:4b34440f0a854428e846b1d2329eede3f0663bec8eff865ae2dffca42542a076", url = "https://github.com/aquasecurity/trivy/releases/download/v0.69.0/trivy_0.69.0_windows-64bit.zip"}
 
 [[tools."aqua:astral-sh/uv"]]
 version = "0.9.26"
@@ -35,16 +35,16 @@ backend = "aqua:astral-sh/uv"
 "platforms.windows-x64" = { checksum = "sha256:eb02fd95d8e0eed462b4a67ecdd320d865b38c560bffcda9a0b87ec944bdf036", url = "https://github.com/astral-sh/uv/releases/download/0.9.26/uv-x86_64-pc-windows-msvc.zip"}
 
 [[tools."aqua:cargo-bins/cargo-binstall"]]
-version = "1.16.7"
+version = "1.17.4"
 backend = "aqua:cargo-bins/cargo-binstall"
-"platforms.linux-arm64" = { checksum = "sha256:119e6b4748ede337f8315c068698fa0cf64a2b009c5a04f45af30b062197b1e4", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-musl.tgz"}
-"platforms.linux-arm64-musl" = { checksum = "sha256:119e6b4748ede337f8315c068698fa0cf64a2b009c5a04f45af30b062197b1e4", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-unknown-linux-musl.tgz"}
-"platforms.linux-x64" = { checksum = "sha256:730c2aba29f8cfa9b78d4b3fbaa705f593643ab1db579f619f90ed90fc6eefec", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-unknown-linux-musl.tgz"}
-"platforms.linux-x64-musl" = { checksum = "sha256:730c2aba29f8cfa9b78d4b3fbaa705f593643ab1db579f619f90ed90fc6eefec", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-unknown-linux-musl.tgz"}
-"platforms.macos-arm64" = { checksum = "sha256:8dcaf49e099bbdd54f813838673bede9088c00111fbab0bc0cfc0e6276241c87", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-apple-darwin.zip"}
-"platforms.macos-x64" = { checksum = "sha256:e62a72d052f7ce457944072386a991e1161899456abb40e92bb54d57b95c5d12", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-apple-darwin.zip"}
-"platforms.windows-arm64" = { checksum = "sha256:335fc9e01ad5758f7c95a4a0a6ef2b7651b5f294cb76cc6397a95e05b515deed", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-aarch64-pc-windows-msvc.zip"}
-"platforms.windows-x64" = { checksum = "sha256:d10ba1651bed7a83d55ef3d6abc8b3cd9704cd3410279781eee7a72c07b5cf71", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.16.7/cargo-binstall-x86_64-pc-windows-msvc.zip"}
+"platforms.linux-arm64" = { checksum = "sha256:1410ec72b4f23fa6cf8ebb4b55fe03ebca63e14adadf4501d78e91fa004e9689", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.17.4/cargo-binstall-aarch64-unknown-linux-musl.tgz"}
+"platforms.linux-arm64-musl" = { checksum = "sha256:1410ec72b4f23fa6cf8ebb4b55fe03ebca63e14adadf4501d78e91fa004e9689", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.17.4/cargo-binstall-aarch64-unknown-linux-musl.tgz"}
+"platforms.linux-x64" = { checksum = "sha256:8822793dd22a1fcfba6d7581ed130ec935fb26a0db58fb9b0f01f0fae17d28f8", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.17.4/cargo-binstall-x86_64-unknown-linux-musl.tgz"}
+"platforms.linux-x64-musl" = { checksum = "sha256:8822793dd22a1fcfba6d7581ed130ec935fb26a0db58fb9b0f01f0fae17d28f8", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.17.4/cargo-binstall-x86_64-unknown-linux-musl.tgz"}
+"platforms.macos-arm64" = { checksum = "sha256:c689061413598fa32b77b6fd2a7300c6392faf008137194ab8a4cdb93c12040a", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.17.4/cargo-binstall-aarch64-apple-darwin.zip"}
+"platforms.macos-x64" = { checksum = "sha256:278a12a049397b9f73df0c1e6c83c15fe184e3f5d824ee9a66460c41e519cfd6", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.17.4/cargo-binstall-x86_64-apple-darwin.zip"}
+"platforms.windows-arm64" = { checksum = "sha256:6096f3a5da155fcf06f5fe48ee86a0b40427e48d0abb7206e2bc54572f875400", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.17.4/cargo-binstall-aarch64-pc-windows-msvc.zip"}
+"platforms.windows-x64" = { checksum = "sha256:9c6df6ed7e0eef153fdd6aa0fe0c873496431ea44e2b209331b2dbd29d0d3c06", url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.17.4/cargo-binstall-x86_64-pc-windows-msvc.zip"}
 
 [[tools."aqua:crate-ci/typos"]]
 version = "1.42.1"
@@ -208,30 +208,31 @@ backend = "github:mstange/samply"
 version_prefix = "samply-v"
 
 [[tools."github:nextest-rs/nextest"]]
-version = "0.9.122"
+version = "0.9.123"
 backend = "github:nextest-rs/nextest"
-"platforms.linux-arm64" = { checksum = "sha256:a6ebfd8bf8f962730172c6d9b10ae1895df52927ca90d37a1be43215eb1aa346", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.122/cargo-nextest-0.9.122-aarch64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/340529156"}
-"platforms.linux-arm64-musl" = { checksum = "sha256:a6ebfd8bf8f962730172c6d9b10ae1895df52927ca90d37a1be43215eb1aa346", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.122/cargo-nextest-0.9.122-aarch64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/340529156"}
-"platforms.linux-x64" = { checksum = "sha256:092ac9eb16051b546a6e6d6f2d4170d7ff48d36c3985100a31ad8d78a2e5c87d", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.122/cargo-nextest-0.9.122-x86_64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/340530349"}
-"platforms.linux-x64-musl" = { checksum = "sha256:0bcd983ab34b4866beb81d41c50659d41a123b5ce53d0cfdeb63b8dc76486b3c", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.122/cargo-nextest-0.9.122-x86_64-unknown-linux-musl.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/340529687"}
-"platforms.macos-arm64" = { checksum = "sha256:c946491d6e0e46b187ebdc344e34eb952d1bd50c8ae62cb71d732046b7fb7acf", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.122/cargo-nextest-0.9.122-universal-apple-darwin.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/340529186"}
-"platforms.macos-x64" = { checksum = "sha256:c946491d6e0e46b187ebdc344e34eb952d1bd50c8ae62cb71d732046b7fb7acf", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.122/cargo-nextest-0.9.122-universal-apple-darwin.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/340529186"}
-"platforms.windows-arm64" = { checksum = "sha256:8df2af491a13cc4dabeb95648916377f19113eec36b6e0220a463733283fb0fd", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.122/cargo-nextest-0.9.122-aarch64-pc-windows-msvc.zip", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/340532474"}
-"platforms.windows-x64" = { checksum = "sha256:8a2162db39fffb9f65f9dde27daea7afd0c3044238abcbb3e817e9174184c5a7", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.122/cargo-nextest-0.9.122-x86_64-pc-windows-msvc.zip", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/340531580"}
+"platforms.linux-arm64" = { checksum = "sha256:91ab98eedb817a52f4d4ae31e4c354e630ce1cc7d81c534b37b4d1edd42451c8", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.123/cargo-nextest-0.9.123-aarch64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/344934353"}
+"platforms.linux-arm64-musl" = { checksum = "sha256:91ab98eedb817a52f4d4ae31e4c354e630ce1cc7d81c534b37b4d1edd42451c8", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.123/cargo-nextest-0.9.123-aarch64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/344934353"}
+"platforms.linux-x64" = { checksum = "sha256:b5bfdecdfd1b4efb702ebfa512b7bf0932aeb8c5cde25917aa6df8bf63837b3b", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.123/cargo-nextest-0.9.123-x86_64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/344932685"}
+"platforms.linux-x64-musl" = { checksum = "sha256:c815b05f54c945f2704e777871bfb6b90a9eb68e5cdbda5bfa2663d38f4aaef7", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.123/cargo-nextest-0.9.123-x86_64-unknown-linux-musl.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/344934474"}
+"platforms.macos-arm64" = { checksum = "sha256:da12a18f487581b1a13f42344e87ebe87bf3074e100e211eafb89f539a54090a", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.123/cargo-nextest-0.9.123-universal-apple-darwin.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/344933444"}
+"platforms.macos-x64" = { checksum = "sha256:da12a18f487581b1a13f42344e87ebe87bf3074e100e211eafb89f539a54090a", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.123/cargo-nextest-0.9.123-universal-apple-darwin.tar.gz", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/344933444"}
+"platforms.windows-arm64" = { checksum = "sha256:5fc7e2a98a7c2f670aa6cbbee5c73bbb0f276bfc5c2d9c8f81d6a56a9d2b2f80", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.123/cargo-nextest-0.9.123-aarch64-pc-windows-msvc.zip", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/344937338"}
+"platforms.windows-x64" = { checksum = "sha256:146f5a0080a476bc2ae394aad854a115e40f2da05bc7013fcc2aaaab8fe64153", url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.123/cargo-nextest-0.9.123-x86_64-pc-windows-msvc.zip", url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/344935587"}
 
 [tools."github:nextest-rs/nextest".options]
 version_prefix = "cargo-nextest-"
 
 [[tools."github:taiki-e/cargo-llvm-cov"]]
-version = "0.6.23"
+version = "0.6.24"
 backend = 'github:taiki-e/cargo-llvm-cov[platforms={ linux-arm64 = { asset_pattern = "*aarch64*linux-musl*" }, linux-x64 = { asset_pattern = "*x86_64*linux-musl*" } }]'
-"platforms.linux-arm64" = { checksum = "sha256:eee34b8c05b85fe0710cfe8bb976ce96f46fbbde862223f22ac9cf2aae355721", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.23/cargo-llvm-cov-aarch64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/337024883"}
-"platforms.linux-arm64-musl" = { checksum = "sha256:9bde17bc15590b287d3465f5db73c112968c251cb9ff2ea1f3139055ea0994b6", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.23/cargo-llvm-cov-aarch64-unknown-linux-musl.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/337025099"}
-"platforms.linux-x64" = { checksum = "sha256:5e636720e36da2b6f4a9b44cd394c269411f224461244ea55976deba5169245c", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.23/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/337025080"}
-"platforms.linux-x64-musl" = { checksum = "sha256:7d731737fb4f538fdea8dfadccb2270bf5ccd1ae3b1f4d8eafb449587f11d554", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.23/cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/337025096"}
-"platforms.macos-arm64" = { checksum = "sha256:7e36889933befc5e548e3b6fa5655df91a5f9fc565ace86780129cf7e9286ab4", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.23/cargo-llvm-cov-aarch64-apple-darwin.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/337026703"}
-"platforms.macos-x64" = { checksum = "sha256:febf0280656b863542ba101f3f8db2103df34b8dda2c240749fefc878117f493", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.23/cargo-llvm-cov-x86_64-apple-darwin.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/337024916"}
-"platforms.windows-x64" = { checksum = "sha256:a6ce50db9fe43a69c1d262dc6ae0fd960f1c6ae284c349fce7111d82654c0705", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.23/cargo-llvm-cov-x86_64-pc-windows-msvc.zip", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/337024920"}
+"platforms.linux-arm64" = { checksum = "sha256:6aedb743082e65f45481cab6cb3b6a946a1c9de5020786d5f7a9a7c4ad46d1d5", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.24/cargo-llvm-cov-aarch64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/344362973"}
+"platforms.linux-arm64-musl" = { checksum = "sha256:e08dc76036142e365777e5f12d194e7c78a3b421853ec5b505170b2cf2679dc6", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.24/cargo-llvm-cov-aarch64-unknown-linux-musl.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/344362942"}
+"platforms.linux-x64" = { checksum = "sha256:6272d16a61570f053580272527150135a91e5a2b9e4f0291c66d1e5309b5cacc", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.24/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/344363117"}
+"platforms.linux-x64-musl" = { checksum = "sha256:9ba3c42b3e0e68fd8ac4e9e40c134632ab0aa640b4011e18c35447537e6acc5e", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.24/cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/344362855"}
+"platforms.macos-arm64" = { checksum = "sha256:429588cdfbd2eeb2aa38313e707fe0162cca1ac87e9f5287a97d4fe6111d26c2", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.24/cargo-llvm-cov-aarch64-apple-darwin.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/344363580"}
+"platforms.macos-x64" = { checksum = "sha256:cb1f5587210046de3fff3dbc84259e0293a189c152d6a34d29a544262f3d9195", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.24/cargo-llvm-cov-x86_64-apple-darwin.tar.gz", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/344363602"}
+"platforms.windows-arm64" = { checksum = "sha256:c9059ac45fa9d7c0632607272901ead11d7989917c850cf86b446903ea72ec80", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.24/cargo-llvm-cov-aarch64-pc-windows-msvc.zip", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/344363950"}
+"platforms.windows-x64" = { checksum = "sha256:2611ab810bca7a630ce2c126f400d2da9dc684994505be717f698cf077275932", url = "https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.6.24/cargo-llvm-cov-x86_64-pc-windows-msvc.zip", url_api = "https://api.github.com/repos/taiki-e/cargo-llvm-cov/releases/assets/344363762"}
 
 [[tools.node]]
 version = "24.13.0"

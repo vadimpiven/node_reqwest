@@ -23,18 +23,15 @@
     "url": "git+https://github.com/vadimpiven/node_reqwest.git"
   },
   "binary": {
-    "module_name": "node_reqwest",
-    "module_path": "./dist/napi-v{napi_build_version}/",
-    "remote_path": "./vadimpiven/{module_name}/releases/download/v{version}/",
-    "package_name": "{module_name}-v{version}-napi-v{napi_build_version}-{platform}-{arch}.tar.gz",
-    "host": "https://github.com/",
-    "napi_versions": [
-      8
-    ]
+    "moduleName": "node_reqwest.node",
+    "modulePath": "./dist/",
+    "packedName": "node_reqwest-v{version}-{platform}-{arch}.node.gz",
+    "remotePath": "https://github.com/vadimpiven/node_reqwest/releases/download/v{version}/"
   },
   "files": [
     "export/**/*",
-    "export_dist/**/*"
+    "export_dist/**/*",
+    "scripts/**/*"
   ],
   "os": [
     "darwin",
@@ -46,14 +43,12 @@
     "arm64"
   ],
   "type": "module",
-  "main": "./export_dist/index.js",
-  "types": "./export_dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./export_dist/index.d.ts",
-      "import": "./export_dist/index.js",
-      "require": "./export_dist/index.cjs"
-    }
+      "default": "./export_dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
@@ -76,12 +71,10 @@
     "preci-test": "pnpm run ci-build",
     "ci-test:rust": "pnpm run test:nextest -r --locked && pnpm run test:rustdoc -r --locked",
     "ci-test": "pnpm run test:ts && pnpm run ci-test:rust",
-    "pack-addon": "pnpm exec node-pre-gyp package",
-    "install:skip": "node -p \"process.exit(+!(require('./package.json').version === '0.0.0'))\"",
-    "install": "node-pre-gyp install --update-binary --fallback-to-build=false || pnpm run install:skip"
+    "pack-addon": "node ../../scripts/pack-addon.ts",
+    "postinstall": "node scripts/postinstall.js"
   },
   "dependencies": {
-    "@mapbox/node-pre-gyp": "catalog:",
     "undici": "catalog:"
   },
   "devDependencies": {
@@ -98,5 +91,8 @@
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

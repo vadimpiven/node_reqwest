@@ -10,7 +10,7 @@ export default defineConfig({
     lib: {
       entry: resolve("export/index.ts"),
       fileName: "index",
-      formats: ["es", "cjs"],
+      formats: ["es"],
     },
     outDir: "export_dist",
     emptyOutDir: true,

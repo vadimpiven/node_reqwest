@@ -5,6 +5,7 @@
 docker-compose.override.yml
 mise.local.toml
 mise.local.lock
+.claude/settings.local.json
 .DS_Store
 lcov.info
 package.tar.gz

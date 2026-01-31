@@ -1,0 +1,44 @@
+{
+  "languages": {
+    "Python": {
+      "formatter": {
+        "external": {
+          "command": "ruff",
+          "arguments": ["format", "-"]
+        }
+      }
+    }
+  },
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "cargo": {
+          "targetDir": true
+        },
+        "runnables": {
+          "extraTestBinaryArgs": ["--nocapture"]
+        },
+        "assist": {
+          "emitMustUse": true,
+          "preferSelf": true
+        },
+        "check": {
+          "command": "clippy",
+          "extraArgs": ["--fix", "--allow-dirty"]
+        },
+        "diagnostics": {
+          "styleLints": {
+            "enable": true
+          }
+        },
+        "imports": {
+          "granularity": {
+            "group": "item"
+          },
+          "preferPrelude": true,
+          "prefix": "plain"
+        }
+      }
+    }
+  }
+}

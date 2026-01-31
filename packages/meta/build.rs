@@ -2,11 +2,14 @@
 
 //! Module with build instructions to extract version tag or commit hash from git.
 
-use std::path::{Path, PathBuf};
+use std::env;
+use std::fs;
+use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
-use std::{env, fs};
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 
 fn valid_git_repo() -> bool {
     matches!(Command::new("git").arg("status").status(), Ok(status) if status.success())
