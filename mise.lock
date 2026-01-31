@@ -118,11 +118,6 @@ backend = "aqua:koalaman/shellcheck"
 "platforms.windows-arm64" = { checksum = "sha256:8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e740e", url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip"}
 "platforms.windows-x64" = { checksum = "sha256:8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e740e", url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip"}
 
-[[tools."aqua:mikefarah/yq"]]
-version = "4.52.1"
-backend = "aqua:mikefarah/yq"
-"platforms.macos-arm64" = { checksum = "sha256:faf051a49a3b73b72790430206679609d86aeca89bc6ea24475b5cece4666b8e", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_darwin_arm64"}
-
 [[tools."aqua:mvdan/sh"]]
 version = "3.12.0"
 backend = "aqua:mvdan/sh"
@@ -172,6 +167,21 @@ backend = 'github:biomejs/biome[version_prefix=@biomejs/biome@,platforms={ linux
 
 [tools."github:biomejs/biome".options]
 version_prefix = "@biomejs/biome@"
+
+[[tools."github:mikefarah/yq"]]
+version = "4.52.1"
+backend = "github:mikefarah/yq"
+"platforms.linux-arm64" = { checksum = "sha256:4c90d678d6eb24523ed05106614c169437449a8b160035db73f649980fbd27bb", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_linux_arm64.tar.gz", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526655"}
+"platforms.linux-arm64-musl" = { checksum = "sha256:4c90d678d6eb24523ed05106614c169437449a8b160035db73f649980fbd27bb", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_linux_arm64.tar.gz", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526655"}
+"platforms.linux-x64" = { checksum = "sha256:a20741acaf5b8e014690ee02185dc8b15ecc9f25dd7a39ece9da0dcf75ad8c3c", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_linux_amd64.tar.gz", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526666"}
+"platforms.linux-x64-musl" = { checksum = "sha256:a20741acaf5b8e014690ee02185dc8b15ecc9f25dd7a39ece9da0dcf75ad8c3c", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_linux_amd64.tar.gz", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526666"}
+"platforms.macos-arm64" = { checksum = "sha256:355caa963f4e568f75f3981e6452f86eed54caf1eafbcbffc8ae310289dea3ff", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_darwin_arm64.tar.gz", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526649"}
+"platforms.macos-x64" = { checksum = "sha256:98a438297a96576fbc8a1d305f1c44464b1bb85c9975d30e5a5157896312a82a", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_darwin_amd64.tar.gz", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526642"}
+"platforms.windows-arm64" = { checksum = "sha256:91490f02ce4307be4c4f60a1cefc3f8cb0385167f9fbe315770cb88402e0430c", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_windows_arm64.zip", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526699"}
+"platforms.windows-x64" = { checksum = "sha256:908f8a1886fcbaef749980bbf77385999f9400126cc94d2b44302f305e968264", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_windows_amd64.zip", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526689"}
+
+[tools."github:mikefarah/yq".options]
+version_prefix = "v"
 
 [[tools."github:mozilla/sccache"]]
 version = "0.12.0"

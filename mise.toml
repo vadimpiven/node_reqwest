@@ -41,7 +41,6 @@ node = "24.13.0"
 rust.version = "nightly-2026-01-15"
 
 "aqua:jqlang/jq" = "1.8.1"
-"aqua:mikefarah/yq" = "4.52.1"
 "aqua:BurntSushi/ripgrep" = "15.1.0"
 "aqua:aquasecurity/trivy" = "0.69.0"
 "aqua:google/yamlfmt" = "0.21.0"
@@ -59,6 +58,10 @@ version = "0.9.124"
 [tools."github:mstange/samply"]
 version_prefix = "samply-v"
 version = "0.13.1"
+
+[tools."github:mikefarah/yq"]
+version_prefix = "v"
+version = "4.52.1"
 
 # Tools with no Windows ARM64 binary available
 [tools."aqua:hadolint/hadolint"]
