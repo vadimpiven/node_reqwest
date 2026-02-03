@@ -6,6 +6,10 @@ packages:
 blockExoticSubdeps: true
 
 catalog:
+  sigstore: ^4.1.0
+  "@sigstore/bundle": ^4.0.0
+  "@sigstore/core": ^3.1.0
+  "@sigstore/rekor-types": ^4.0.0
   "@codecov/vite-plugin": ^1.9.1
   "@playwright/test": 1.58.0
   "@rollup/plugin-node-resolve": ^16.0.3

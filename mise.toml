@@ -258,14 +258,14 @@ sources = ["*.{yaml,yml}", "{.devcontainer,.github}/**/*.{yaml,yml}"]
 description = "Check Rust code with clippy"
 hide = true
 depends = ["setup:rust"]
-run = "cargo clippy -r --locked -- -D warnings"
+run = "cargo clippy --all-targets -r --locked -- -D warnings"
 sources = ["packages/**/*.rs", "Cargo.{toml,lock}", "clippy.toml"]
 
 [tasks."fix:clippy"]
 description = "Fix Rust code with clippy"
 hide = true
 depends = ["setup:rust"]
-run = "cargo clippy -r --locked --fix --allow-dirty"
+run = "cargo clippy --all-targets --fix --allow-dirty"
 sources = ["packages/**/*.rs", "Cargo.{toml,lock}", "clippy.toml"]
 
 # --- rustfmt (Rust) ---

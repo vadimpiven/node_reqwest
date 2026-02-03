@@ -75,12 +75,16 @@
     "postinstall": "node scripts/postinstall.js"
   },
   "dependencies": {
+    "@sigstore/core": "catalog:",
+    "sigstore": "catalog:",
     "undici": "catalog:"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
     "@playwright/test": "catalog:",
     "@rollup/plugin-node-resolve": "catalog:",
+    "@sigstore/bundle": "catalog:",
+    "@sigstore/rekor-types": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "electron": "catalog:",
