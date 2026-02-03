@@ -180,9 +180,6 @@ backend = "github:mikefarah/yq"
 "platforms.windows-arm64" = { checksum = "sha256:91490f02ce4307be4c4f60a1cefc3f8cb0385167f9fbe315770cb88402e0430c", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_windows_arm64.zip", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526699"}
 "platforms.windows-x64" = { checksum = "sha256:908f8a1886fcbaef749980bbf77385999f9400126cc94d2b44302f305e968264", url = "https://github.com/mikefarah/yq/releases/download/v4.52.1/yq_windows_amd64.zip", url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/348526689"}
 
-[tools."github:mikefarah/yq".options]
-version_prefix = "v"
-
 [[tools."github:mozilla/sccache"]]
 version = "0.12.0"
 backend = "github:mozilla/sccache"
