@@ -7,7 +7,7 @@ blockExoticSubdeps: true
 
 catalog:
   "@codecov/vite-plugin": ^1.9.1
-  "@playwright/test": 1.58.0
+  "@playwright/test": 1.58.2
   "@rollup/plugin-node-resolve": ^16.0.3
   "@taplo/cli": ^0.7.0
   "@types/node": ^24.10.9
