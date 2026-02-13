@@ -1,0 +1,34 @@
+# the name by which the project can be referenced within Serena
+project_name: "node_reqwest"
+
+# list of languages for which language servers are started
+languages:
+- rust
+- typescript
+
+# the encoding used by text files in the project
+encoding: "utf-8"
+
+# whether to use project's .gitignore files to ignore files
+ignore_all_files_in_gitignore: true
+
+# list of additional paths to ignore
+ignored_paths:
+- ".cache/**"
+- "node_modules/**"
+- "target/**"
+
+# whether the project is in read-only mode
+read_only: false
+
+# list of tool names to exclude
+excluded_tools: []
+
+# list of optional tools to include
+included_optional_tools: []
+
+# fixed set of tools (if non-empty, replaces default set)
+fixed_tools: []
+
+# initial prompt for the project
+initial_prompt: ""

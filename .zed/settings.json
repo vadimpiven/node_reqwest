@@ -1,23 +1,4 @@
 {
-  "auto_install_extensions": {
-    // Language support
-    "html": true,
-    "toml": true,
-    "dockerfile": true,
-    "docker-compose": true,
-    "yaml": true,
-    "basher": true,
-    // Tools & linting
-    "editorconfig": true,
-    "markdownlint": true,
-    "ruff": true,
-    "github-actions": true,
-    // Spell checking (equivalent to code-spell-checker)
-    "typos": true,
-    // Dependency management (equivalent to dependi)
-    "crates-lsp": true,
-    "deputy": true
-  },
   "read_only_files": [
     "**/.cargo/registry/src/**/*.rs",
     "**/.cargo/git/checkouts/**/*.rs",
