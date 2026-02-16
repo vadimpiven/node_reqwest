@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Review the conversation to determine if Claude just completed a coding task (implementation, bug fix, refactoring — not just answering a question or exploring the codebase). If a coding task was completed, check whether `mise run check` was run AND passed (or the relevant subset of checks for the changed files). If a coding task was completed but check was not run or did not pass, respond {\"ok\": false, \"reason\": \"Run `mise run check` and fix any failures before stopping.\"}. If no coding task was done, or checks already passed, respond {\"ok\": true}. Context: $ARGUMENTS",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
