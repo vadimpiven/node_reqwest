@@ -61,7 +61,7 @@ version = "0.13.1"
 
 [tools."github:mikefarah/yq"]
 version_prefix = "v"
-version = "4.52.1"
+version = "4.52.4"
 
 # Tools with no Windows ARM64 binary available
 [tools."aqua:hadolint/hadolint"]
