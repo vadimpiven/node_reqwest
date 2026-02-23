@@ -73,7 +73,7 @@ version = "0.19.0"
 os = ["linux", "macos"]
 
 [tools."aqua:crate-ci/typos"]
-version = "1.42.1"
+version = "1.43.5"
 os = ["linux", "macos"]
 
 [tools."github:taiki-e/cargo-llvm-cov"]
