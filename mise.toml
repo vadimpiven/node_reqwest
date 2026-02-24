@@ -47,7 +47,7 @@ rust.version = "nightly-2026-01-15"
 "aqua:koalaman/shellcheck" = "0.11.0"
 "aqua:gitleaks/gitleaks" = "8.30.0"
 "aqua:rhysd/actionlint" = "1.7.10"
-"aqua:astral-sh/uv" = "0.9.26"
+"aqua:astral-sh/uv" = "0.10.4"
 "aqua:cargo-bins/cargo-binstall" = "1.17.4"
 
 # Tools with non-standard version prefix
