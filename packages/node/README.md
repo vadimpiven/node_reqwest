@@ -44,8 +44,10 @@ setGlobalDispatcher(agent);
 const response = await fetch("https://example.com");
 ```
 
-## Install script
+## Postinstall Script
 
-Warning: this package uses install script to download precompiled binary
-for the correct OS and architecture. All the binaries get attached to GitHub
-release. The releases are made immutable to prevent supply chain attacks.
+This package downloads a precompiled binary during installation. The
+[postinstall script](./scripts/postinstall.js) cryptographically verifies that
+the binary was built in the same GitHub Actions workflow run as this npm package
+using [Sigstore](https://www.sigstore.dev/) provenance attestations and the
+public [Rekor](https://docs.sigstore.dev/logging/overview/) transparency log.
