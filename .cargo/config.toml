@@ -8,5 +8,10 @@ rustflags = ["-C", "target-feature=+crt-static"]
 [target.'cfg(target_arch = "x86_64")']
 rustflags = ["-C", "target-feature=+sse3,+ssse3,+sse4.1,+sse4.2,+popcnt,+cmpxchg16b"]
 
+# Use bundled rust-lld for faster linking on all Linux targets
+# (default on x86_64-unknown-linux-gnu since Rust 1.90, opt-in for others)
+[target.'cfg(target_os = "linux")']
+rustflags = ["-Zlinker-features=+lld"]
+
 [env]
 MACOSX_DEPLOYMENT_TARGET = { value = "13.0" }

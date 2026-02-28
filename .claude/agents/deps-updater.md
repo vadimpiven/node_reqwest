@@ -20,7 +20,7 @@ Launch ALL of the following sub-agents IN PARALLEL using the Task tool with `run
     - Run `pnpm update --recursive` to update within existing ranges
     - Use `pnpm outdated --recursive` to find packages outside current ranges
     - Update catalog entries in pnpm-workspace.yaml where newer versions exist
-    - Keep `^` prefix for ranges that have it, keep exact pins for exact versions
+    - All catalog entries use exact versions (no `^` prefix) to prevent version drift
     - After updating catalog entries, run `pnpm install` to verify the lockfile regenerates without errors. If a version is rejected due to the cooldown, revert to the previous version for that package.
     - Do NOT change overrides, onlyBuiltDependencies, strictDepBuilds, blockExoticSubdeps, or minimumReleaseAge
 
@@ -46,7 +46,7 @@ Launch ALL of the following sub-agents IN PARALLEL using the Task tool with `run
     - Actions to check: actions/checkout, actions/cache, actions/setup-node, actions/attest-build-provenance, softprops/action-gh-release, zizmorcore/zizmor-action, aquasecurity/trivy-action, github/codeql-action, ilammy/msvc-dev-cmd, jdx/mise-action, docker/login-action, docker/setup-buildx-action, docker/build-push-action, hoverkraft-tech/compose-action, apple-actions/import-codesign-certs, codecov/codecov-action
 
 6. **Docker & Rust toolchain** - Update Docker base images and Rust nightly
-    - Update rust-toolchain.toml channel and mise.toml rust.version to latest nightly (today is 2026-02-13, try nightly-2026-02-12)
+    - Update rust-toolchain.toml channel and mise.toml rust.version to latest nightly (check available dates with `rustup check`)
     - Run `rustup show` after updating to verify it installs
     - Check for newer Docker base image digests using `docker buildx imagetools inspect`
     - Check for newer dockerfile syntax image version/digest

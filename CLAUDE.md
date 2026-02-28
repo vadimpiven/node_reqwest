@@ -38,6 +38,10 @@ client functionality (wrapping reqwest). Three Rust packages
   `exclude-newer = "1 day"` (pyproject.toml) and pnpm uses
   `minimumReleaseAge: 1440` minutes (pnpm-workspace.yaml).
   Never pin to a version published less than 1 day ago.
+- **Exact pins in pnpm catalog** — all entries in
+  `pnpm-workspace.yaml`'s `catalog:` section use exact
+  versions (no `^`). This prevents version drift from
+  semver ranges.
 - **Verify CLI compatibility after upgrades** — tool upgrades
   can change CLI flags (e.g. pyrefly dropped `--all`). After
   bumping a tool version, verify that all mise tasks using it
