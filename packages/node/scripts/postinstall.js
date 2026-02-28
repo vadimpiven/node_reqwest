@@ -92,7 +92,7 @@ function getExtensionValue(cert, oid) {
   // v1 extensions store raw ASCII in the value
   const subs = ext.valueObj.subs;
   if (subs && subs.length > 0) {
-    return subs[0].value.toString("ascii");
+    return subs[0].value.toString("utf8");
   }
   return ext.value.toString("ascii");
 }
@@ -287,7 +287,7 @@ async function main() {
 
   // Extract expected repository from package.json
   const repoUrl = typeof repository === "string" ? repository : (repository?.url ?? "");
-  const repoMatch = repoUrl.match(/github\.com[/:]([^/]+\/[^/.]+)/);
+  const repoMatch = repoUrl.match(/github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?$/);
   const expectedRepo = repoMatch ? repoMatch[1] : null;
 
   if (!expectedRepo) {
