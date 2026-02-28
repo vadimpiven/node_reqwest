@@ -79,7 +79,7 @@ jobs:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           run: 'pnpm -F "{packages/node}" run pack-addon'
       - name: "Attest build provenance"
-        uses: "actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8" # v3.1.0
+        uses: "actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f" # v3.2.0
         with:
           subject-path: "packages/node/dist/*.gz"
       - name: "Upload node addon"
@@ -125,7 +125,7 @@ jobs:
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run build:ts
       - name: "Attest build provenance"
-        uses: "actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8" # v3.1.0
+        uses: "actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f" # v3.2.0
         with:
           subject-path: "packages/node/package.tar.gz"
       - name: "Finalize release"

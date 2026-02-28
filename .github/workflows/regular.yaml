@@ -94,7 +94,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: "Run zizmor"
-        uses: "zizmorcore/zizmor-action@135698455da5c3b3e55f73f4419e481ab68cdd95" # v0.4.1
+        uses: "zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d" # v0.5.0
         with:
           persona: "auditor"
         env:
@@ -114,7 +114,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: "Run Trivy vulnerability scanner"
-        uses: "aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8" # v0.33.1
+        uses: "aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518" # 0.34.1
         with:
           trivy-config: "trivy.yaml"
           scan-type: "fs"
@@ -123,6 +123,6 @@ jobs:
           output: "trivy-results.sarif"
           ignore-unfixed: true
       - name: "Upload Trivy scan results to GitHub Security tab"
-        uses: "github/codeql-action/upload-sarif@19b2f06db2b6f5108140aeb04014ef02b648f789" # v4.31.11
+        uses: "github/codeql-action/upload-sarif@89a39a4e59826350b863aa6b6252a07ad50cf83e" # v4.32.4
         with:
           sarif_file: "trivy-results.sarif"
