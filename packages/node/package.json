@@ -20,18 +20,12 @@
   "author": "Vadim Piven <vadim@piven.tech> (https://piven.tech)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vadimpiven/node_reqwest.git"
-  },
-  "binary": {
-    "moduleName": "node_reqwest.node",
-    "modulePath": "./dist/",
-    "packedName": "node_reqwest-v{version}-{platform}-{arch}.node.gz",
-    "remotePath": "https://github.com/vadimpiven/node_reqwest/releases/download/v{version}/"
+    "url": "git+https://github.com/vadimpiven/node_reqwest.git",
+    "directory": "packages/node"
   },
   "files": [
     "export/**/*",
-    "export_dist/**/*",
-    "scripts/**/*"
+    "export_dist/**/*"
   ],
   "os": [
     "darwin",
@@ -71,26 +65,20 @@
     "preci-test": "pnpm run ci-build",
     "ci-test:rust": "pnpm run test:nextest -r --locked && pnpm run test:rustdoc -r --locked",
     "ci-test": "pnpm run test:ts && pnpm run ci-test:rust",
-    "pack-addon": "node ../../scripts/pack-addon.ts",
-    "postinstall": "node scripts/postinstall.js"
+    "pack-addon": "slsa pack",
+    "postinstall": "slsa wget"
   },
   "dependencies": {
-    "@sigstore/core": "catalog:",
-    "sigstore": "catalog:",
+    "@node-reqwest/slsa": "workspace:*",
     "undici": "catalog:"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
     "@playwright/test": "catalog:",
-    "@rollup/plugin-node-resolve": "catalog:",
-    "@sigstore/bundle": "catalog:",
-    "@sigstore/rekor-types": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "electron": "catalog:",
     "monocart-reporter": "catalog:",
-    "rollup": "catalog:",
-    "rollup-plugin-node-externals": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
@@ -98,5 +86,9 @@
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
+  },
+  "addon": {
+    "path": "./dist/node_reqwest.node",
+    "url": "https://github.com/vadimpiven/node_reqwest/releases/download/v{version}/node_reqwest-v{version}-{platform}-{arch}.node.gz"
   }
 }

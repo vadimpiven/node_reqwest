@@ -4,7 +4,8 @@
 
 Rust-based Node.js native addon using neon bindings for HTTP
 client functionality (wrapping reqwest). Three Rust packages
-(`core`, `meta`, `node`) and TypeScript exports.
+(`core`, `meta`, `node`), one TypeScript package (`slsa` for
+supply-chain verification), and TypeScript exports.
 
 ## Commands
 

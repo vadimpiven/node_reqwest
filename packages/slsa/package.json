@@ -1,0 +1,59 @@
+{
+  "name": "@node-reqwest/slsa",
+  "version": "0.0.0",
+  "description": "SLSA supply-chain security for node-reqwest",
+  "homepage": "https://github.com/vadimpiven/node_reqwest",
+  "bugs": {
+    "url": "https://github.com/vadimpiven/node_reqwest/issues"
+  },
+  "license": "Apache-2.0 OR MIT",
+  "author": "Vadim Piven <vadim@piven.tech> (https://piven.tech)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vadimpiven/node_reqwest.git",
+    "directory": "packages/slsa"
+  },
+  "bin": {
+    "slsa": "./bin/slsa.mjs"
+  },
+  "files": [
+    "dist/**/*",
+    "bin/**/*"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
+  "scripts": {
+    "bump-version": "cargo run -p meta --bin npm_version -r --locked",
+    "type-check": "pnpm exec tsc --noEmit",
+    "build": "vite build && pnpm pack --out package.tar.gz",
+    "test:vitest": "pnpm exec vitest run --coverage",
+    "pretest": "pnpm run build",
+    "test": "pnpm run type-check && pnpm run test:vitest",
+    "ci-build": "pnpm run build",
+    "ci-test": "pnpm run test"
+  },
+  "devDependencies": {
+    "@sigstore/bundle": "catalog:",
+    "@sigstore/core": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "sigstore": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}

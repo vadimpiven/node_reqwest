@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "lib": ["ESNext", "ESNext.Symbol", "ESNext.Disposable"],
-    "types": ["node"],
+    "types": ["node", "vitest/importMeta"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "isolatedModules": true,
@@ -13,7 +13,7 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "outDir": "./export_dist",
+    "outDir": "./dist",
 
     // Strict mode (base)
     "strict": true,
@@ -33,5 +33,5 @@
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["./export/**/*.ts", "./tests/**/*.{mjs,ts}"]
+  "include": ["./src/**/*.ts", "./tests/**/*.ts"]
 }

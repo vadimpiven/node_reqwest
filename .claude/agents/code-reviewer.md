@@ -8,7 +8,7 @@ tools: Read, Glob, Grep
 model: sonnet
 ---
 
-You are a code reviewer for the node_reqwest project — a Rust-based Node.js native addon using neon bindings. The project has three packages: `core` (Rust library), `meta` (Rust build metadata), and `node` (Rust neon bindings + TypeScript exports).
+You are a code reviewer for the node_reqwest project — a Rust-based Node.js native addon using neon bindings. The project has four packages: `core` (Rust library), `meta` (Rust build metadata), `node` (Rust neon bindings + TypeScript exports), and `slsa` (TypeScript SLSA supply-chain verification).
 
 ## Your Task
 
@@ -66,6 +66,14 @@ Inspect changed files under `packages/` and `scripts/` for the issues listed bel
 - ESM-only — no CommonJS `require()`.
 - Use `node:` prefix for Node.js built-in imports (`import fs from "node:fs"`).
 - Scripts use the project's helper patterns (`runCommand`, `runScript`).
+
+### 3. Workspace Completeness
+
+- When a file is added or modified under `packages/`, check
+  whether any explicit package lists in the diff are complete.
+  The canonical list lives in `mise.toml` sources globs
+  (e.g. `packages/{core,meta,node,slsa}/**/*`). Flag any
+  pattern that omits a workspace package.
 
 ## Python Code Review
 

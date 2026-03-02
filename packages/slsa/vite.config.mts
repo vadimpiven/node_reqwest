@@ -1,54 +1,47 @@
 import { builtinModules } from "node:module";
 import { resolve } from "node:path";
-import { codecovVitePlugin } from "@codecov/vite-plugin";
 import dts from "vite-plugin-dts";
 import { defineConfig } from "vitest/config";
 
 // Externalize all Node.js built-ins (with and without node: prefix)
-const nodeBuiltins = new Set([...builtinModules, ...builtinModules.map((m) => `node:${m}`)]);
+const nodeBuiltins = [...builtinModules, ...builtinModules.map((m) => `node:${m}`)];
 
 export default defineConfig({
+  define: {
+    "import.meta.vitest": "undefined",
+  },
   build: {
     lib: {
-      entry: resolve("export/index.ts"),
+      entry: resolve("src/index.ts"),
       fileName: "index",
       formats: ["es"],
     },
-    outDir: "export_dist",
+    outDir: "dist",
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
-      external: (id: string) =>
-        nodeBuiltins.has(id) ||
-        (!id.startsWith(".") && !id.startsWith("/") && !id.startsWith("\0")),
+      external: nodeBuiltins,
+      platform: "node",
     },
   },
   test: {
-    testTimeout: 30000,
-    globalSetup: "./tests/global-setup.ts",
     watch: false,
     pool: "forks",
-    maxWorkers: 1,
-    isolate: false,
     passWithNoTests: true,
     coverage: {
       provider: "istanbul",
       reporter: ["lcovonly", "text"],
       reportsDirectory: "./coverage-vitest",
     },
-    reporters: ["default", ["junit", { outputFile: "report-vitest.junit.xml" }]],
+    reporters: ["default"],
     detectAsyncLeaks: false,
+    includeSource: ["src/**/*.ts"],
     include: ["tests/vitest/**/*.test.ts"],
   },
   plugins: [
     dts({
       staticImport: true,
-      entryRoot: "export",
-    }),
-    codecovVitePlugin({
-      enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
-      bundleName: "node-reqwest",
-      uploadToken: process.env.CODECOV_TOKEN,
+      entryRoot: "src",
     }),
   ],
 });

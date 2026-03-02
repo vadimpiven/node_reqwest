@@ -87,8 +87,8 @@ jobs:
         with:
           files: "packages/node/dist/*.gz"
           draft: true
-  build-package:
-    name: "Build package"
+  build-packages:
+    name: "Build packages"
     timeout-minutes: 30
     permissions:
       contents: "write" # for release creation
@@ -117,31 +117,46 @@ jobs:
           cache-key: "${{ needs.init.outputs.cache-key }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           mise-version: "${{ needs.init.outputs.mise-version }}"
-      - name: "Build export wrapper"
+      - name: "Build and pack slsa package"
+        uses: "./.github/actions/shell"
+        with:
+          docker-service: "${{ needs.init.outputs.docker-service }}"
+          run: |
+            pnpm -F "{packages/slsa}" run bump-version
+            pnpm -F "{packages/slsa}" run build
+            mv packages/slsa/package.tar.gz packages/slsa/slsa.tar.gz
+      - name: "Build and pack node package"
         uses: "./.github/actions/shell"
         with:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run build:ts
-      - name: "Attest build provenance"
+            mv packages/node/package.tar.gz packages/node/node.tar.gz
+      - name: "Attest slsa build provenance"
         uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
         with:
-          subject-path: "packages/node/package.tar.gz"
+          subject-path: "packages/slsa/slsa.tar.gz"
+      - name: "Attest node build provenance"
+        uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
+        with:
+          subject-path: "packages/node/node.tar.gz"
       - name: "Finalize release"
         uses: "softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b" # v2.5.0
         with:
-          files: "packages/node/package.tar.gz"
+          files: |
+            packages/slsa/slsa.tar.gz
+            packages/node/node.tar.gz
           draft: false
-  npm-publish:
-    name: "Publish package"
+  npm-publish-slsa:
+    name: "Publish slsa package"
     timeout-minutes: 15
     permissions:
       contents: "read" # to fetch code
       id-token: "write" # for OIDC authentication
     needs:
-      - "build-package"
-    if: "needs.build-package.result == 'success'"
+      - "build-packages"
+    if: "needs.build-packages.result == 'success'"
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout"
@@ -150,24 +165,33 @@ jobs:
           ref: "${{ github.ref }}"
           fetch-depth: 1
           persist-credentials: false
-      - name: "Install latest Node.js with correct .npmrc"
-        uses: "actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238" # v6.2.0
+      - name: "Publish slsa package"
+        uses: "./.github/actions/npm-publish"
         with:
-          node-version: "latest"
-          check-latest: true
-          registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
-      - name: "Update npm CLI"
-        shell: "bash"
-        run: "npm install -g npm@latest"
-      - name: "Download package artifact"
-        shell: "bash"
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: 'gh release download "$GITHUB_REF_NAME" --pattern package.tar.gz'
-      - name: "Publish to npmjs.org"
-        shell: "bash"
-        run: "npm publish package.tar.gz --access public --provenance"
+          artifact: "slsa.tar.gz"
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+  npm-publish:
+    name: "Publish node package"
+    timeout-minutes: 15
+    permissions:
+      contents: "read" # to fetch code
+      id-token: "write" # for OIDC authentication
+    needs:
+      - "npm-publish-slsa"
+    if: "needs.npm-publish-slsa.result == 'success'"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+        with:
+          ref: "${{ github.ref }}"
+          fetch-depth: 1
+          persist-credentials: false
+      - name: "Publish node package"
+        uses: "./.github/actions/npm-publish"
+        with:
+          artifact: "node.tar.gz"
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
   verify-installation:
     name: "Verify release installation"
     timeout-minutes: 5
