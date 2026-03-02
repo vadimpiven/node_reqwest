@@ -33,19 +33,14 @@
       "enabled": false
     },
     {
-      "description": "Group GitHub Actions updates",
-      "matchManagers": ["github-actions"],
-      "groupName": "GitHub Actions"
+      "description": "Group all non-major updates into a single PR",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "all dependencies"
     },
     {
-      "description": "Group Docker updates",
-      "matchManagers": ["dockerfile", "docker-compose"],
-      "groupName": "Docker dependencies"
-    },
-    {
-      "description": "Group Rust toolchain updates",
-      "matchPackageNames": ["rust", "rustlang/rust"],
-      "groupName": "Rust Toolchain"
+      "description": "Group all major updates into a single PR",
+      "matchUpdateTypes": ["major"],
+      "groupName": "all major dependencies"
     }
   ],
   "customManagers": [
