@@ -77,11 +77,11 @@ undocumented_unsafe_blocks = "deny"
 
 [workspace.dependencies]
 # Always update nightly version in `mise.toml` file when updating dependencies
-anyhow = { version = "1.0.100" }
+anyhow = { version = "1.0.101" }
 async-stream = { version = "0.3.6" }
 async-trait = { version = "0.1.89" }
-bytes = { version = "1.10.1" }
-chrono = { version = "0.4.42", features = ["serde"] }
+bytes = { version = "1.11.1" }
+chrono = { version = "0.4.43", features = ["serde"] }
 core = { path = "packages/core", version = "0.0.0" }
 futures = { version = "0.3.31" }
 futures-util = { version = "0.3.31" }
@@ -91,7 +91,7 @@ mimalloc = { version = "0.1.48" }
 neon = { version = "1.1.1", features = ["napi-8", "serde", "tokio", "tokio-rt-multi-thread"] }
 neon-build = { version = "0.10.1" }
 pretty_assertions = { version = "1.4.1", features = ["unstable"] }
-reqwest = { version = "0.13.1", features = [
+reqwest = { version = "0.13.2", features = [
     "brotli",
     "cookies",
     "deflate",
@@ -106,13 +106,13 @@ reqwest = { version = "0.13.1", features = [
 ] }
 reqwest-websocket = { version = "0.6.0", features = ["json"] }
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = { version = "1.0.148" }
+serde_json = { version = "1.0.149" }
 tauri-winres = { version = "0.3.5" }
-tempfile = { version = "3.24.0" }
+tempfile = { version = "3.25.0" }
 thiserror = { version = "2.0.18" }
 tokio = { version = "1.49.0", features = ["rt-multi-thread", "sync", "time"] }
-tokio-stream = { version = "0.1.17" }
-tokio-test = { version = "0.4.4" }
-tokio-util = { version = "0.7.17", features = ["join-map"] }
-wiremock = { version = "0.6.4" }
+tokio-stream = { version = "0.1.18" }
+tokio-test = { version = "0.4.5" }
+tokio-util = { version = "0.7.18", features = ["join-map"] }
+wiremock = { version = "0.6.5" }
 with_dir = { version = "0.1.4" }

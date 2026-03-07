@@ -13,9 +13,9 @@ members = ["packages/node/tests/mitmproxy"]
 [dependency-groups]
 dev = [
     "mitmproxy==12.2.1 ; sys_platform != 'win32'",
-    "pyrefly==0.50.1",
-    "ruff==0.14.14",
-    "semgrep==1.149.0 ; sys_platform != 'win32'",
+    "pyrefly==0.52.0",
+    "ruff==0.15.0",
+    "semgrep==1.151.0 ; sys_platform != 'win32'",
     "zizmor==1.22.0 ; sys_platform != 'win32'",
 ]
 

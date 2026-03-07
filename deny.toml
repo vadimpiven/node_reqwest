@@ -217,6 +217,7 @@ skip = [
     { crate = "socket2", reason = "multiple versions across hyper-util and ipconfig" },
     { crate = "core-foundation", reason = "Apple platform crate version fragmentation" },
     { crate = "getrandom", reason = "different versions for different rand ecosystem crates" },
+    { crate = "r-efi", reason = "follows getrandom versioning" },
     { crate = "hashbrown", reason = "indexmap and other crates use different versions" },
     { crate = "thiserror", reason = "ecosystem transition between v1 and v2" },
     { crate = "thiserror-impl", reason = "follows thiserror versioning" },

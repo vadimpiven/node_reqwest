@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "lib": ["ESNext", "ESNext.Symbol", "ESNext.Disposable"],
+    "types": ["node", "vitest/importMeta"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "isolatedModules": true,

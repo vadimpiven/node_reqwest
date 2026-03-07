@@ -5,6 +5,7 @@
 # It inherits from mise.toml and overrides container-specific settings
 
 [settings]
+http_timeout = "120"
 rust.cargo_home = "/workspace/.cache/docker/cargo"
 rust.rustup_home = "/workspace/.cache/docker/rustup"
 # Force GNU Python builds (manylinux_2_28 container is glibc-based)
