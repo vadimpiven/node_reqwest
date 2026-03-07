@@ -168,7 +168,8 @@ jobs:
   smoke-test:
     name: "Smoke test"
     timeout-minutes: 10
-    permissions: {}
+    permissions:
+      contents: "read" # GITHUB_TOKEN for slsa postinstall
     needs:
       - "init"
       - "publish"
@@ -200,6 +201,8 @@ jobs:
           exit 1
       - name: "Smoke test"
         shell: "bash"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           cd "$(mktemp -d)"
           npm init -y
