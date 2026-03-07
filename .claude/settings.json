@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$(git rev-parse --show-toplevel)\" && mise run check",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && mise run fix",
             "timeout": 600
           }
         ]

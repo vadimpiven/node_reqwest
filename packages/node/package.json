@@ -69,7 +69,7 @@
     "postinstall": "slsa wget"
   },
   "dependencies": {
-    "@node-reqwest/slsa": "workspace:*",
+    "node-addon-slsa": "0.6.0",
     "undici": "catalog:"
   },
   "devDependencies": {

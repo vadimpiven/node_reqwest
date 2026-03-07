@@ -43,14 +43,14 @@ rust.version = "nightly-2026-02-28"
 "aqua:jqlang/jq" = "1.8.1"
 "github:mikefarah/yq" = "4.52.4"
 "aqua:BurntSushi/ripgrep" = "15.1.0"
-"aqua:aquasecurity/trivy" = "0.69.1"
+"aqua:aquasecurity/trivy" = "0.69.3"
 "aqua:google/yamlfmt" = "0.21.0"
 "aqua:koalaman/shellcheck" = "0.11.0"
 "aqua:gitleaks/gitleaks" = "8.30.0"
 "aqua:rhysd/actionlint" = "1.7.11"
-"aqua:astral-sh/uv" = "0.10.7"
+"aqua:astral-sh/uv" = "0.10.9"
 "aqua:cli/cli" = "2.87.3"
-"aqua:cargo-bins/cargo-binstall" = "1.17.5"
+"aqua:cargo-bins/cargo-binstall" = "1.17.7"
 
 # Tools with non-standard version prefix
 [tools."github:nextest-rs/nextest"]
@@ -650,24 +650,17 @@ depends = ["setup:rust"]
 run = 'pnpm -F "{packages/meta}" --if-present run ci-build'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
-[tasks."ci-build:slsa"]
-description = "Build slsa package for CI"
-hide = true
-depends = ["setup:pnpm"]
-run = 'pnpm -F "{packages/slsa}" --if-present run ci-build'
-sources = ["packages/slsa/**/*"]
-
 [tasks."ci-build:node"]
 description = "Build node package for CI"
 hide = true
 depends = ["setup:rust", "setup:pnpm", "setup:python"]
 run = 'pnpm -F "{packages/node}" --if-present run ci-build'
-sources = ["packages/{core,meta,node,slsa}/**/*", "Cargo.{toml,lock}"]
+sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build"]
 description = "Build all packages for CI"
 hide = true
-depends = ["ci-build:core", "ci-build:meta", "ci-build:slsa", "ci-build:node"]
+depends = ["ci-build:core", "ci-build:meta", "ci-build:node"]
 
 # --- CI Test tasks ---
 [tasks."ci-test:core"]
@@ -684,24 +677,17 @@ depends = ["check"]
 run = 'pnpm -F "{packages/meta}" --if-present run ci-test'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
-[tasks."ci-test:slsa"]
-description = "Run CI tests for slsa package"
-hide = true
-depends = ["check"]
-run = 'pnpm -F "{packages/slsa}" --if-present run ci-test'
-sources = ["packages/slsa/**/*"]
-
 [tasks."ci-test:node"]
 description = "Run CI tests for node package"
 hide = true
 depends = ["check", "setup:pnpm"]
 run = 'pnpm -F "{packages/node}" --if-present run ci-test'
-sources = ["packages/{core,meta,node,slsa}/**/*", "Cargo.{toml,lock}"]
+sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test"]
 description = "Run all CI tests"
 hide = true
-depends = ["ci-test:core", "ci-test:meta", "ci-test:slsa", "ci-test:node"]
+depends = ["ci-test:core", "ci-test:meta", "ci-test:node"]
 
 # --- Build tasks ---
 [tasks."build:core"]
@@ -718,24 +704,17 @@ depends = ["setup:rust"]
 run = 'pnpm -F "{packages/meta}" --if-present run build'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
-[tasks."build:slsa"]
-description = "Build slsa package"
-hide = true
-depends = ["setup:pnpm"]
-run = 'pnpm -F "{packages/slsa}" --if-present run build'
-sources = ["packages/slsa/**/*"]
-
 [tasks."build:node"]
 description = "Build node package"
 hide = true
 depends = ["setup:rust", "setup:pnpm", "setup:python"]
 run = 'pnpm -F "{packages/node}" --if-present run build'
-sources = ["packages/{core,meta,node,slsa}/**/*", "Cargo.{toml,lock}"]
+sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.build]
 description = "Compile all packages"
 alias = "b"
-depends = ["build:core", "build:meta", "build:slsa", "build:node"]
+depends = ["build:core", "build:meta", "build:node"]
 
 # --- Test tasks ---
 [tasks."test:core"]
@@ -752,21 +731,14 @@ depends = ["fix"]
 run = 'pnpm -F "{packages/meta}" --if-present run test'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
-[tasks."test:slsa"]
-description = "Run tests for slsa package"
-hide = true
-depends = ["fix"]
-run = 'pnpm -F "{packages/slsa}" --if-present run test'
-sources = ["packages/slsa/**/*"]
-
 [tasks."test:node"]
 description = "Run tests for node package"
 hide = true
 depends = ["fix", "setup:pnpm"]
 run = 'pnpm -F "{packages/node}" --if-present run test'
-sources = ["packages/{core,meta,node,slsa}/**/*", "Cargo.{toml,lock}"]
+sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.test]
 description = "Run all tests"
 alias = "t"
-depends = ["test:core", "test:meta", "test:slsa", "test:node"]
+depends = ["test:core", "test:meta", "test:node"]

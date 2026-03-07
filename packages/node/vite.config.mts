@@ -8,6 +8,9 @@ import { defineConfig } from "vitest/config";
 const nodeBuiltins = new Set([...builtinModules, ...builtinModules.map((m) => `node:${m}`)]);
 
 export default defineConfig({
+  define: {
+    "import.meta.vitest": "undefined",
+  },
   build: {
     lib: {
       entry: resolve("export/index.ts"),
@@ -35,9 +38,13 @@ export default defineConfig({
       provider: "istanbul",
       reporter: ["lcovonly", "text"],
       reportsDirectory: "./coverage-vitest",
+      // TODO: enable once coverage reaches 80%
+      // thresholds: { lines: 80, branches: 80, functions: 80, statements: 80 },
     },
     reporters: ["default", ["junit", { outputFile: "report-vitest.junit.xml" }]],
+    // TODO: enable once vitest stops reporting false positives from native addons
     detectAsyncLeaks: false,
+    includeSource: ["export/**/*.ts"],
     include: ["tests/vitest/**/*.test.ts"],
   },
   plugins: [

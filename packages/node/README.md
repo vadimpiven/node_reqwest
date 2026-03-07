@@ -1,53 +1,72 @@
 # node-reqwest
 
-Node.js bindings for [reqwest](https://crates.io/crates/reqwest) - Rust
-HTTP client library. This library provides support for system proxy and
-trusted system CA certificates without additional configuration.
-The build is made in a fashion that allows usage by Electron-based applications.
+Node.js bindings for [reqwest][reqwest] — a Rust HTTP client library.
+Provides system proxy, trusted system CA certificates, and HTTP/2
+out of the box, with no additional configuration. Compatible with
+Electron.
 
-## Why you want to use this library?
+[reqwest]: https://crates.io/crates/reqwest
 
-1. DNS resolution using recursive DNS resolver
-   <https://github.com/hickory-dns/hickory-dns> instead of
-   non-recursive <https://github.com/c-ares/c-ares> used by Node.js
-   (and Undici) which crashes Electron on Windows if you try
-   to resolve nonexistent domain `fetch('http://example.lan')`
-2. System CA certificates are used by default without additional
-   libraries like <https://www.npmjs.com/package/win-ca> and
-   <https://www.npmjs.com/package/mac-ca>
-3. System proxy is used by default, while it is not obtainable with
-   Node.js and in Electron you have to use very complex interface
-   <https://www.electronjs.org/docs/latest/api/session#sesresolveproxyurl>
-4. Socks proxy is supported out of the box
-5. HTTP/2 performance and support is much better than in Node.js
-6. Rustls <https://github.com/rustls/rustls> is used for TLS
+## Why node-reqwest?
+
+| Feature | node-reqwest | Node.js / undici |
+| --- | --- | --- |
+| DNS resolver | Recursive ([hickory-dns][hickory]) | Non-recursive (c-ares) — crashes Electron on Windows for nonexistent domains |
+| System CA certificates | Built-in | Requires [win-ca][win-ca], [mac-ca][mac-ca] |
+| System proxy | Built-in | Not available (complex Electron [workaround][electron-proxy]) |
+| SOCKS proxy | Built-in | Not available |
+| HTTP/2 | Full support via [hyper][hyper] | Limited |
+| TLS | [rustls][rustls] | OpenSSL |
+
+[hickory]: https://github.com/hickory-dns/hickory-dns
+[win-ca]: https://www.npmjs.com/package/win-ca
+[mac-ca]: https://www.npmjs.com/package/mac-ca
+[electron-proxy]: https://www.electronjs.org/docs/latest/api/session#sesresolveproxyurl
+[hyper]: https://github.com/hyperium/hyper
+[rustls]: https://github.com/rustls/rustls
 
 ## Usage
 
-This library provides an `Agent` that is fully compatible with the
-`undici.Dispatcher` interface. This allows it to be used as a global
-dispatcher for `fetch` or with other `undici`-compatible APIs.
+This library provides an `Agent` that implements the
+`undici.Dispatcher` interface. Use it as a global dispatcher for
+`fetch` or with any `undici`-compatible API.
 
 ```typescript
 import { Agent } from "node-reqwest";
 import { setGlobalDispatcher } from "undici";
 
-// Create an agent with system proxy enabled (default)
 const agent = new Agent({
-    allowH2: true,
-    proxy: "system",
+  allowH2: true,
+  proxy: "system",
 });
 
 setGlobalDispatcher(agent);
 
-// Now all fetch calls will use reqwest under the hood
+// All fetch calls now use reqwest under the hood
 const response = await fetch("https://example.com");
 ```
 
-## Postinstall Script
+## Installation safety
 
-This package downloads a precompiled binary during installation. The
-[postinstall script](./scripts/postinstall.js) cryptographically verifies that
-the binary was built in the same GitHub Actions workflow run as this npm package
-using [Sigstore](https://www.sigstore.dev/) provenance attestations and the
-public [Rekor](https://docs.sigstore.dev/logging/overview/) transparency log.
+This package downloads a precompiled binary during `npm install`.
+The [postinstall script][postinstall] uses
+[node-addon-slsa][slsa] to cryptographically verify that the
+binary was built in the same GitHub Actions workflow run as this
+npm package, using [sigstore][sigstore] provenance attestations
+and the [GitHub Attestations API][gh-attestations].
+
+Installation aborts with a `SECURITY` error if any check fails.
+
+[postinstall]: https://github.com/vadimpiven/node_reqwest/blob/main/packages/node/scripts/postinstall.js
+[slsa]: https://www.npmjs.com/package/node-addon-slsa
+[sigstore]: https://www.sigstore.dev/
+[gh-attestations]: https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations
+
+## Requirements
+
+- Node.js `^20.19.0 || >=22.12.0`
+
+## License
+
+[Apache-2.0](../../LICENSE-APACHE.txt) OR
+[MIT](../../LICENSE-MIT.txt)
