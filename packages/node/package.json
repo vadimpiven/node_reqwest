@@ -69,8 +69,7 @@
     "postinstall": "slsa wget"
   },
   "dependencies": {
-    "node-addon-slsa": "0.6.0",
-    "undici": "catalog:"
+    "node-addon-slsa": "0.6.0"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
@@ -80,9 +79,13 @@
     "electron": "catalog:",
     "monocart-reporter": "catalog:",
     "typescript": "catalog:",
+    "undici": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "undici": ">=7.0.0"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
