@@ -12,7 +12,8 @@ jobs:
   init:
     name: "Init"
     runs-on: "ubuntu-latest"
-    permissions: {} # No permissions needed
+    permissions:
+      contents: "write" # for draft release creation
     outputs:
       matrix: "${{ steps.init-workflow.outputs.matrix }}"
       env: "${{ steps.init-workflow.outputs.env }}"
@@ -31,11 +32,15 @@ jobs:
       - name: "Init workflow constants"
         id: "init-workflow"
         uses: "./.github/actions/init-workflow"
+      - name: "Create draft release"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: 'gh release create "$GITHUB_REF_NAME" --draft --generate-notes'
   build-addon:
     name: "Build addon"
     timeout-minutes: 45
     permissions:
-      contents: "write" # for release creation
+      contents: "write" # to upload release assets
       packages: "write" # to push Docker images
       id-token: "write" # for OIDC authentication
       attestations: "write" # for build provenance
@@ -83,15 +88,14 @@ jobs:
         with:
           subject-path: "packages/node/dist/*.gz"
       - name: "Upload node addon"
-        uses: "softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b" # v2.5.0
-        with:
-          files: "packages/node/dist/*.gz"
-          draft: true
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: 'gh release upload "$GITHUB_REF_NAME" packages/node/dist/*.gz'
   build-packages:
     name: "Build packages"
     timeout-minutes: 30
     permissions:
-      contents: "write" # for release creation
+      contents: "write" # to upload release assets
       packages: "write" # to push Docker images (if Linux runner)
       id-token: "write" # for OIDC authentication
       attestations: "write" # for build provenance
@@ -128,11 +132,16 @@ jobs:
         uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
         with:
           subject-path: "packages/node/package.tar.gz"
-      - name: "Finalize release"
-        uses: "softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b" # v2.5.0
+      - name: "Upload docs artifact"
+        uses: "actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b" # v4.0.0
         with:
-          files: "packages/node/package.tar.gz"
-          draft: false
+          path: "packages/node/docs"
+      - name: "Upload package and publish release"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: |
+          gh release upload "$GITHUB_REF_NAME" packages/node/package.tar.gz
+          gh release edit "$GITHUB_REF_NAME" --draft=false
   publish:
     name: "Publish"
     timeout-minutes: 15
@@ -151,7 +160,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: "Install latest Node.js with correct .npmrc"
-        uses: "actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238" # v6.2.0
+        uses: "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f" # v6.3.0
         with:
           node-version: "latest"
           check-latest: true
@@ -165,6 +174,22 @@ jobs:
         run: 'gh release download "$GITHUB_REF_NAME" --pattern "package.tar.gz"'
       - name: "Publish to npmjs.org"
         run: 'npm publish "package.tar.gz" --access public --provenance'
+  docs:
+    name: "Deploy docs"
+    needs: "publish"
+    if: "needs.publish.result == 'success'"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+    permissions:
+      pages: "write" # to deploy to GitHub Pages
+      id-token: "write" # to verify the deployment originates from an appropriate source
+    environment:
+      name: "github-pages"
+      url: "${{ steps.deploy.outputs.page_url }}"
+    steps:
+      - name: "Deploy to GitHub Pages"
+        id: "deploy"
+        uses: "actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e" # v4.0.5
   smoke-test:
     name: "Smoke test"
     timeout-minutes: 10
@@ -180,7 +205,7 @@ jobs:
     runs-on: "${{ matrix.os }}"
     steps:
       - name: "Install Node.js"
-        uses: "actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238" # v6.2.0
+        uses: "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f" # v6.3.0
         with:
           node-version: "latest"
           check-latest: true

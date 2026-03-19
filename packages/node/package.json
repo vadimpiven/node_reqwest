@@ -12,7 +12,7 @@
     "request",
     "reqwest"
   ],
-  "homepage": "https://github.com/vadimpiven/node_reqwest",
+  "homepage": "https://vadimpiven.github.io/node_reqwest",
   "bugs": {
     "url": "https://github.com/vadimpiven/node_reqwest/issues"
   },
@@ -51,7 +51,7 @@
     "bump-version": "cargo run -p meta --bin npm_version -r --locked",
     "type-check": "pnpm exec tsc --noEmit",
     "build:cargo": "cargo build",
-    "build:ts": "vite build && pnpm pack --out package.tar.gz",
+    "build:ts": "vite build && typedoc && pnpm pack --out package.tar.gz",
     "build": "pnpm run build:cargo && pnpm run build:ts",
     "test:vitest": "pnpm exec vitest run --coverage",
     "test:playwright": "node ../../scripts/test-playwright.ts --config playwright.config.ts",
@@ -69,7 +69,7 @@
     "postinstall": "slsa wget"
   },
   "dependencies": {
-    "node-addon-slsa": "0.6.0"
+    "node-addon-slsa": "0.6.4"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
@@ -78,6 +78,8 @@
     "@vitest/coverage-istanbul": "catalog:",
     "electron": "catalog:",
     "monocart-reporter": "catalog:",
+    "typedoc": "catalog:",
+    "typedoc-theme-oxide": "catalog:",
     "typescript": "catalog:",
     "undici": "catalog:",
     "vite": "catalog:",

@@ -77,14 +77,14 @@ undocumented_unsafe_blocks = "deny"
 
 [workspace.dependencies]
 # Always update nightly version in `mise.toml` file when updating dependencies
-anyhow = { version = "1.0.101" }
+anyhow = { version = "1.0.102" }
 async-stream = { version = "0.3.6" }
 async-trait = { version = "0.1.89" }
 bytes = { version = "1.11.1" }
-chrono = { version = "0.4.43", features = ["serde"] }
+chrono = { version = "0.4.44", features = ["serde"] }
 core = { path = "packages/core", version = "0.0.0" }
-futures = { version = "0.3.31" }
-futures-util = { version = "0.3.31" }
+futures = { version = "0.3.32" }
+futures-util = { version = "0.3.32" }
 indoc = { version = "2.0.7" }
 meta = { path = "packages/meta", version = "0.0.0" }
 mimalloc = { version = "0.1.48" }
@@ -108,9 +108,9 @@ reqwest-websocket = { version = "0.6.0", features = ["json"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.149" }
 tauri-winres = { version = "0.3.5" }
-tempfile = { version = "3.25.0" }
+tempfile = { version = "3.27.0" }
 thiserror = { version = "2.0.18" }
-tokio = { version = "1.49.0", features = ["rt-multi-thread", "sync", "time"] }
+tokio = { version = "1.50.0", features = ["rt-multi-thread", "sync", "time"] }
 tokio-stream = { version = "0.1.18" }
 tokio-test = { version = "0.4.5" }
 tokio-util = { version = "0.7.18", features = ["join-map"] }
