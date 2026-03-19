@@ -1,0 +1,13 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./export/index.ts"],
+  "out": "docs",
+  "plugin": ["typedoc-theme-oxide"],
+  "theme": "oxide",
+  "name": "node-reqwest",
+  "includeVersion": true,
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "readme": "README.md",
+  "sourceLinkTemplate": "https://github.com/vadimpiven/node_reqwest/blob/{gitRevision}/{path}#L{line}"
+}

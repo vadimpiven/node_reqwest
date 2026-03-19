@@ -1,6 +1,6 @@
-# syntax=docker/dockerfile:1.21@sha256:27f9262d43452075f3c410287a2c43f5ef1bf7ec2bb06e8c9eeb1b8d453087bc
+# syntax=docker/dockerfile:1.22@sha256:4a43a54dd1fedceb30ba47e76cfcf2b47304f4161c0caeac2db1c61804ea3c91
 # <https://quay.io/repository/pypa/manylinux_2_28?tab=tags>
-FROM quay.io/pypa/manylinux_2_28@sha256:66883e65ba93c6c1b84bb458d92684dac9486596bbf319ff43e465f5f014aa2e
+FROM quay.io/pypa/manylinux_2_28@sha256:36171a7725a3d58b5bc4b7ecc377b45d155901ae33f503a9efe08db9a578eb59
 
 ARG TARGETARCH
 ARG USERNAME=runner

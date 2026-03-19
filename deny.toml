@@ -209,7 +209,6 @@ skip = [
     { crate = "windows_aarch64_gnullvm", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_aarch64_msvc", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_i686_gnu", reason = "Windows platform crate version fragmentation" },
-    { crate = "windows_i686_gnullvm", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_i686_msvc", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_x86_64_gnu", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_x86_64_gnullvm", reason = "Windows platform crate version fragmentation" },
@@ -221,6 +220,7 @@ skip = [
     { crate = "hashbrown", reason = "indexmap and other crates use different versions" },
     { crate = "thiserror", reason = "ecosystem transition between v1 and v2" },
     { crate = "thiserror-impl", reason = "follows thiserror versioning" },
+    { crate = "winnow", reason = "toml crate uses both toml_parser (winnow 1.0) and legacy winnow 0.7" },
 ]
 # Similarly to `skip` allows you to skip certain crates during duplicate
 # detection. Unlike skip, it also includes the entire tree of transitive

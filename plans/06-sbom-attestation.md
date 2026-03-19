@@ -1,109 +1,190 @@
-# SBOM Attestation for Native Addon Binaries
-
-## Goal
-
-Attach a signed [CycloneDX][cyclonedx] SBOM to the `.node`
-binaries published to GitHub Releases. Enterprise consumers
-query the SBOM via the [GitHub Attestations API][gh-attest] or
-download it from the release, and merge it into their
-application-level SBOM.
+# SBOM and Attestation
 
 [cyclonedx]: https://cyclonedx.org/
 [gh-attest]: https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations
+[cargo-sbom-tracking]: https://github.com/rust-lang/cargo/issues/16565
+
+## Goal
+
+Audit both Rust and JS dependency trees of the published
+npm package through four complementary mechanisms.
 
 ## Problem
 
 The compiled `.node` binary is opaque to JS-level SBOM
-scanners (Trivy, Grype, Syft). The Rust dependency tree
-(reqwest, hyper, rustls, tokio — ~100 crates from
-`Cargo.lock`) is invisible to consumers auditing their supply
-chain.
+scanners (Trivy, Grype, Syft). The ~100 Rust crates from
+`Cargo.lock` are invisible to consumers. JS dependencies
+bundled into the tarball lack a machine-readable SBOM —
+`pnpm-lock.yaml` is not included in the published package.
 
 ## Scope
 
-The SBOM covers the **Rust dependency tree** resolved from
-`Cargo.lock` via `cargo metadata`. It does **not** cover:
+| Layer | Tool | Covers | Format |
+| --- | --- | --- | --- |
+| Rust deps (file) | `cargo-cyclonedx` | Cargo.lock tree | CycloneDX 1.5 |
+| Rust deps (embedded) | `cargo-auditable` | Cargo.lock tree | `.dep-v0` section |
+| Cargo build manifest | `-Z sbom` | deps + features + rustc | cargo JSON |
+| JS/TS deps | `rollup-plugin-sbom` | bundled npm deps | CycloneDX 1.6 |
 
-- System libraries linked at build time (none currently —
-  rustls eliminates OpenSSL)
-- Build toolchain components (rustc, neon-build)
-- JS dependencies (`node-addon-slsa`, `undici`) — these are
-  visible to JS-level scanners via `package-lock.json` /
-  `pnpm-lock.yaml`
+**Not covered**: system libraries (none — rustls
+eliminates OpenSSL), build toolchain (rustc, neon-build).
 
-## Format: CycloneDX 1.5
+## Format: CycloneDX
 
-CycloneDX over SPDX:
+CycloneDX over SPDX: both `cargo-cyclonedx` and
+`rollup-plugin-sbom` generate it natively,
+`actions/attest-sbom` accepts it, dominant format in the
+npm/GitHub ecosystem.
 
-- `cargo-cyclonedx` (official CycloneDX project) generates it
-  from `Cargo.lock` directly
-- `actions/attest-sbom` accepts CycloneDX natively
-- Dominant format in the npm/GitHub ecosystem for binary SBOMs
-
-Spec 1.5 (not 1.6): `cargo-cyclonedx` 0.5.7 supports up to
-1.5. Spec 1.5 covers all fields needed for dependency
-inventory (purls, versions, licenses). Consumer tools (Trivy,
-Grype, Dependency-Track) fully support 1.5.
+Rust SBOM: spec 1.5 (`cargo-cyclonedx` 0.5.7 max).
+JS SBOM: spec 1.6 (`rollup-plugin-sbom` default).
+Consumer tools (Trivy, Grype, Dependency-Track) support
+both.
 
 ## Trust model
 
-The SBOM attestation is **as trustworthy as the CI
-environment**. `cargo-cyclonedx` reads `Cargo.lock` and
-`Cargo.toml` metadata, not the compiled binary. A compromised
-CI could produce a valid SBOM that does not match actual binary
-contents. This is consistent with SLSA Level 2–3 guarantees
-and is the standard trust model for CI-generated SBOMs.
+SBOM attestations are **as trustworthy as the CI
+environment**. `cargo-cyclonedx` reads `Cargo.lock`
+metadata, `rollup-plugin-sbom` reads the Vite bundle
+graph — neither inspects the compiled binary. Consistent
+with SLSA Level 2-3 guarantees.
 
-The attestation proves: "this SBOM was produced in the same
-GitHub Actions workflow that built the binary." It does not
-prove: "the binary contains exactly these dependencies."
+The attestation proves: "this SBOM was produced in the
+same workflow that built the artifact." Not: "the artifact
+contains exactly these dependencies."
 
 ## Changes
 
-### 1. Install `cargo-cyclonedx` via mise
-
-`cargo-cyclonedx` 0.5.7 publishes GitHub release binaries
-(via cargo-dist). Tag format: `cargo-cyclonedx-0.5.7`.
-
-Add to `mise.toml`:
+### 1. Install cargo-cyclonedx via mise
 
 ```toml
+# mise.toml
 [tools."github:CycloneDX/cyclonedx-rust-cargo"]
 version_prefix = "cargo-cyclonedx-"
 version = "0.5.7"
-os = ["macos"]
+os = ["linux", "macos"]
 [tools."github:CycloneDX/cyclonedx-rust-cargo".platforms]
-macos-x64 = { asset_pattern = "*-x86_64-apple-darwin*" }
-macos-arm64 = { asset_pattern = "*-aarch64-apple-darwin*" }
+linux-x64 = {
+  asset_pattern = "*-x86_64-unknown-linux-musl*"
+}
+macos-x64 = {
+  asset_pattern = "*-x86_64-apple-darwin*"
+}
+macos-arm64 = {
+  asset_pattern = "*-aarch64-apple-darwin*"
+}
 ```
 
-Available binaries: `x86_64-apple-darwin`,
-`aarch64-apple-darwin`, `x86_64-pc-windows-msvc`,
-`x86_64-unknown-linux-gnu`, `x86_64-unknown-linux-musl`.
+Linux uses the musl binary (statically linked). No
+`aarch64-unknown-linux-*` binary exists, but SBOM
+generation runs only on `ubuntu-latest` (x86_64) in
+`build-packages`.
 
-**No `aarch64-unknown-linux-*` binary exists.** Linux builds
-run inside the `manylinux_2_28` Docker container (glibc 2.28).
-The musl binary works for x86_64 Linux, but arm64 Linux has
-no prebuilt binary at all. This is moot because SBOM
-generation moves to `build-packages` (see next section).
+### 2. Install cargo-auditable via mise (cargo backend)
 
-### 2. Generate SBOM once in `build-packages`
+```toml
+# mise.toml — add under [tools]
+"cargo:cargo-auditable" = "0.7.4"
+```
 
-The SBOM content is identical across platforms (same
-`Cargo.lock`). Generating it 6 times in the `build-addon`
-matrix is wasteful and creates a release asset naming
-collision (`bom.json` uploaded by all 6 runners).
+The `cargo:` backend tries `cargo binstall` first, then
+falls back to `cargo install`. `cargo-binstall` is already
+in `mise.toml` (line 53).
 
-Generate the SBOM once in the `build-packages` job, which
-runs on `ubuntu-latest` (not inside Docker), after all addon
-builds succeed. This eliminates the glibc/musl concern and
-the linux-arm64 binary gap.
+Handles the linux-arm64 glibc mismatch: the only published
+arm64 Linux binary is GNU, linked against glibc 2.39
+(ubuntu-24.04). The Docker image (`manylinux_2_28`) has
+glibc 2.28 — `binstall` fails, mise falls back to source
+build automatically.
 
-Add after "Build and pack node package", before "Attest node
-build provenance":
+### 3. Add rollup-plugin-sbom to packages/node
 
 ```yaml
-- name: "Generate SBOM"
+# pnpm-workspace.yaml — add to catalog
+rollup-plugin-sbom: 3.0.5
+```
+
+```typescript
+// packages/node/vite.config.mts — add import
+import sbom from "rollup-plugin-sbom";
+
+// add to plugins array, before dts()
+sbom({
+  rootComponentType: "library",
+  generateSerial: true,
+}),
+```
+
+Generates `export_dist/cyclonedx/bom.json` and
+`export_dist/.well-known/sbom` during `vite build`.
+Same pattern as
+`node-addon-slsa/package/vite.config.mts:47-50`.
+
+### 4. Use cargo-auditable for release builds
+
+```jsonc
+// packages/node/package.json
+// before
+"ci-build": "pnpm run build:cargo -r --locked && pnpm run build:ts",
+// after
+"ci-build": "cargo auditable build -r --locked && pnpm run build:ts",
+```
+
+Transparent wrapper around `cargo build` that embeds a
+compressed dependency snapshot into the binary's `.dep-v0`
+section. Dev builds stay with plain `cargo build`
+(`build:cargo` unchanged). The release workflow already
+calls `ci-build` (`release.yaml` > `build-addon`).
+
+### 5. Enable cargo `-Z sbom`
+
+```toml
+# .cargo/config.toml — add to existing [build] section
+sbom = true
+
+# add new section
+[unstable]
+sbom = true
+```
+
+Generates `node_reqwest.cargo-sbom.json` alongside the
+`.node` binary during every build — full dependency graph
+with package IDs, features, and rustc version. Unstable
+feature on nightly (`nightly-2026-02-28`). Tracking issue:
+[rust-lang/cargo#16565][cargo-sbom-tracking] — 3 open
+stabilization blockers.
+
+[TODO: verify the exact output path — confirm the file
+ends up in `packages/node/dist/` after the build.]
+
+### 6. Verify auditable metadata in CI
+
+In `release.yaml` > `build-addon`, after "Build node
+addon", before "Sign and notarize":
+
+```yaml
+- name: "Verify auditable metadata"
+  uses: "./.github/actions/shell"
+  with:
+      docker-service: >-
+          ${{ needs.init.outputs.docker-service }}
+      run: |
+          cargo auditable info \
+            packages/node/dist/node_reqwest.node
+```
+
+Exits non-zero if `.dep-v0` is missing, failing the
+release.
+
+### 7. Generate Rust CycloneDX SBOM in `build-packages`
+
+In `build-packages`, after "Build and pack node package",
+before "Attest node build provenance". Runs once on
+`ubuntu-latest` (x86_64) — Rust SBOM is identical across
+platforms (same `Cargo.lock`).
+
+```yaml
+- name: "Generate Rust SBOM"
   shell: "bash"
   run: |
     cargo cyclonedx \
@@ -111,65 +192,59 @@ build provenance":
       --format json \
       --spec-version 1.5 \
       --describe crate
-- name: "Validate SBOM"
+    mv packages/node/bom.json \
+      "packages/node/node_reqwest-${GITHUB_REF_NAME}-rust.cdx.json"
+- name: "Validate Rust SBOM"
   shell: "bash"
   run: |
-    test -s packages/node/bom.json
     jq -e '.components | length > 50' \
-      packages/node/bom.json
+      packages/node/node_reqwest-*-rust.cdx.json
 ```
 
-Output: `packages/node/bom.json` (~50 KB). Contains all Rust
-crates with versions pinned from `Cargo.lock`, plus license
-and purl metadata from `Cargo.toml` / crates.io registry.
+`--describe crate` scopes to the `node` crate's dependency
+tree (including transitive workspace deps `core` and
+`meta`). Validation ensures ~100 expected components are
+present. Uses `shell: "bash"` (host, not Docker), same as
+the existing `attest-build-provenance` step.
 
-The `--describe crate` flag scopes the SBOM to the `node`
-crate's dependency tree (including transitive workspace
-dependencies `core` and `meta`). No feature flags needed —
-`packages/node/Cargo.toml` has no optional features.
+### 8. Rename JS SBOM
 
-The validation step ensures the SBOM is non-empty and contains
-a reasonable number of components (~100 expected). If
-`cargo-cyclonedx` fails or produces a degenerate file, the
-release fails fast.
-
-`cargo-cyclonedx` must be available on the `build-packages`
-runner (`ubuntu-latest`, native — not Docker). Install via
-mise on native runners. The `build-packages` job currently
-uses the `./.github/actions/shell` action which dispatches
-to Docker on Linux. The SBOM generation step uses
-`shell: "bash"` directly (runs on the host, not in Docker),
-same as the existing `attest-build-provenance` step.
-
-[TODO: verify that `cargo cyclonedx` is available on the
-GitHub Actions host after `mise install`. The `build-packages`
-job runs `mise setup` via the setup action, which installs all
-mise tools. Since `cargo-cyclonedx` will be in `mise.toml`,
-it should be available. Confirm this works when `os` is set
-to `["macos"]` — may need to add `"linux"` with a platforms
-block for `ubuntu-latest`, or use `cargo binstall` as a
-fallback step.]
-
-### 3. Attest the SBOM
-
-Add after the existing "Attest node build provenance" step:
+Generated by `rollup-plugin-sbom` during `vite build`
+(part of `build:ts`):
 
 ```yaml
-- name: "Attest SBOM"
+- name: "Rename JS SBOM"
+  shell: "bash"
+  run: |
+    mv packages/node/export_dist/cyclonedx/bom.json \
+      "packages/node/node_reqwest-${GITHUB_REF_NAME}-js.cdx.json"
+```
+
+### 9. Attest both SBOMs
+
+After the existing "Attest node build provenance" step:
+
+```yaml
+- name: "Attest Rust SBOM"
   uses: "actions/attest-sbom@10926c72720ffc3f7b666661c8e55b1344e2a365" # v2.4.0
   with:
     subject-path: "packages/node/package.tar.gz"
-    sbom-path: "packages/node/bom.json"
+    sbom-path: "packages/node/node_reqwest-*-rust.cdx.json"
+- name: "Attest JS SBOM"
+  uses: "actions/attest-sbom@10926c72720ffc3f7b666661c8e55b1344e2a365" # v2.4.0
+  with:
+    subject-path: "packages/node/package.tar.gz"
+    sbom-path: "packages/node/node_reqwest-*-js.cdx.json"
 ```
 
-Binds the SBOM to the npm tarball (`package.tar.gz`) — the
-artifact consumers actually install. The `build-packages` job
-already has `id-token: write` and `attestations: write`
-permissions.
+Binds both SBOMs to the npm tarball. `build-packages`
+already has `id-token: write` and `attestations: write`.
 
-### 4. Upload SBOM to GitHub Release
+[TODO: verify `actions/attest-sbom` supports glob patterns
+in `sbom-path`. If not, use the explicit versioned
+filename.]
 
-Extend the existing "Finalize release" step:
+### 10. Upload all artifacts to GitHub Release
 
 ```yaml
 - name: "Finalize release"
@@ -177,45 +252,25 @@ Extend the existing "Finalize release" step:
   with:
     files: |
       packages/node/package.tar.gz
-      packages/node/bom.json
+      packages/node/node_reqwest-*-rust.cdx.json
+      packages/node/node_reqwest-*-js.cdx.json
+      packages/node/dist/*.cargo-sbom.json
     draft: false
 ```
 
-Single upload from a single runner — no naming collision.
+### 11. Add smoke test verification
 
-### 5. Rename SBOM file
-
-Rename from `bom.json` to `node_reqwest-v{version}.cdx.json`:
-
-- `.cdx.json` is the CycloneDX filename convention
-- Version in filename prevents collisions when consumers
-  download SBOMs for multiple versions
-
-The rename happens after generation:
-
-```yaml
-- name: "Rename SBOM"
-  shell: "bash"
-  run: |
-    mv packages/node/bom.json \
-      "packages/node/node_reqwest-${GITHUB_REF_NAME}.cdx.json"
-```
-
-Update subsequent steps (`sbom-path`, `files`) to use the
-new filename pattern.
-
-### 6. Add smoke test verification
-
-Add to the `smoke-test` job after the existing install check:
+In `smoke-test`, after the existing install check:
 
 ```bash
-# Verify SBOM is downloadable from release
+# Verify SBOMs are downloadable from release
 gh release download "$GITHUB_REF_NAME" \
   --repo vadimpiven/node_reqwest \
   --pattern "*.cdx.json"
 # Validate SBOM content
-jq -e '.bomFormat == "CycloneDX"' *.cdx.json
-jq -e '.components | length > 50' *.cdx.json
+jq -e '.bomFormat == "CycloneDX"' *-rust.cdx.json
+jq -e '.components | length > 50' *-rust.cdx.json
+jq -e '.bomFormat == "CycloneDX"' *-js.cdx.json
 # Verify SBOM attestation exists
 gh attestation verify \
   "package.tar.gz" \
@@ -223,15 +278,13 @@ gh attestation verify \
   --predicate-type https://cyclonedx.org/bom
 ```
 
-[TODO: the smoke test job currently has `contents: read`
-permission. `gh attestation verify` may need additional
-permissions — verify this.]
+[TODO: `smoke-test` has `contents: read` permission.
+`gh attestation verify` may need more — verify.]
 
-### 7. Add local mise task
-
-Add to `mise.toml`:
+### 12. Add local mise task
 
 ```toml
+# mise.toml
 [tasks.sbom]
 description = "Generate CycloneDX SBOM for node package"
 depends = ["setup:rust"]
@@ -247,35 +300,33 @@ jq -e '.components | length' packages/node/bom.json
 sources = ["Cargo.lock", "packages/*/Cargo.toml"]
 ```
 
-Developers can run `mise run sbom` to preview SBOM impact
-after `Cargo.lock` changes.
+### 13. Update README
 
-### 8. Update README
+In `packages/node/README.md` > "Installation safety",
+after existing provenance text:
 
-Add a paragraph to the "Installation safety" section in
-`packages/node/README.md`, after the existing provenance
-text:
+> A [CycloneDX][cyclonedx] SBOM listing all Rust and
+> JavaScript dependencies is attached to each GitHub
+> Release and verifiable via the
+> [GitHub Attestations API][gh-attest].
 
-> A [CycloneDX][cyclonedx] SBOM listing all Rust dependencies
-> compiled into the binary is attached to each GitHub Release
-> and verifiable via the
-> [GitHub Attestations API][gh-attest]. The SBOM covers the
-> Rust dependency tree; JavaScript dependencies are visible
-> through standard npm tooling.
+### 14. Scope of impact
 
-### 9. No other changes needed
-
-- **node-addon-slsa** — unchanged. SBOM is a transparency
-  feature, not an install-time check.
-- **`build-addon` job** — unchanged.
-- **`publish` job** — unchanged.
+- **Regular CI** (`regular.yaml`): `-Z sbom` generates
+  manifest during builds. No other changes.
+- **Release CI** (`release.yaml`):
+  - `build-addon`: `cargo auditable build` +
+    verification step.
+  - `build-packages`: Rust/JS CycloneDX generation,
+    attestation, upload.
+  - `smoke-test`: SBOM download and validation.
+- **Local dev**: `cargo build` (no auditable), `-Z sbom`
+  generates manifest, `mise run sbom` for CycloneDX.
+- **node-addon-slsa**: Unchanged.
 
 ## Consumer scenarios
 
 ### Automated SBOM ingestion
-
-Enterprise security tooling queries the GitHub Attestations
-API after `npm install`:
 
 ```bash
 gh attestation verify \
@@ -285,8 +336,12 @@ gh attestation verify \
   --predicate-type https://cyclonedx.org/bom
 ```
 
-Returns the signed CycloneDX JSON. The tool merges it with
-the JS-level SBOM for a complete dependency inventory.
+### Binary audit (no API needed)
+
+```bash
+cargo audit bin \
+  node_modules/node-reqwest/dist/node_reqwest.node
+```
 
 ### Manual download
 
@@ -298,16 +353,19 @@ gh release download v1.2.3 \
 
 ### CVE response
 
-A CVE drops for `rustls@0.23.x`. The security team searches
-their aggregated SBOMs, finds `rustls@0.23.25` in the
-node-reqwest SBOM, identifies affected applications — without
+A CVE drops for `rustls@0.23.x`. The security team
+searches aggregated SBOMs, finds `rustls@0.23.25` in the
+Rust SBOM, identifies affected applications — without
 contacting the maintainer.
 
 ## Remaining TODOs
 
-1. Verify `cargo-cyclonedx` is available on `ubuntu-latest`
-   after `mise install` with `os = ["macos"]`. May need to
-   add Linux to the `os` list with a musl platform selector,
-   or fall back to `cargo binstall`.
-2. Verify `gh attestation verify` works in smoke test with
-   only `contents: read` permission.
+1. Verify `cargo-cyclonedx` is available on
+   `ubuntu-latest` after `mise install` with
+   `os = ["linux", "macos"]`.
+2. Verify `gh attestation verify` works in smoke test
+   with only `contents: read` permission.
+3. Verify `actions/attest-sbom` supports glob patterns
+   in `sbom-path`.
+4. Verify `cargo -Z sbom` output path ends up in
+   `packages/node/dist/` after the build.
