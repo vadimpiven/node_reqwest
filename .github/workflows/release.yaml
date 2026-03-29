@@ -83,7 +83,7 @@ jobs:
         with:
           subject-path: "packages/node/dist/*.gz"
       - name: "Upload node addon"
-        uses: "softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b" # v2.5.0
+        uses: "softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe" # v2.6.1
         with:
           files: "packages/node/dist/*.gz"
           draft: true
@@ -129,7 +129,7 @@ jobs:
         with:
           subject-path: "packages/node/package.tar.gz"
       - name: "Finalize release"
-        uses: "softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b" # v2.5.0
+        uses: "softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe" # v2.6.1
         with:
           files: "packages/node/package.tar.gz"
           draft: false
@@ -151,7 +151,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: "Install latest Node.js with correct .npmrc"
-        uses: "actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238" # v6.2.0
+        uses: "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f" # v6.3.0
         with:
           node-version: "latest"
           check-latest: true
@@ -180,7 +180,7 @@ jobs:
     runs-on: "${{ matrix.os }}"
     steps:
       - name: "Install Node.js"
-        uses: "actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238" # v6.2.0
+        uses: "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f" # v6.3.0
         with:
           node-version: "latest"
           check-latest: true
