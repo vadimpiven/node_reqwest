@@ -3,7 +3,6 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch: {}
 permissions: {}
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -12,7 +11,8 @@ jobs:
   init:
     name: "Init"
     runs-on: "ubuntu-latest"
-    permissions: {} # No permissions needed
+    permissions:
+      contents: "write" # for draft release creation
     outputs:
       matrix: "${{ steps.init-workflow.outputs.matrix }}"
       env: "${{ steps.init-workflow.outputs.env }}"
@@ -28,14 +28,29 @@ jobs:
           ref: "${{ github.ref }}"
           fetch-depth: 1
           persist-credentials: false
+      - name: "Verify tag is on main"
+        env:
+          GH_TOKEN: "${{ github.token }}"
+          GH_REPOSITORY: "${{ github.repository }}"
+        run: |
+          set -euo pipefail
+          STATUS=$(gh api "repos/$GH_REPOSITORY/compare/main...$GITHUB_SHA" --jq '.status')
+          case "$STATUS" in
+            behind|identical) echo "Tag $GITHUB_REF_NAME is on main (status: $STATUS)" ;;
+            *) echo "::error::Tag must point to a commit on main (got status: ${STATUS:-empty})"; exit 1 ;;
+          esac
       - name: "Init workflow constants"
         id: "init-workflow"
         uses: "./.github/actions/init-workflow"
+      - name: "Create draft release"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: 'gh release create "$GITHUB_REF_NAME" --draft --generate-notes'
   build-addon:
     name: "Build addon"
     timeout-minutes: 45
     permissions:
-      contents: "write" # for release creation
+      contents: "write" # to upload release assets
       packages: "write" # to push Docker images
       id-token: "write" # for OIDC authentication
       attestations: "write" # for build provenance
@@ -83,15 +98,14 @@ jobs:
         with:
           subject-path: "packages/node/dist/*.gz"
       - name: "Upload node addon"
-        uses: "softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b" # v2.5.0
-        with:
-          files: "packages/node/dist/*.gz"
-          draft: true
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: 'gh release upload "$GITHUB_REF_NAME" packages/node/dist/*.gz'
   build-packages:
     name: "Build packages"
     timeout-minutes: 30
     permissions:
-      contents: "write" # for release creation
+      contents: "write" # to upload release assets
       packages: "write" # to push Docker images (if Linux runner)
       id-token: "write" # for OIDC authentication
       attestations: "write" # for build provenance
@@ -128,43 +142,66 @@ jobs:
         uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
         with:
           subject-path: "packages/node/package.tar.gz"
-      - name: "Finalize release"
-        uses: "softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b" # v2.5.0
+      - name: "Upload pre-packed tarball"
+        uses: "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4" # v5.0.0
         with:
-          files: "packages/node/package.tar.gz"
-          draft: false
-  publish:
-    name: "Publish"
-    timeout-minutes: 15
-    permissions:
-      contents: "read" # to fetch code
-      id-token: "write" # for OIDC authentication
-    needs:
-      - "build-packages"
-    if: "needs.build-packages.result == 'success'"
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Checkout"
-        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+          name: "slsa-tarball"
+          path: "packages/node/package.tar.gz"
+      - name: "Upload docs artifact"
+        uses: "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9" # v5.0.0
         with:
-          ref: "${{ github.ref }}"
-          fetch-depth: 1
-          persist-credentials: false
-      - name: "Install latest Node.js with correct .npmrc"
-        uses: "actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238" # v6.2.0
-        with:
-          node-version: "latest"
-          check-latest: true
-          registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
-      - name: "Update npm CLI"
-        run: "npm install -g npm@latest"
-      - name: "Download release artifact"
+          path: "packages/node/docs"
+      - name: "Upload package and publish release"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: 'gh release download "$GITHUB_REF_NAME" --pattern "package.tar.gz"'
-      - name: "Publish to npmjs.org"
-        run: 'npm publish "package.tar.gz" --access public --provenance'
+        run: |
+          gh release upload "$GITHUB_REF_NAME" packages/node/package.tar.gz
+          gh release edit "$GITHUB_REF_NAME" --draft=false
+  publish:
+    name: "Publish"
+    needs:
+      - "build-addon"
+      - "build-packages"
+    if: "needs.build-packages.result == 'success'"
+    permissions:
+      contents: "read" # to fetch reusable workflow repo
+      id-token: "write" # sigstore OIDC + npm trusted publishing
+      attestations: "write" # @actions/attest writes to the GitHub Attestations API
+    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@e9dda1e232a026d46ffd53ceff631f521709345c" # v0.8.2
+    with:
+      access: "public"
+      tarball-artifact: "slsa-tarball" # must match `upload-artifact` name in build-packages
+      addons: |
+        {
+          "linux":  {
+            "x64":   "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-linux-x64.node.gz",
+            "arm64": "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-linux-arm64.node.gz"
+          },
+          "darwin": {
+            "x64":   "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-darwin-x64.node.gz",
+            "arm64": "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-darwin-arm64.node.gz"
+          },
+          "win32":  {
+            "x64":   "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-win32-x64.node.gz",
+            "arm64": "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-win32-arm64.node.gz"
+          }
+        }
+  docs:
+    name: "Deploy docs"
+    needs: "publish"
+    if: "needs.publish.result == 'success'"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+    permissions:
+      pages: "write" # to deploy to GitHub Pages
+      id-token: "write" # to verify the deployment originates from an appropriate source
+    environment:
+      name: "github-pages"
+      url: "${{ steps.deploy.outputs.page_url }}"
+    steps:
+      - name: "Deploy to GitHub Pages"
+        id: "deploy"
+        uses: "actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128" # v5.0.0
   smoke-test:
     name: "Smoke test"
     timeout-minutes: 10
@@ -180,7 +217,7 @@ jobs:
     runs-on: "${{ matrix.os }}"
     steps:
       - name: "Install Node.js"
-        uses: "actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238" # v6.2.0
+        uses: "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" # v6.4.0
         with:
           node-version: "latest"
           check-latest: true

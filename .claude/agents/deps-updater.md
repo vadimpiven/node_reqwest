@@ -38,6 +38,7 @@ Launch ALL of the following sub-agents IN PARALLEL using the Task tool with `run
     - Update version specifiers in pyproject.toml with the latest eligible versions.
     - Run `uv lock --upgrade` to update uv.lock and verify it succeeds without errors.
     - Packages to check: mitmproxy, pyrefly, ruff, semgrep, zizmor
+    - **semgrep**: pyproject.toml pins `[[tool.uv.sources.semgrep]]` entries to the musllinux_1_2_x86_64 and musllinux_1_2_aarch64 wheel URLs (registry default is manylinux_2_35, incompatible with the project's glibc 2.28 build container). When bumping the semgrep version, refresh both URLs from `curl -s "https://pypi.org/pypi/semgrep/<version>/json"` — look for the `musllinux_1_2_x86_64.whl` and `musllinux_1_2_aarch64.whl` entries.
 
 5. **GitHub Actions** - Update all action SHAs and version comments
     - For each action `uses:` with a pinned SHA, look up the latest release tag and resolve its commit SHA

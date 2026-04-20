@@ -92,7 +92,6 @@ allow = [
     "MIT",
     "Unicode-3.0",
     "BSD-3-Clause",
-    "OpenSSL",
     "CDLA-Permissive-2.0",
 ]
 # The confidence threshold for detecting a license from license text.
@@ -203,24 +202,23 @@ deny = [
 # (reqwest, tokio, neon, hickory-resolver, tauri-winres) use different versions.
 # Cannot be resolved until upstream crates align their dependencies.
 skip = [
-    { crate = "winreg", reason = "transitive conflict between hickory-resolver and tauri-winres" },
     { crate = "windows-sys", reason = "multiple versions across socket2, jni, ipconfig ecosystem" },
     { crate = "windows-targets", reason = "follows windows-sys versioning" },
     { crate = "windows_aarch64_gnullvm", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_aarch64_msvc", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_i686_gnu", reason = "Windows platform crate version fragmentation" },
-    { crate = "windows_i686_gnullvm", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_i686_msvc", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_x86_64_gnu", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_x86_64_gnullvm", reason = "Windows platform crate version fragmentation" },
     { crate = "windows_x86_64_msvc", reason = "Windows platform crate version fragmentation" },
-    { crate = "socket2", reason = "multiple versions across hyper-util and ipconfig" },
     { crate = "core-foundation", reason = "Apple platform crate version fragmentation" },
     { crate = "getrandom", reason = "different versions for different rand ecosystem crates" },
     { crate = "r-efi", reason = "follows getrandom versioning" },
     { crate = "hashbrown", reason = "indexmap and other crates use different versions" },
     { crate = "thiserror", reason = "ecosystem transition between v1 and v2" },
     { crate = "thiserror-impl", reason = "follows thiserror versioning" },
+    { crate = "winnow", reason = "toml crate uses both toml_parser (winnow 1.0) and legacy winnow 0.7" },
+    { crate = "wit-bindgen", reason = "wasip2 and wasip3 ecosystem crates use different versions" },
 ]
 # Similarly to `skip` allows you to skip certain crates during duplicate
 # detection. Unlike skip, it also includes the entire tree of transitive

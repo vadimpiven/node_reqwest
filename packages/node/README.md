@@ -1,3 +1,23 @@
+[![GitHub repo][github-badge]][github-repo]
+[![npm version][npm-badge]][npm-package]
+[![API docs][docs-badge]][docs-site]
+[![Ask DeepWiki][deepwiki-badge]][deepwiki-site]
+[![CI status][status-badge]][status-dashboard]
+[![Test coverage][coverage-badge]][coverage-dashboard]
+
+[github-badge]: https://img.shields.io/github/stars/vadimpiven/node_reqwest?style=flat&logo=github
+[github-repo]: https://github.com/vadimpiven/node_reqwest
+[npm-badge]: https://img.shields.io/npm/v/node-reqwest?logo=npm
+[npm-package]: https://www.npmjs.com/package/node-reqwest
+[docs-badge]: https://img.shields.io/badge/API_docs-typedoc-blue?logo=readthedocs
+[docs-site]: https://vadimpiven.github.io/node_reqwest
+[deepwiki-badge]: https://deepwiki.com/badge.svg
+[deepwiki-site]: https://deepwiki.com/vadimpiven/node_reqwest
+[status-badge]: https://img.shields.io/github/checks-status/vadimpiven/node_reqwest/main?logo=githubactions&label=CI
+[status-dashboard]: https://github.com/vadimpiven/node_reqwest/actions?query=branch%3Amain
+[coverage-badge]: https://img.shields.io/codecov/c/github/vadimpiven/node_reqwest/main?logo=codecov
+[coverage-dashboard]: https://app.codecov.io/gh/vadimpiven/node_reqwest/tree/main
+
 # node-reqwest
 
 Node.js bindings for [reqwest][reqwest] — a Rust HTTP client library.
