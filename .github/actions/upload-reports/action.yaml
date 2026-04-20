@@ -11,7 +11,7 @@ runs:
   using: "composite"
   steps:
     - name: "Install latest Node.js"
-      uses: "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f" # v6.3.0
+      uses: "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" # v6.4.0
       with:
         node-version: "latest"
         check-latest: true
@@ -40,14 +40,14 @@ runs:
         EOF
     - name: "Upload coverage reports to Codecov"
       if: "steps.expand.outputs.coverage != ''"
-      uses: "codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad" # v5.5.3
+      uses: "codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2" # v6.0.0
       with:
         use_oidc: true
         report_type: "coverage"
         files: "${{ steps.expand.outputs.coverage }}"
     - name: "Upload test results to Codecov"
       if: "steps.expand.outputs.reports != ''"
-      uses: "codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad" # v5.5.3
+      uses: "codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2" # v6.0.0
       with:
         use_oidc: true
         report_type: "test_results"

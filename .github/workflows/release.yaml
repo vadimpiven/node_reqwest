@@ -3,7 +3,6 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch: {}
 permissions: {}
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -29,6 +28,17 @@ jobs:
           ref: "${{ github.ref }}"
           fetch-depth: 1
           persist-credentials: false
+      - name: "Verify tag is on main"
+        env:
+          GH_TOKEN: "${{ github.token }}"
+          GH_REPOSITORY: "${{ github.repository }}"
+        run: |
+          set -euo pipefail
+          STATUS=$(gh api "repos/$GH_REPOSITORY/compare/main...$GITHUB_SHA" --jq '.status')
+          case "$STATUS" in
+            behind|identical) echo "Tag $GITHUB_REF_NAME is on main (status: $STATUS)" ;;
+            *) echo "::error::Tag must point to a commit on main (got status: ${STATUS:-empty})"; exit 1 ;;
+          esac
       - name: "Init workflow constants"
         id: "init-workflow"
         uses: "./.github/actions/init-workflow"
@@ -133,7 +143,7 @@ jobs:
         with:
           subject-path: "packages/node/package.tar.gz"
       - name: "Upload docs artifact"
-        uses: "actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b" # v4.0.0
+        uses: "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9" # v5.0.0
         with:
           path: "packages/node/docs"
       - name: "Upload package and publish release"
@@ -160,7 +170,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: "Install latest Node.js with correct .npmrc"
-        uses: "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f" # v6.3.0
+        uses: "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" # v6.4.0
         with:
           node-version: "latest"
           check-latest: true
@@ -189,7 +199,7 @@ jobs:
     steps:
       - name: "Deploy to GitHub Pages"
         id: "deploy"
-        uses: "actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e" # v4.0.5
+        uses: "actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128" # v5.0.0
   smoke-test:
     name: "Smoke test"
     timeout-minutes: 10
@@ -205,7 +215,7 @@ jobs:
     runs-on: "${{ matrix.os }}"
     steps:
       - name: "Install Node.js"
-        uses: "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f" # v6.3.0
+        uses: "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" # v6.4.0
         with:
           node-version: "latest"
           check-latest: true
