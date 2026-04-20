@@ -65,11 +65,11 @@
     "preci-test": "pnpm run ci-build",
     "ci-test:rust": "pnpm run test:nextest -r --locked && pnpm run test:rustdoc -r --locked",
     "ci-test": "pnpm run test:ts && pnpm run ci-test:rust",
-    "pack-addon": "slsa pack",
+    "pack-addon": "slsa pack dist/node_reqwest-v{version}-{platform}-{arch}.node.gz",
     "postinstall": "slsa wget"
   },
   "dependencies": {
-    "node-addon-slsa": "0.8.0"
+    "node-addon-slsa": "0.8.2"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
