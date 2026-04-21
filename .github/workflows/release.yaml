@@ -168,7 +168,7 @@ jobs:
       contents: "read" # to fetch reusable workflow repo
       id-token: "write" # sigstore OIDC + npm trusted publishing
       attestations: "write" # @actions/attest writes to the GitHub Attestations API
-    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@e9dda1e232a026d46ffd53ceff631f521709345c" # v0.8.2
+    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@47d59866f367ca19395d53c313ff9fc9fc8a30c6" # v0.8.3
     with:
       access: "public"
       tarball-artifact: "slsa-tarball" # must match `upload-artifact` name in build-packages
