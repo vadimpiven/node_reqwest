@@ -98,6 +98,7 @@ jobs:
         with:
           subject-path: "packages/node/dist/*.gz"
       - name: "Upload node addon"
+        shell: "bash"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: 'gh release upload "$GITHUB_REF_NAME" packages/node/dist/*.gz'

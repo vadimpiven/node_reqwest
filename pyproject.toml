@@ -10,21 +10,14 @@ exclude-newer = "1 day"
 [tool.uv.workspace]
 members = ["packages/node/tests/mitmproxy"]
 
-# Force musllinux semgrep wheels on Linux.
-[[tool.uv.sources.semgrep]]
-url = "https://files.pythonhosted.org/packages/16/87/7bfa399b72d45b20712825d18948c9a40c5648b1d3ac0eaf280c02bf9a10/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_x86_64.whl"
-marker = "sys_platform == 'linux' and platform_machine == 'x86_64'"
-
-[[tool.uv.sources.semgrep]]
-url = "https://files.pythonhosted.org/packages/b4/c9/9aeb8078ad7886d34766c96a69cc011d737cd383fe488ae9a79312dbc377/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_aarch64.whl"
-marker = "sys_platform == 'linux' and platform_machine == 'aarch64'"
-
 [dependency-groups]
 dev = [
     "mitmproxy==12.2.2 ; sys_platform != 'win32'",
     "pyrefly==0.61.1",
     "ruff==0.15.11",
-    "semgrep==1.159.0 ; sys_platform != 'win32'",
+    # Pinned below 1.152: newer semgrep manylinux wheels target glibc 2.35,
+    # which is newer than our manylinux_2_28 (glibc 2.28) dev-container base.
+    "semgrep==1.151.0 ; sys_platform != 'win32'",
     "zizmor==1.24.1 ; sys_platform != 'win32'",
 ]
 

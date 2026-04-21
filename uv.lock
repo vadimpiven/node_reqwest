@@ -11,7 +11,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-19T20:07:14.055798Z"
+exclude-newer = "2026-04-20T08:30:09.856267Z"
 exclude-newer-span = "P1D"
 
 [manifest]
@@ -1154,15 +1154,15 @@ wheels = [
 
 [[package]]
 name = "rich"
-version = "15.0.0"
+version = "13.5.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py", marker = "sys_platform != 'win32'" },
     { name = "pygments", marker = "sys_platform != 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/8f/0722ca900cc807c13a6a0c696dacf35430f72e0ec571c4275d2371fca3e9/rich-15.0.0.tar.gz", hash = "sha256:edd07a4824c6b40189fb7ac9bc4c52536e9780fbbfbddf6f1e2502c31b068c36", size = 230680, upload-time = "2026-04-12T08:24:00.75Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/d6/9773d48804d085962c4f522db96f6a9ea9bd2e0480b3959a929176d92f01/rich-13.5.3.tar.gz", hash = "sha256:87b43e0543149efa1253f485cd845bb7ee54df16c9617b8a893650ab84b4acb6", size = 220323, upload-time = "2023-09-17T15:51:18.161Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/3b/64d4899d73f91ba49a8c18a8ff3f0ea8f1c1d75481760df8c68ef5235bf5/rich-15.0.0-py3-none-any.whl", hash = "sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb", size = 310654, upload-time = "2026-04-12T08:24:02.83Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/d1/23ba6235ed82883bb416f57179d1db2c05f3fb8e5d83c18660f9ab6f09c9/rich-13.5.3-py3-none-any.whl", hash = "sha256:9257b468badc3d347e146a4faa268ff229039d4c2d176ab0cffb4c4fbc73d5d9", size = 239782, upload-time = "2023-09-17T15:51:16.081Z" },
 ]
 
 [[package]]
@@ -1254,189 +1254,42 @@ wheels = [
 
 [[package]]
 name = "semgrep"
-version = "1.159.0"
+version = "1.151.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "(platform_machine != 'arm64' and platform_machine != 'x86_64' and sys_platform == 'darwin') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux' and sys_platform != 'win32')",
-    "platform_machine == 'x86_64' and sys_platform == 'darwin'",
-    "platform_machine == 'arm64' and sys_platform == 'darwin'",
-]
 dependencies = [
-    { name = "attrs", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "boltons", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "click", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "click-option-group", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "colorama", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "exceptiongroup", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "glom", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "jsonschema", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "mcp", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "opentelemetry-api", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "opentelemetry-exporter-otlp-proto-http", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "opentelemetry-instrumentation-requests", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "opentelemetry-instrumentation-threading", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "opentelemetry-sdk", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "packaging", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "peewee", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "pyjwt", extra = ["crypto"], marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "requests", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "rich", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "ruamel-yaml", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "ruamel-yaml-clib", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "semantic-version", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "tomli", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "typing-extensions", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "urllib3", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "wcmatch", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
+    { name = "attrs", marker = "sys_platform != 'win32'" },
+    { name = "boltons", marker = "sys_platform != 'win32'" },
+    { name = "click", marker = "sys_platform != 'win32'" },
+    { name = "click-option-group", marker = "sys_platform != 'win32'" },
+    { name = "colorama", marker = "sys_platform != 'win32'" },
+    { name = "exceptiongroup", marker = "sys_platform != 'win32'" },
+    { name = "glom", marker = "sys_platform != 'win32'" },
+    { name = "jsonschema", marker = "sys_platform != 'win32'" },
+    { name = "mcp", marker = "sys_platform != 'win32'" },
+    { name = "opentelemetry-api", marker = "sys_platform != 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "sys_platform != 'win32'" },
+    { name = "opentelemetry-instrumentation-requests", marker = "sys_platform != 'win32'" },
+    { name = "opentelemetry-instrumentation-threading", marker = "sys_platform != 'win32'" },
+    { name = "opentelemetry-sdk", marker = "sys_platform != 'win32'" },
+    { name = "packaging", marker = "sys_platform != 'win32'" },
+    { name = "peewee", marker = "sys_platform != 'win32'" },
+    { name = "pyjwt", extra = ["crypto"], marker = "sys_platform != 'win32'" },
+    { name = "requests", marker = "sys_platform != 'win32'" },
+    { name = "rich", marker = "sys_platform != 'win32'" },
+    { name = "ruamel-yaml", marker = "sys_platform != 'win32'" },
+    { name = "ruamel-yaml-clib", marker = "sys_platform != 'win32'" },
+    { name = "semantic-version", marker = "sys_platform != 'win32'" },
+    { name = "tomli", marker = "sys_platform != 'win32'" },
+    { name = "typing-extensions", marker = "sys_platform != 'win32'" },
+    { name = "urllib3", marker = "sys_platform != 'win32'" },
+    { name = "wcmatch", marker = "sys_platform != 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5a/02/e60e30f109a4e5aa3b5d81f4b1ae361e1823f7f95783e4152c89605761d6/semgrep-1.159.0.tar.gz", hash = "sha256:f16524f05612d959067bf7145c763c79ffb2f47701981887e3d59daa63bd210b", size = 53861304, upload-time = "2026-04-10T21:11:58.274Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/d3/cea445ac3b31706396f2317371de386927f3ff61d08dac26283e54cb7767/semgrep-1.151.0.tar.gz", hash = "sha256:2f82ea173811727a5d64df5490f4d2154a75abe570882524996eebd588264fe0", size = 42369933, upload-time = "2026-02-04T18:37:20.294Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/59/9e4d5ea0999549c28fff512aacc5a97ba2b900ea6d452a89b42a585daeed/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-macosx_10_14_x86_64.whl", hash = "sha256:baa3aa0a360cc9c6c73d30b842c91040c458b63b426c0ac5b1776827899c6cf4", size = 43276878, upload-time = "2026-04-10T21:11:31.759Z" },
-    { url = "https://files.pythonhosted.org/packages/f2/16/6510ed61cd136382842c671b1ffbe9825834f040aebcb29a15338c96ba35/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-macosx_11_0_arm64.whl", hash = "sha256:cf4267500a5d523cb9e907da62f9518a7609289846db6023b8c415a10e45eea9", size = 47093038, upload-time = "2026-04-10T21:11:35.237Z" },
-    { url = "https://files.pythonhosted.org/packages/4b/6d/d58a12d4ebbce3d7eb896ff58e19b5b45fc269e94620ea309b723376326f/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-manylinux_2_35_aarch64.whl", hash = "sha256:aad32c3245d47f1bb490e60cccb4e2cab098da8e501da9d19e1727121a6f6b51", size = 76115986, upload-time = "2026-04-10T21:11:38.848Z" },
-    { url = "https://files.pythonhosted.org/packages/51/db/a42b7f6ed4442056fcfcb0d18a383850e1c3335f0ad7a44802c82799eaa8/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-manylinux_2_35_x86_64.whl", hash = "sha256:818fa01b5f64a08f90730c392db3638daaae558066f555ffc44759c535d3d1e5", size = 74408486, upload-time = "2026-04-10T21:11:42.849Z" },
-    { url = "https://files.pythonhosted.org/packages/b4/c9/9aeb8078ad7886d34766c96a69cc011d737cd383fe488ae9a79312dbc377/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_aarch64.whl", hash = "sha256:16b4d4180434a3467f63f1e967dcd2ead6237d594e1cc3fcfe17ee0b354b7d1f", size = 76539489, upload-time = "2026-04-10T21:11:46.473Z" },
-    { url = "https://files.pythonhosted.org/packages/16/87/7bfa399b72d45b20712825d18948c9a40c5648b1d3ac0eaf280c02bf9a10/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_x86_64.whl", hash = "sha256:46b8bd3fc55e006758363ab713b89420dfe6318244407e4ede4384987c4e6fd9", size = 74104265, upload-time = "2026-04-10T21:11:50.882Z" },
-]
-
-[[package]]
-name = "semgrep"
-version = "1.159.0"
-source = { url = "https://files.pythonhosted.org/packages/16/87/7bfa399b72d45b20712825d18948c9a40c5648b1d3ac0eaf280c02bf9a10/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_x86_64.whl" }
-resolution-markers = [
-    "platform_machine == 'x86_64' and sys_platform == 'linux'",
-]
-dependencies = [
-    { name = "attrs", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "boltons", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "click", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "click-option-group", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "colorama", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "exceptiongroup", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "glom", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "jsonschema", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "mcp", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-api", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-exporter-otlp-proto-http", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-instrumentation-requests", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-instrumentation-threading", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-sdk", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "packaging", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "peewee", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "pyjwt", extra = ["crypto"], marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "requests", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "rich", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "ruamel-yaml", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "ruamel-yaml-clib", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "semantic-version", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "tomli", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "typing-extensions", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "urllib3", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "wcmatch", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/16/87/7bfa399b72d45b20712825d18948c9a40c5648b1d3ac0eaf280c02bf9a10/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_x86_64.whl", hash = "sha256:46b8bd3fc55e006758363ab713b89420dfe6318244407e4ede4384987c4e6fd9" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "attrs", specifier = ">=21.3" },
-    { name = "boltons", specifier = "~=21.0" },
-    { name = "click", specifier = "~=8.1.8" },
-    { name = "click-option-group", specifier = "~=0.5" },
-    { name = "colorama", specifier = "~=0.4.0" },
-    { name = "exceptiongroup", specifier = "~=1.2.0" },
-    { name = "glom", specifier = ">=23.3" },
-    { name = "jsonschema", specifier = "~=4.25.1" },
-    { name = "mcp", specifier = "==1.23.3" },
-    { name = "opentelemetry-api", specifier = "~=1.37.0" },
-    { name = "opentelemetry-exporter-otlp-proto-http", specifier = "~=1.37.0" },
-    { name = "opentelemetry-instrumentation-requests", specifier = "~=0.58b0" },
-    { name = "opentelemetry-instrumentation-threading", specifier = "~=0.58b0" },
-    { name = "opentelemetry-sdk", specifier = "~=1.37.0" },
-    { name = "packaging", specifier = ">=21.0" },
-    { name = "peewee", specifier = "~=3.14" },
-    { name = "pyjwt", extras = ["crypto"], specifier = "~=2.12.0" },
-    { name = "pywin32", marker = "sys_platform == 'win32'", specifier = "==311" },
-    { name = "requests", specifier = "~=2.22" },
-    { name = "rich", specifier = ">=13.5.2" },
-    { name = "ruamel-yaml", specifier = ">=0.18.15" },
-    { name = "ruamel-yaml-clib", specifier = "==0.2.14" },
-    { name = "semantic-version", specifier = "~=2.10.0" },
-    { name = "tomli", specifier = "~=2.0.1" },
-    { name = "typing-extensions", specifier = "~=4.2" },
-    { name = "urllib3", specifier = "~=2.0" },
-    { name = "wcmatch", specifier = "~=8.3" },
-]
-
-[[package]]
-name = "semgrep"
-version = "1.159.0"
-source = { url = "https://files.pythonhosted.org/packages/b4/c9/9aeb8078ad7886d34766c96a69cc011d737cd383fe488ae9a79312dbc377/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_aarch64.whl" }
-resolution-markers = [
-    "platform_machine == 'aarch64' and sys_platform == 'linux'",
-]
-dependencies = [
-    { name = "attrs", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "boltons", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "click", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "click-option-group", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "colorama", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "exceptiongroup", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "glom", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "jsonschema", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "mcp", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-api", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-exporter-otlp-proto-http", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-instrumentation-requests", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-instrumentation-threading", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "opentelemetry-sdk", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "packaging", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "peewee", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "pyjwt", extra = ["crypto"], marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "requests", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "rich", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "ruamel-yaml", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "ruamel-yaml-clib", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "semantic-version", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "tomli", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "typing-extensions", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "urllib3", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-    { name = "wcmatch", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/c9/9aeb8078ad7886d34766c96a69cc011d737cd383fe488ae9a79312dbc377/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_aarch64.whl", hash = "sha256:16b4d4180434a3467f63f1e967dcd2ead6237d594e1cc3fcfe17ee0b354b7d1f" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "attrs", specifier = ">=21.3" },
-    { name = "boltons", specifier = "~=21.0" },
-    { name = "click", specifier = "~=8.1.8" },
-    { name = "click-option-group", specifier = "~=0.5" },
-    { name = "colorama", specifier = "~=0.4.0" },
-    { name = "exceptiongroup", specifier = "~=1.2.0" },
-    { name = "glom", specifier = ">=23.3" },
-    { name = "jsonschema", specifier = "~=4.25.1" },
-    { name = "mcp", specifier = "==1.23.3" },
-    { name = "opentelemetry-api", specifier = "~=1.37.0" },
-    { name = "opentelemetry-exporter-otlp-proto-http", specifier = "~=1.37.0" },
-    { name = "opentelemetry-instrumentation-requests", specifier = "~=0.58b0" },
-    { name = "opentelemetry-instrumentation-threading", specifier = "~=0.58b0" },
-    { name = "opentelemetry-sdk", specifier = "~=1.37.0" },
-    { name = "packaging", specifier = ">=21.0" },
-    { name = "peewee", specifier = "~=3.14" },
-    { name = "pyjwt", extras = ["crypto"], specifier = "~=2.12.0" },
-    { name = "pywin32", marker = "sys_platform == 'win32'", specifier = "==311" },
-    { name = "requests", specifier = "~=2.22" },
-    { name = "rich", specifier = ">=13.5.2" },
-    { name = "ruamel-yaml", specifier = ">=0.18.15" },
-    { name = "ruamel-yaml-clib", specifier = "==0.2.14" },
-    { name = "semantic-version", specifier = "~=2.10.0" },
-    { name = "tomli", specifier = "~=2.0.1" },
-    { name = "typing-extensions", specifier = "~=4.2" },
-    { name = "urllib3", specifier = "~=2.0" },
-    { name = "wcmatch", specifier = "~=8.3" },
+    { url = "https://files.pythonhosted.org/packages/8b/99/ef84748e94fd9b8aa7b6dcddb5b5de0849e4e00c1fd5df1c682d20fe052d/semgrep-1.151.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-macosx_10_14_x86_64.whl", hash = "sha256:f4e15e3346bee1216c0bfe8f89456bd63e6ebfab4ab7be57067db02bcc0b2e14", size = 35037660, upload-time = "2026-02-04T18:37:03.851Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/64/358a1598713a118548a2ea490366d9f82a0e583c16ac08a1967474608604/semgrep-1.151.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-macosx_11_0_arm64.whl", hash = "sha256:7e500831cc53bfc55e7c1a8a0dd63d28d06d31c88e6ca8ead12c878cf3ddcd2c", size = 39926511, upload-time = "2026-02-04T18:37:07.898Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/49/6f4c6419d789d23fdda959b8b0360f5eb8d61d3f5887caba208e9892cc51/semgrep-1.151.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_0_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c9d61dc8c24615bfaedb3c08bd40d328ab3d33ca1f15600f8179ef61de599694", size = 54402517, upload-time = "2026-02-04T18:37:10.73Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/4b/91d05acc6a53175815401acf6e27ea702af91de74b185063278fdffe08a5/semgrep-1.151.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_0_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2ffe0351049ce466953043a4a01f91c56ea1acfd179c9ade0c0ff17d2b2861aa", size = 50490352, upload-time = "2026-02-04T18:37:13.557Z" },
 ]
 
 [[package]]
@@ -1609,9 +1462,7 @@ dev = [
     { name = "mitmproxy", marker = "sys_platform != 'win32'" },
     { name = "pyrefly" },
     { name = "ruff" },
-    { name = "semgrep", version = "1.159.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')" },
-    { name = "semgrep", version = "1.159.0", source = { url = "https://files.pythonhosted.org/packages/16/87/7bfa399b72d45b20712825d18948c9a40c5648b1d3ac0eaf280c02bf9a10/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_x86_64.whl" }, marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "semgrep", version = "1.159.0", source = { url = "https://files.pythonhosted.org/packages/b4/c9/9aeb8078ad7886d34766c96a69cc011d737cd383fe488ae9a79312dbc377/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_aarch64.whl" }, marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "semgrep", marker = "sys_platform != 'win32'" },
     { name = "zizmor", marker = "sys_platform != 'win32'" },
 ]
 
@@ -1622,9 +1473,7 @@ dev = [
     { name = "mitmproxy", marker = "sys_platform != 'win32'", specifier = "==12.2.2" },
     { name = "pyrefly", specifier = "==0.61.1" },
     { name = "ruff", specifier = "==0.15.11" },
-    { name = "semgrep", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (sys_platform != 'linux' and sys_platform != 'win32')", specifier = "==1.159.0" },
-    { name = "semgrep", marker = "platform_machine == 'aarch64' and sys_platform == 'linux'", url = "https://files.pythonhosted.org/packages/b4/c9/9aeb8078ad7886d34766c96a69cc011d737cd383fe488ae9a79312dbc377/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_aarch64.whl" },
-    { name = "semgrep", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'", url = "https://files.pythonhosted.org/packages/16/87/7bfa399b72d45b20712825d18948c9a40c5648b1d3ac0eaf280c02bf9a10/semgrep-1.159.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-musllinux_1_2_x86_64.whl" },
+    { name = "semgrep", marker = "sys_platform != 'win32'", specifier = "==1.151.0" },
     { name = "zizmor", marker = "sys_platform != 'win32'", specifier = "==1.24.1" },
 ]
 
