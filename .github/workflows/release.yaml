@@ -21,6 +21,7 @@ jobs:
       docker-cache: "${{ steps.init-workflow.outputs.docker-cache }}"
       docker-service: "${{ steps.init-workflow.outputs.docker-service }}"
       mise-version: "${{ steps.init-workflow.outputs.mise-version }}"
+      addons: "${{ steps.init-workflow.outputs.addons }}"
     steps:
       - name: "Checkout"
         uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
@@ -52,8 +53,6 @@ jobs:
     permissions:
       contents: "write" # to upload release assets
       packages: "write" # to push Docker images
-      id-token: "write" # for OIDC authentication
-      attestations: "write" # for build provenance
     needs:
       - "init"
     strategy:
@@ -93,15 +92,41 @@ jobs:
         with:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           run: 'pnpm -F "{packages/node}" run pack-addon'
-      - name: "Attest build provenance"
-        uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
-        with:
-          subject-path: "packages/node/dist/*.gz"
       - name: "Upload node addon"
         shell: "bash"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: 'gh release upload "$GITHUB_REF_NAME" packages/node/dist/*.gz'
+  attest-addons:
+    name: "Attest addons (sigstore)"
+    needs:
+      - "init"
+      - "build-addon"
+    if: "needs.build-addon.result == 'success'"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 15
+    permissions:
+      id-token: "write" # sigstore OIDC
+      attestations: "write" # @actions/attest writes to the GitHub Attestations API
+      contents: "write" # upload sidecar bundles to the draft release
+    steps:
+      - name: "Attest addons (public-good sigstore)"
+        id: "attest"
+        # File name must match `addon.attestWorkflow` in package.json — the
+        # install-time verifier pins attestations to this exact workflow.
+        uses: "vadimpiven/node-addon-slsa/.github/actions/attest-addons@d2e5e5635f1a11a4b283ca47ed316921dec3e416" # v0.11.1
+        with:
+          addons: "${{ needs.init.outputs.addons }}"
+          bundle-dir: "${{ runner.temp }}/slsa-bundles"
+      - name: "Upload sidecar bundles to draft release"
+        shell: "bash"
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          BUNDLES: "${{ steps.attest.outputs.bundles }}"
+        run: |
+          set -euo pipefail
+          mapfile -t paths < <(jq -r '.[].path' <<<"$BUNDLES")
+          gh release upload "$GITHUB_REF_NAME" "${paths[@]}" --clobber
   build-packages:
     name: "Build packages"
     timeout-minutes: 30
@@ -161,32 +186,18 @@ jobs:
   publish:
     name: "Publish"
     needs:
-      - "build-addon"
+      - "init"
+      - "attest-addons"
       - "build-packages"
-    if: "needs.build-packages.result == 'success'"
+    if: "needs.attest-addons.result == 'success' && needs.build-packages.result == 'success'"
     permissions:
       contents: "read" # to fetch reusable workflow repo
-      id-token: "write" # sigstore OIDC + npm trusted publishing
-      attestations: "write" # @actions/attest writes to the GitHub Attestations API
-    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@29bbe43259d77f4bf05eb1971483a337e1320114" # v0.8.12
+      id-token: "write" # npm trusted publishing
+    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@d2e5e5635f1a11a4b283ca47ed316921dec3e416" # v0.11.1
     with:
       access: "public"
       tarball-artifact: "slsa-tarball" # must match `upload-artifact` name in build-packages
-      addons: |
-        {
-          "linux":  {
-            "x64":   "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-linux-x64.node.gz",
-            "arm64": "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-linux-arm64.node.gz"
-          },
-          "darwin": {
-            "x64":   "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-darwin-x64.node.gz",
-            "arm64": "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-darwin-arm64.node.gz"
-          },
-          "win32":  {
-            "x64":   "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-win32-x64.node.gz",
-            "arm64": "https://github.com/vadimpiven/node_reqwest/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-win32-arm64.node.gz"
-          }
-        }
+      addons: "${{ needs.init.outputs.addons }}"
   docs:
     name: "Deploy docs"
     needs: "publish"
