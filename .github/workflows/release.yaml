@@ -178,19 +178,32 @@ jobs:
         uses: "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9" # v5.0.0
         with:
           path: "packages/node/docs"
-      - name: "Upload package and publish release"
+      - name: "Upload pre-packed tarball to draft release"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: |
-          gh release upload "$GITHUB_REF_NAME" packages/node/package.tar.gz
-          gh release edit "$GITHUB_REF_NAME" --draft=false
+        run: 'gh release upload "$GITHUB_REF_NAME" packages/node/package.tar.gz'
+  finalize-release:
+    name: "Finalize release"
+    needs:
+      - "attest-addons"
+      - "build-packages"
+    if: "needs.attest-addons.result == 'success' && needs.build-packages.result == 'success'"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+    permissions:
+      contents: "write" # flip release out of draft
+    steps:
+      - name: "Flip release out of draft"
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          GH_REPO: "${{ github.repository }}"
+        run: 'gh release edit "$GITHUB_REF_NAME" --draft=false'
   publish:
     name: "Publish"
     needs:
       - "init"
-      - "attest-addons"
-      - "build-packages"
-    if: "needs.attest-addons.result == 'success' && needs.build-packages.result == 'success'"
+      - "finalize-release"
+    if: "needs.finalize-release.result == 'success'"
     permissions:
       contents: "read" # to fetch reusable workflow repo
       id-token: "write" # npm trusted publishing
