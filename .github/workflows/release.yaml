@@ -114,7 +114,7 @@ jobs:
         id: "attest"
         # File name must match `addon.attestWorkflow` in package.json — the
         # install-time verifier pins attestations to this exact workflow.
-        uses: "vadimpiven/node-addon-slsa/.github/actions/attest-addons@d2e5e5635f1a11a4b283ca47ed316921dec3e416" # v0.11.1
+        uses: "vadimpiven/node-addon-slsa/.github/actions/attest-addons@61100a0963f4fc8ffc8bcd3c2ea7a98cb2959439" # v0.11.2
         with:
           addons: "${{ needs.init.outputs.addons }}"
           bundle-dir: "${{ runner.temp }}/slsa-bundles"
@@ -194,7 +194,7 @@ jobs:
     permissions:
       contents: "read" # to fetch reusable workflow repo
       id-token: "write" # npm trusted publishing
-    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@d2e5e5635f1a11a4b283ca47ed316921dec3e416" # v0.11.1
+    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@61100a0963f4fc8ffc8bcd3c2ea7a98cb2959439" # v0.11.2
     with:
       access: "public"
       tarball-artifact: "slsa-tarball" # must match `upload-artifact` name in build-packages
