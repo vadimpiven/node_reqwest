@@ -122,6 +122,7 @@ jobs:
         shell: "bash"
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          GH_REPO: "${{ github.repository }}" # this job has no checkout, so gh can't infer the repo
           BUNDLES: "${{ steps.attest.outputs.bundles }}"
         run: |
           set -euo pipefail
