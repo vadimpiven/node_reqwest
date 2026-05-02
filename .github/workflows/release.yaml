@@ -21,7 +21,7 @@ jobs:
       docker-cache: "${{ steps.init-workflow.outputs.docker-cache }}"
       docker-service: "${{ steps.init-workflow.outputs.docker-service }}"
       mise-version: "${{ steps.init-workflow.outputs.mise-version }}"
-      addons: "${{ steps.init-workflow.outputs.addons }}"
+      release-base-url: "${{ steps.init-workflow.outputs.release-base-url }}"
     steps:
       - name: "Checkout"
         uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
@@ -53,6 +53,8 @@ jobs:
     permissions:
       contents: "write" # to upload release assets
       packages: "write" # to push Docker images
+      id-token: "write" # sigstore OIDC for per-binary attestation
+      attestations: "write" # @actions/attest writes to the GitHub Attestations API
     needs:
       - "init"
     strategy:
@@ -92,42 +94,22 @@ jobs:
         with:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           run: 'pnpm -F "{packages/node}" run pack-addon'
-      - name: "Upload node addon"
-        shell: "bash"
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: 'gh release upload "$GITHUB_REF_NAME" packages/node/dist/*.gz'
-  attest-addons:
-    name: "Attest addons (sigstore)"
-    needs:
-      - "init"
-      - "build-addon"
-    if: "needs.build-addon.result == 'success'"
-    runs-on: "ubuntu-latest"
-    timeout-minutes: 15
-    permissions:
-      id-token: "write" # sigstore OIDC
-      attestations: "write" # @actions/attest writes to the GitHub Attestations API
-      contents: "write" # upload sidecar bundles to the draft release
-    steps:
-      - name: "Attest addons (public-good sigstore)"
+      - name: "Attest addon (public-good sigstore)"
         id: "attest"
         # File name must match `addon.attestWorkflow` in package.json — the
         # install-time verifier pins attestations to this exact workflow.
-        uses: "vadimpiven/node-addon-slsa/.github/actions/attest-addons@61100a0963f4fc8ffc8bcd3c2ea7a98cb2959439" # v0.11.2
+        uses: "vadimpiven/node-addon-slsa/.github/actions/attest-addon@fcd88c6850e28a2c526e747c108a00e6a9341634" # v0.12.1
         with:
-          addons: "${{ needs.init.outputs.addons }}"
-          bundle-dir: "${{ runner.temp }}/slsa-bundles"
-      - name: "Upload sidecar bundles to draft release"
+          binary: "packages/node/dist/*.node.gz"
+          url-prefix: "${{ needs.init.outputs.release-base-url }}"
+      - name: "Upload addon and sidecar to draft release"
         shell: "bash"
         env:
-          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          GH_REPO: "${{ github.repository }}" # this job has no checkout, so gh can't infer the repo
-          BUNDLES: "${{ steps.attest.outputs.bundles }}"
-        run: |
-          set -euo pipefail
-          mapfile -t paths < <(jq -r '.[].path' <<<"$BUNDLES")
-          gh release upload "$GITHUB_REF_NAME" "${paths[@]}" --clobber
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          BINARY_PATH: "${{ steps.attest.outputs.binary-path }}"
+          BUNDLE_PATH: "${{ steps.attest.outputs.bundle-path }}"
+        # `--clobber` so re-runs of a failed matrix cell don't 422 on partial uploads.
+        run: 'gh release upload "$GITHUB_REF_NAME" --clobber "$BINARY_PATH" "$BUNDLE_PATH"'
   build-packages:
     name: "Build packages"
     timeout-minutes: 30
@@ -182,12 +164,15 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: 'gh release upload "$GITHUB_REF_NAME" packages/node/package.tar.gz'
+  # Release becomes immutable here. On `publish` failure, re-run only
+  # the publish job — public URLs are stable, artifacts persist, and
+  # `publish.yaml` is idempotent (npm rejects duplicate-version publishes).
   finalize-release:
     name: "Finalize release"
     needs:
-      - "attest-addons"
+      - "build-addon"
       - "build-packages"
-    if: "needs.attest-addons.result == 'success' && needs.build-packages.result == 'success'"
+    if: "needs.build-addon.result == 'success' && needs.build-packages.result == 'success'"
     runs-on: "ubuntu-latest"
     timeout-minutes: 5
     permissions:
@@ -207,11 +192,12 @@ jobs:
     permissions:
       contents: "read" # to fetch reusable workflow repo
       id-token: "write" # npm trusted publishing
-    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@61100a0963f4fc8ffc8bcd3c2ea7a98cb2959439" # v0.11.2
+    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@fcd88c6850e28a2c526e747c108a00e6a9341634" # v0.12.1
     with:
       access: "public"
-      tarball-artifact: "slsa-tarball" # must match `upload-artifact` name in build-packages
-      addons: "${{ needs.init.outputs.addons }}"
+      tarball-artifact: "slsa-tarball"
+      addons-artifact-pattern: "slsa-addons-*"
+      release-base-url: "${{ needs.init.outputs.release-base-url }}"
   docs:
     name: "Deploy docs"
     needs: "publish"
