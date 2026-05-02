@@ -46,42 +46,12 @@ outputs:
   mise-version:
     description: "Mise version"
     value: "${{ steps.parse.outputs.mise-version }}"
-  addons:
+  release-base-url:
     description: >-
-      JSON map of native addon URLs and sidecar bundle URLs for the current release tag, consumed by node-addon-slsa's `attest-addons` action and reusable `publish.yaml` workflow.
-    value: |
-      {
-        "linux": {
-          "x64": {
-            "url":       "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-linux-x64.node.gz",
-            "bundleUrl": "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-linux-x64.node.gz.sigstore"
-          },
-          "arm64": {
-            "url":       "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-linux-arm64.node.gz",
-            "bundleUrl": "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-linux-arm64.node.gz.sigstore"
-          }
-        },
-        "darwin": {
-          "x64": {
-            "url":       "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-darwin-x64.node.gz",
-            "bundleUrl": "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-darwin-x64.node.gz.sigstore"
-          },
-          "arm64": {
-            "url":       "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-darwin-arm64.node.gz",
-            "bundleUrl": "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-darwin-arm64.node.gz.sigstore"
-          }
-        },
-        "win32": {
-          "x64": {
-            "url":       "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-win32-x64.node.gz",
-            "bundleUrl": "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-win32-x64.node.gz.sigstore"
-          },
-          "arm64": {
-            "url":       "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-win32-arm64.node.gz",
-            "bundleUrl": "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/node_reqwest-${{ github.ref_name }}-win32-arm64.node.gz.sigstore"
-          }
-        }
-      }
+      Public URL prefix where every `.node.gz` and `.node.gz.sigstore` for this
+      release tag will be served.
+    value: "https://github.com/${{ github.repository }}/releases/download/${{
+      github.ref_name }}/"
 runs:
   using: "composite"
   steps:
