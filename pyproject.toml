@@ -13,8 +13,8 @@ members = ["packages/node/tests/mitmproxy"]
 [dependency-groups]
 dev = [
     "mitmproxy==12.2.2 ; sys_platform != 'win32'",
-    "pyrefly==0.61.1",
-    "ruff==0.15.11",
+    "pyrefly==0.63.1",
+    "ruff==0.15.12",
     # Pinned below 1.152: newer semgrep manylinux wheels target glibc 2.35,
     # which is newer than our manylinux_2_28 (glibc 2.28) dev-container base.
     "semgrep==1.151.0 ; sys_platform != 'win32'",

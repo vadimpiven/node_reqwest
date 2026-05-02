@@ -70,8 +70,13 @@ feature-depth = 1
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-    #{ id = "RUSTSEC-0000-0000", reason = "you can specify a reason the advisory is ignored" },
-    #{ crate = "a-crate-that-is-yanked@0.1.1", reason = "you can specify why you are ignoring the yanked crate" },
+    # hickory-proto 0.25.2 is pulled transitively via reqwest 0.13.3 →
+    # hickory-resolver 0.25. Both advisories are fixed only in the 0.26
+    # branch, which is semver-incompatible with reqwest's pin. Tracking
+    # https://github.com/seanmonstar/reqwest/pull/3014 — remove these on
+    # the next reqwest release that bumps to hickory 0.26.
+    { id = "RUSTSEC-2026-0118", reason = "DnssecDnsHandle NSEC3 unbounded loop. Reqwest does not enable hickory-resolver's `dnssec-ring`/`dnssec-aws-lc-rs` features (verified via `cargo tree -p reqwest -e features`), so the vulnerable code path is not compiled." },
+    { id = "RUSTSEC-2026-0119", reason = "BinEncoder O(n^2) name-compression DoS. Only reachable on outbound DNS resolution and bounded by request timeouts; impact is local CPU spike, not remote exploit." },
 ]
 # If this is true, then cargo deny will use the git executable to fetch advisory database.
 # If this is false, then it uses a built-in git library.
@@ -203,21 +208,10 @@ deny = [
 # Cannot be resolved until upstream crates align their dependencies.
 skip = [
     { crate = "windows-sys", reason = "multiple versions across socket2, jni, ipconfig ecosystem" },
-    { crate = "windows-targets", reason = "follows windows-sys versioning" },
-    { crate = "windows_aarch64_gnullvm", reason = "Windows platform crate version fragmentation" },
-    { crate = "windows_aarch64_msvc", reason = "Windows platform crate version fragmentation" },
-    { crate = "windows_i686_gnu", reason = "Windows platform crate version fragmentation" },
-    { crate = "windows_i686_msvc", reason = "Windows platform crate version fragmentation" },
-    { crate = "windows_x86_64_gnu", reason = "Windows platform crate version fragmentation" },
-    { crate = "windows_x86_64_gnullvm", reason = "Windows platform crate version fragmentation" },
-    { crate = "windows_x86_64_msvc", reason = "Windows platform crate version fragmentation" },
     { crate = "core-foundation", reason = "Apple platform crate version fragmentation" },
     { crate = "getrandom", reason = "different versions for different rand ecosystem crates" },
     { crate = "r-efi", reason = "follows getrandom versioning" },
     { crate = "hashbrown", reason = "indexmap and other crates use different versions" },
-    { crate = "thiserror", reason = "ecosystem transition between v1 and v2" },
-    { crate = "thiserror-impl", reason = "follows thiserror versioning" },
-    { crate = "winnow", reason = "toml crate uses both toml_parser (winnow 1.0) and legacy winnow 0.7" },
     { crate = "wit-bindgen", reason = "wasip2 and wasip3 ecosystem crates use different versions" },
 ]
 # Similarly to `skip` allows you to skip certain crates during duplicate

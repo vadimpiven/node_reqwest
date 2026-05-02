@@ -38,7 +38,7 @@ _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
 node = "24.15.0"
-rust.version = "nightly-2026-04-20"
+rust.version = "nightly-2026-05-01"
 
 "aqua:jqlang/jq" = "1.8.1"
 "github:mikefarah/yq" = "4.53.2"
@@ -48,8 +48,8 @@ rust.version = "nightly-2026-04-20"
 "aqua:koalaman/shellcheck" = "0.11.0"
 "aqua:gitleaks/gitleaks" = "8.30.1"
 "aqua:rhysd/actionlint" = "1.7.12"
-"aqua:astral-sh/uv" = "0.11.7"
-"aqua:cli/cli" = "2.88.1"
+"aqua:astral-sh/uv" = "0.11.8"
+"aqua:cli/cli" = "2.92.0"
 "aqua:cargo-bins/cargo-binstall" = "1.18.1"
 
 # Tools with non-standard version prefix
@@ -71,7 +71,7 @@ version = "0.19.4"
 os = ["linux", "macos"]
 
 [tools."aqua:crate-ci/typos"]
-version = "1.45.1"
+version = "1.46.0"
 os = ["linux", "macos"]
 
 [tools."github:taiki-e/cargo-llvm-cov"]
