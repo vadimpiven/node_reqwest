@@ -69,7 +69,7 @@
     "postinstall": "slsa wget"
   },
   "dependencies": {
-    "node-addon-slsa": "0.11.1"
+    "node-addon-slsa": "0.12.1"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
