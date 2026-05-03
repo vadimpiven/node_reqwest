@@ -94,7 +94,7 @@ jobs:
       - name: "Upload binary for attest job"
         uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
         with:
-          name: "addon-${{ matrix.platform }}-${{ matrix.arch }}"
+          name: "addon-${{ matrix.os }}"
           path: "packages/node/dist/*.node.gz"
           if-no-files-found: "error"
   attest-addon:
@@ -114,9 +114,7 @@ jobs:
       attestations: "write" # @actions/attest writes to the GitHub Attestations API
     uses: "vadimpiven/node-addon-slsa/.github/workflows/attest-addon.yaml@05d945b477a6476c12ae4b96cb42d5fbda0748d1" # v0.13.3
     with:
-      binary-artifact: "addon-${{ matrix.platform }}-${{ matrix.arch }}"
-      platform: "${{ matrix.platform }}"
-      arch: "${{ matrix.arch }}"
+      binary-artifact: "addon-${{ matrix.os }}"
   build-packages:
     name: "Build packages"
     timeout-minutes: 30
