@@ -5,13 +5,13 @@ outputs:
     description: "Matrix for regular runs"
     value: |
       {
-        "os": [
-          "ubuntu-24.04",
-          "ubuntu-24.04-arm",
-          "macos-15-intel",
-          "macos-15",
-          "windows-2025",
-          "windows-11-arm"
+        "include": [
+          { "os": "ubuntu-24.04",     "platform": "linux",  "arch": "x64"   },
+          { "os": "ubuntu-24.04-arm", "platform": "linux",  "arch": "arm64" },
+          { "os": "macos-15-intel",   "platform": "darwin", "arch": "x64"   },
+          { "os": "macos-15",         "platform": "darwin", "arch": "arm64" },
+          { "os": "windows-2025",     "platform": "win32",  "arch": "x64"   },
+          { "os": "windows-11-arm",   "platform": "win32",  "arch": "arm64" }
         ]
       }
   cache-key:
