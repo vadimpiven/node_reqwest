@@ -109,8 +109,8 @@ importers:
   packages/node:
     dependencies:
       node-addon-slsa:
-        specifier: 0.12.1
-        version: 0.12.1
+        specifier: 0.13.1
+        version: 0.13.1
     devDependencies:
       '@codecov/vite-plugin':
         specifier: 'catalog:'
@@ -2150,8 +2150,8 @@ packages:
     resolution: {integrity: sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==}
     engines: {node: '>= 0.6'}
 
-  node-addon-slsa@0.12.1:
-    resolution: {integrity: sha512-sVqk0c/Res4R5thXDbuFKHhOcFNokuXaf51wZQXprmS6td2X0wZU/bGHmmnZH4sGyXGzlIVDdk5ws5g0DK2ASw==}
+  node-addon-slsa@0.13.1:
+    resolution: {integrity: sha512-GFa7wD1dBHfC8T38cqO80KougjDdQHwurHMPIgy1kDBn5s4qzhT8M1Iwd9R9OfUaQijhxqMTVHUi2ZT7Nsgm/A==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
@@ -4699,7 +4699,7 @@ snapshots:
 
   negotiator@0.6.3: {}
 
-  node-addon-slsa@0.12.1: {}
+  node-addon-slsa@0.13.1: {}
 
   node-releases@2.0.37: {}
 
