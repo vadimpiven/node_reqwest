@@ -227,7 +227,7 @@ jobs:
         shell: "bash"
         run: |
           version="${GITHUB_REF_NAME#v}"
-          for i in {1..10}; do
+          for i in {1..20}; do
             if npm view "node-reqwest@${version}" version >/dev/null 2>&1; then
               echo "Version ${version} available on attempt ${i}"
               exit 0
@@ -235,7 +235,7 @@ jobs:
             echo "Attempt ${i}: not yet available, waiting 15s..."
             sleep 15
           done
-          echo "Version ${version} not available after 10 attempts"
+          echo "Version ${version} not available after 20 attempts"
           exit 1
       - name: "Smoke test"
         shell: "bash"
