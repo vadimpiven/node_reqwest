@@ -69,7 +69,7 @@
     "postinstall": "slsa wget"
   },
   "dependencies": {
-    "node-addon-slsa": "0.14.0"
+    "node-addon-slsa": "0.15.0"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
@@ -94,7 +94,6 @@
   },
   "addon": {
     "path": "./dist/node_reqwest.node",
-    "manifest": "./dist/slsa-manifest.json",
-    "attestWorkflow": "release.yaml"
+    "url": "https://github.com/vadimpiven/node_reqwest/releases/download/v{version}/node_reqwest-v{version}-{platform}-{arch}.node.gz"
   }
 }
