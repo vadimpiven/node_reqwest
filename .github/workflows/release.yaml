@@ -50,7 +50,10 @@ jobs:
     name: "Build addon"
     timeout-minutes: 45
     permissions:
+      contents: "write" # to upload release assets
       packages: "write" # to push Docker images
+      id-token: "write" # for OIDC authentication
+      attestations: "write" # for build provenance
     needs:
       - "init"
     strategy:
@@ -90,33 +93,15 @@ jobs:
         with:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           run: 'pnpm -F "{packages/node}" run pack-addon'
-      # Artifact name is consumed by the `attest-addon` job below — keep in sync.
-      - name: "Upload binary for attest job"
-        uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
+      - name: "Attest build provenance"
+        uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
         with:
-          name: "addon-${{ matrix.platform }}-${{ matrix.arch }}"
-          path: "packages/node/dist/*.node.gz"
-          if-no-files-found: "error"
-  attest-addon:
-    name: "Attest addon (toolkit)"
-    needs:
-      - "init"
-      - "build-addon"
-    if: "needs.build-addon.result == 'success'"
-    strategy:
-      fail-fast: false
-      matrix: "${{ fromJSON(needs.init.outputs.matrix) }}"
-    # Permissions and `release-base-url` default are documented at the
-    # callee — see vadimpiven/node-addon-slsa/.github/workflows/attest-addon.yaml.
-    permissions:
-      contents: "write" # to upload binary + bundle to the draft release
-      id-token: "write" # sigstore OIDC for per-binary attestation
-      attestations: "write" # @actions/attest writes to the GitHub Attestations API
-    uses: "vadimpiven/node-addon-slsa/.github/workflows/attest-addon.yaml@05d945b477a6476c12ae4b96cb42d5fbda0748d1" # v0.13.3
-    with:
-      binary-artifact: "addon-${{ matrix.platform }}-${{ matrix.arch }}"
-      platform: "${{ matrix.platform }}"
-      arch: "${{ matrix.arch }}"
+          subject-path: "packages/node/dist/*.gz"
+      - name: "Upload node addon"
+        shell: "bash"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: 'gh release upload "$GITHUB_REF_NAME" packages/node/dist/*.gz'
   build-packages:
     name: "Build packages"
     timeout-minutes: 30
@@ -158,7 +143,6 @@ jobs:
         uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
         with:
           subject-path: "packages/node/package.tar.gz"
-      # Name `slsa-tarball` is hardcoded in the toolkit's publish.yaml.
       - name: "Upload pre-packed tarball"
         uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
         with:
@@ -168,40 +152,40 @@ jobs:
         uses: "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9" # v5.0.0
         with:
           path: "packages/node/docs"
-      - name: "Upload pre-packed tarball to draft release"
+      - name: "Upload package and publish release"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: 'gh release upload "$GITHUB_REF_NAME" packages/node/package.tar.gz'
-  # Release becomes immutable here. On `publish` failure, re-run only
-  # the publish job — public URLs are stable, artifacts persist, and
-  # `publish.yaml` is idempotent (npm rejects duplicate-version publishes).
-  finalize-release:
-    name: "Finalize release"
-    needs:
-      - "attest-addon"
-      - "build-packages"
-    if: "needs.attest-addon.result == 'success' && needs.build-packages.result == 'success'"
-    runs-on: "ubuntu-latest"
-    timeout-minutes: 5
-    permissions:
-      contents: "write" # flip release out of draft
-    steps:
-      - name: "Flip release out of draft"
-        env:
-          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          GH_REPO: "${{ github.repository }}"
-        run: 'gh release edit "$GITHUB_REF_NAME" --draft=false'
+        run: |
+          gh release upload "$GITHUB_REF_NAME" packages/node/package.tar.gz
+          gh release edit "$GITHUB_REF_NAME" --draft=false
   publish:
     name: "Publish"
-    needs: "finalize-release"
-    if: "needs.finalize-release.result == 'success'"
+    timeout-minutes: 10
+    needs:
+      - "build-addon"
+      - "build-packages"
+    if: "needs.build-addon.result == 'success' && needs.build-packages.result == 'success'"
+    runs-on: "ubuntu-latest"
     permissions:
-      contents: "read" # to fetch reusable workflow repo
-      id-token: "write" # npm trusted publishing
-    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@05d945b477a6476c12ae4b96cb42d5fbda0748d1" # v0.13.3
+      contents: "read"
+      id-token: "write" # npm provenance via OIDC + npm trusted publishing
+    steps:
+      - name: "Install Node.js"
+        uses: "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" # v6.4.0
+        with:
+          node-version: "latest"
+          check-latest: true
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+      - name: "Download pre-packed tarball"
+        uses: "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c" # v8.0.1
+        with:
+          name: "slsa-tarball"
+      - name: "Publish to npm"
+        shell: "bash"
+        run: "npm publish package.tar.gz --provenance --access public"
   docs:
     name: "Deploy docs"
-    # Gated on publish so docs don't deploy for a release that didn't reach npm.
     needs: "publish"
     if: "needs.publish.result == 'success'"
     runs-on: "ubuntu-latest"
@@ -236,8 +220,6 @@ jobs:
           node-version: "latest"
           check-latest: true
           package-manager-cache: false
-      # Cap is 20×15s = 5min: npm CDN propagation post-trusted-publish
-      # routinely takes 3–5min.
       - name: "Wait for npm registry"
         shell: "bash"
         run: |
