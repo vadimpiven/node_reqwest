@@ -21,7 +21,6 @@ jobs:
       docker-cache: "${{ steps.init-workflow.outputs.docker-cache }}"
       docker-service: "${{ steps.init-workflow.outputs.docker-service }}"
       mise-version: "${{ steps.init-workflow.outputs.mise-version }}"
-      release-base-url: "${{ steps.init-workflow.outputs.release-base-url }}"
     steps:
       - name: "Checkout"
         uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
@@ -51,10 +50,7 @@ jobs:
     name: "Build addon"
     timeout-minutes: 45
     permissions:
-      contents: "write" # to upload release assets
       packages: "write" # to push Docker images
-      id-token: "write" # sigstore OIDC for per-binary attestation
-      attestations: "write" # @actions/attest writes to the GitHub Attestations API
     needs:
       - "init"
     strategy:
@@ -94,22 +90,33 @@ jobs:
         with:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           run: 'pnpm -F "{packages/node}" run pack-addon'
-      - name: "Attest addon (public-good sigstore)"
-        id: "attest"
-        # File name must match `addon.attestWorkflow` in package.json — the
-        # install-time verifier pins attestations to this exact workflow.
-        uses: "vadimpiven/node-addon-slsa/.github/actions/attest-addon@fcd88c6850e28a2c526e747c108a00e6a9341634" # v0.12.1
+      # Artifact name is consumed by the `attest-addon` job below — keep in sync.
+      - name: "Upload binary for attest job"
+        uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
         with:
-          binary: "packages/node/dist/*.node.gz"
-          url-prefix: "${{ needs.init.outputs.release-base-url }}"
-      - name: "Upload addon and sidecar to draft release"
-        shell: "bash"
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          BINARY_PATH: "${{ steps.attest.outputs.binary-path }}"
-          BUNDLE_PATH: "${{ steps.attest.outputs.bundle-path }}"
-        # `--clobber` so re-runs of a failed matrix cell don't 422 on partial uploads.
-        run: 'gh release upload "$GITHUB_REF_NAME" --clobber "$BINARY_PATH" "$BUNDLE_PATH"'
+          name: "addon-${{ matrix.platform }}-${{ matrix.arch }}"
+          path: "packages/node/dist/*.node.gz"
+          if-no-files-found: "error"
+  attest-addon:
+    name: "Attest addon (toolkit)"
+    needs:
+      - "init"
+      - "build-addon"
+    if: "needs.build-addon.result == 'success'"
+    strategy:
+      fail-fast: false
+      matrix: "${{ fromJSON(needs.init.outputs.matrix) }}"
+    # Permissions and `release-base-url` default are documented at the
+    # callee — see vadimpiven/node-addon-slsa/.github/workflows/attest-addon.yaml.
+    permissions:
+      contents: "write" # to upload binary + bundle to the draft release
+      id-token: "write" # sigstore OIDC for per-binary attestation
+      attestations: "write" # @actions/attest writes to the GitHub Attestations API
+    uses: "vadimpiven/node-addon-slsa/.github/workflows/attest-addon.yaml@f74796e76734df71e6a2298b7ef5097419595760" # v0.13.1
+    with:
+      binary-artifact: "addon-${{ matrix.platform }}-${{ matrix.arch }}"
+      platform: "${{ matrix.platform }}"
+      arch: "${{ matrix.arch }}"
   build-packages:
     name: "Build packages"
     timeout-minutes: 30
@@ -151,6 +158,7 @@ jobs:
         uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
         with:
           subject-path: "packages/node/package.tar.gz"
+      # Name `slsa-tarball` is hardcoded in the toolkit's publish.yaml.
       - name: "Upload pre-packed tarball"
         uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
         with:
@@ -170,9 +178,9 @@ jobs:
   finalize-release:
     name: "Finalize release"
     needs:
-      - "build-addon"
+      - "attest-addon"
       - "build-packages"
-    if: "needs.build-addon.result == 'success' && needs.build-packages.result == 'success'"
+    if: "needs.attest-addon.result == 'success' && needs.build-packages.result == 'success'"
     runs-on: "ubuntu-latest"
     timeout-minutes: 5
     permissions:
@@ -185,21 +193,15 @@ jobs:
         run: 'gh release edit "$GITHUB_REF_NAME" --draft=false'
   publish:
     name: "Publish"
-    needs:
-      - "init"
-      - "finalize-release"
+    needs: "finalize-release"
     if: "needs.finalize-release.result == 'success'"
     permissions:
       contents: "read" # to fetch reusable workflow repo
       id-token: "write" # npm trusted publishing
-    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@fcd88c6850e28a2c526e747c108a00e6a9341634" # v0.12.1
-    with:
-      access: "public"
-      tarball-artifact: "slsa-tarball"
-      addons-artifact-pattern: "slsa-addons-*"
-      release-base-url: "${{ needs.init.outputs.release-base-url }}"
+    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@f74796e76734df71e6a2298b7ef5097419595760" # v0.13.1
   docs:
     name: "Deploy docs"
+    # Gated on publish so docs don't deploy for a release that didn't reach npm.
     needs: "publish"
     if: "needs.publish.result == 'success'"
     runs-on: "ubuntu-latest"
@@ -234,11 +236,13 @@ jobs:
           node-version: "latest"
           check-latest: true
           package-manager-cache: false
+      # Cap is 20×15s = 5min: npm CDN propagation post-trusted-publish
+      # routinely takes 3–5min.
       - name: "Wait for npm registry"
         shell: "bash"
         run: |
           version="${GITHUB_REF_NAME#v}"
-          for i in {1..10}; do
+          for i in {1..20}; do
             if npm view "node-reqwest@${version}" version >/dev/null 2>&1; then
               echo "Version ${version} available on attempt ${i}"
               exit 0
@@ -246,7 +250,7 @@ jobs:
             echo "Attempt ${i}: not yet available, waiting 15s..."
             sleep 15
           done
-          echo "Version ${version} not available after 10 attempts"
+          echo "Version ${version} not available after 20 attempts"
           exit 1
       - name: "Smoke test"
         shell: "bash"
