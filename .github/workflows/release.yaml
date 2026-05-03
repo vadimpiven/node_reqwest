@@ -163,7 +163,7 @@ jobs:
     needs:
       - "build-addon"
       - "build-packages"
-    if: "needs.build-packages.result == 'success'"
+    if: "needs.build-addon.result == 'success' && needs.build-packages.result == 'success'"
     permissions:
       contents: "read" # to fetch reusable workflow repo
       id-token: "write" # sigstore OIDC + npm trusted publishing
