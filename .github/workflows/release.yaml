@@ -112,7 +112,7 @@ jobs:
       contents: "write" # to upload binary + bundle to the draft release
       id-token: "write" # sigstore OIDC for per-binary attestation
       attestations: "write" # @actions/attest writes to the GitHub Attestations API
-    uses: "vadimpiven/node-addon-slsa/.github/workflows/attest-addon.yaml@f74796e76734df71e6a2298b7ef5097419595760" # v0.13.1
+    uses: "vadimpiven/node-addon-slsa/.github/workflows/attest-addon.yaml@05d945b477a6476c12ae4b96cb42d5fbda0748d1" # v0.13.3
     with:
       binary-artifact: "addon-${{ matrix.platform }}-${{ matrix.arch }}"
       platform: "${{ matrix.platform }}"
@@ -198,7 +198,7 @@ jobs:
     permissions:
       contents: "read" # to fetch reusable workflow repo
       id-token: "write" # npm trusted publishing
-    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@f74796e76734df71e6a2298b7ef5097419595760" # v0.13.1
+    uses: "vadimpiven/node-addon-slsa/.github/workflows/publish.yaml@05d945b477a6476c12ae4b96cb42d5fbda0748d1" # v0.13.3
   docs:
     name: "Deploy docs"
     # Gated on publish so docs don't deploy for a release that didn't reach npm.
