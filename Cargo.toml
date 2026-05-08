@@ -110,7 +110,7 @@ serde_json = { version = "1.0.149" }
 tauri-winres = { version = "0.3.6" }
 tempfile = { version = "3.27.0" }
 thiserror = { version = "2.0.18" }
-tokio = { version = "1.52.1", features = ["rt-multi-thread", "sync", "time"] }
+tokio = { version = "1.52.3", features = ["rt-multi-thread", "sync", "time"] }
 tokio-stream = { version = "0.1.18" }
 tokio-test = { version = "0.4.5" }
 tokio-util = { version = "0.7.18", features = ["join-map"] }
