@@ -1,0 +1,7 @@
+# hickory-proto 0.25.2 is pulled transitively via reqwest 0.13.3 →
+# hickory-resolver 0.25. The fix is in the 0.26 branch which is
+# semver-incompatible with reqwest's pin. Tracking
+# https://github.com/seanmonstar/reqwest/pull/3014 — remove this
+# on the next reqwest release that bumps to hickory 0.26.
+# Matches deny.toml advisory ignore for RUSTSEC-2026-0119.
+GHSA-q2qq-hmj6-3wpp
