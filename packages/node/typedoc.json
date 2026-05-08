@@ -8,6 +8,7 @@
   "includeVersion": true,
   "excludeInternal": true,
   "excludePrivate": true,
+  "intentionallyNotExported": ["Agent"],
   "readme": "README.md",
   "sourceLinkTemplate": "https://github.com/vadimpiven/node_reqwest/blob/{gitRevision}/{path}#L{line}"
 }

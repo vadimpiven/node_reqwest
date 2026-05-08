@@ -16,24 +16,25 @@ function normalizePem(pem?: string | Buffer | (string | Buffer)[]): string[] {
   return [Buffer.isBuffer(pem) ? pem.toString() : pem];
 }
 
+type HeaderValue = string | string[] | number | undefined;
+
 function normalizeHeaders(
-  headers?:
-    | Record<string, string | string[] | undefined>
-    | Iterable<[string, string | string[] | undefined]>
-    | string[]
-    | null,
+  headers?: Record<string, HeaderValue> | Iterable<[string, HeaderValue]> | string[] | null,
 ): Record<string, string> {
   if (!headers) {
     return {};
   }
 
   const result: Record<string, string> = {};
-  const add = (key: string, value?: string | string[]): void => {
-    if (!value) {
+  const add = (key: string, value: HeaderValue): void => {
+    if (value === undefined || value === null) {
       return;
     }
     const k = key.toLowerCase();
-    const v = Array.isArray(value) ? value.join(", ") : value;
+    const v = Array.isArray(value) ? value.join(", ") : String(value);
+    if (!v) {
+      return;
+    }
     const existing = result[k];
     result[k] = existing ? `${existing}, ${v}` : v;
   };
