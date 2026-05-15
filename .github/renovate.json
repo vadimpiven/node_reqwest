@@ -29,6 +29,11 @@
       "allowedVersions": "<1.152.0"
     },
     {
+      "description": "Pin electron below 42: v42 dropped the auto-postinstall binary download in favor of an explicit install-electron bin, incompatible with our docker CI sandbox",
+      "matchPackageNames": ["electron"],
+      "allowedVersions": "<42.0.0"
+    },
+    {
       "description": "Group all non-major updates into a single PR",
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "all dependencies"
