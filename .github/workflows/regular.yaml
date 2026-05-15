@@ -94,7 +94,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: "Run zizmor"
-        uses: "zizmorcore/zizmor-action@b1d7e1fb5de872772f31590499237e7cce841e8e" # v0.5.3
+        uses: "zizmorcore/zizmor-action@b572f7b1a1c2d41efaab43d504f68d215c3cd727" # v0.5.4
         with:
           persona: "auditor"
         env:
@@ -123,6 +123,6 @@ jobs:
           output: "trivy-results.sarif"
           ignore-unfixed: true
       - name: "Upload Trivy scan results to GitHub Security tab"
-        uses: "github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e" # v4.35.4
+        uses: "github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba" # v4.35.5
         with:
           sarif_file: "trivy-results.sarif"
