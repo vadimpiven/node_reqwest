@@ -38,7 +38,7 @@ _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 [tools]
 node = "24.15.0"
-rust.version = "nightly-2026-05-07"
+rust.version = "nightly-2026-05-13"
 
 "aqua:jqlang/jq" = "1.8.1"
 "github:mikefarah/yq" = "4.53.2"
@@ -48,14 +48,14 @@ rust.version = "nightly-2026-05-07"
 "aqua:koalaman/shellcheck" = "0.11.0"
 "aqua:gitleaks/gitleaks" = "8.30.1"
 "aqua:rhysd/actionlint" = "1.7.12"
-"aqua:astral-sh/uv" = "0.11.11"
+"aqua:astral-sh/uv" = "0.11.14"
 "aqua:cli/cli" = "2.92.0"
 "aqua:cargo-bins/cargo-binstall" = "1.19.1"
 
 # Tools with non-standard version prefix
 [tools."github:nextest-rs/nextest"]
 version_prefix = "cargo-nextest-"
-version = "0.9.133"
+version = "0.9.135"
 
 [tools."github:mstange/samply"]
 version_prefix = "samply-v"
@@ -67,7 +67,7 @@ version = "2.14.0"
 os = ["linux", "macos"]
 
 [tools."github:EmbarkStudios/cargo-deny"]
-version = "0.19.4"
+version = "0.19.6"
 os = ["linux", "macos"]
 
 [tools."aqua:crate-ci/typos"]
@@ -75,7 +75,7 @@ version = "1.46.1"
 os = ["linux", "macos"]
 
 [tools."github:taiki-e/cargo-llvm-cov"]
-version = "0.8.5"
+version = "0.8.7"
 os = ["linux", "macos"]
 
 [tools."aqua:mvdan/sh"]

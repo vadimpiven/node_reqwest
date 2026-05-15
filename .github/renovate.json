@@ -24,6 +24,11 @@
       "enabled": false
     },
     {
+      "description": "Pin semgrep below 1.152: newer manylinux wheels target glibc 2.35, incompatible with manylinux_2_28 (glibc 2.28) build container",
+      "matchPackageNames": ["semgrep"],
+      "allowedVersions": "<1.152.0"
+    },
+    {
       "description": "Group all non-major updates into a single PR",
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "all dependencies"
