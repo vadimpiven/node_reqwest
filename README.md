@@ -4,6 +4,7 @@
 [![Ask DeepWiki][deepwiki-badge]][deepwiki-site]
 [![CI status][status-badge]][status-dashboard]
 [![Test coverage][coverage-badge]][coverage-dashboard]
+[![Supply-chain score][socket-badge]][socket-dashboard]
 
 [github-badge]: https://img.shields.io/github/stars/vadimpiven/node_reqwest?style=flat&logo=github
 [github-repo]: https://github.com/vadimpiven/node_reqwest
@@ -17,6 +18,8 @@
 [status-dashboard]: https://github.com/vadimpiven/node_reqwest/actions?query=branch%3Amain
 [coverage-badge]: https://img.shields.io/codecov/c/github/vadimpiven/node_reqwest/main?logo=codecov
 [coverage-dashboard]: https://app.codecov.io/gh/vadimpiven/node_reqwest/tree/main
+[socket-badge]: https://badge.socket.dev/npm/package/node-reqwest
+[socket-dashboard]: https://socket.dev/npm/package/node-reqwest
 
 [![Open in GitHub Codespaces][codespace-badge]][codespace-action]
 
