@@ -184,22 +184,7 @@ New step after "Attest build provenance":
 stem-pairing). Per-matrix-entry, both globs resolve to a single file — single-subject,
 single-predicate, no ambiguity.
 
-### 7. Upload Rust SBOMs to GitHub Release
-
-Extend the existing "Upload node addon" step in `build-addon`:
-
-```yaml
-- name: "Upload node addon"
-  shell: "bash"
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  run: |
-    gh release upload "$GITHUB_REF_NAME" \
-      packages/node/dist/*.gz \
-      packages/node/dist/sbom/*.cdx.json
-```
-
-### 8. Generate JS SBOM in build-packages
+### 7. Generate JS SBOM in build-packages
 
 Ship the lockfile inside the tarball so Syft's pnpm cataloger sees the full resolved tree (without
 it, only direct deps from `package.json` appear). `pnpm pack` resolves `files` relative to the
@@ -237,7 +222,7 @@ node build provenance":
     ' packages/node/node_reqwest-*-js.cdx.json
 ```
 
-### 9. Attest and upload JS SBOM
+### 8. Attest JS SBOM
 
 New step after "Attest node build provenance":
 
@@ -249,16 +234,10 @@ New step after "Attest node build provenance":
     sbom-path: "packages/node/node_reqwest-*-js.cdx.json"
 ```
 
-Extend the existing upload step:
+Existing upload step in `build-packages` (release.yaml:155-160) is unchanged — SBOMs live in the
+attestation predicate, not as separate release assets.
 
-```bash
-gh release upload "$GITHUB_REF_NAME" \
-  packages/node/package.tar.gz \
-  packages/node/node_reqwest-*-js.cdx.json
-gh release edit "$GITHUB_REF_NAME" --draft=false
-```
-
-### 10. New job: smoke-sbom
+### 9. New job: smoke-sbom
 
 Add a top-level job under `jobs:` in `release.yaml`, alongside the existing `smoke-test`
 (release.yaml:203). Single-runner since SBOM/attestation verification doesn't depend on OS.
@@ -274,12 +253,6 @@ smoke-sbom:
   if: needs.publish.result == 'success'
   runs-on: "ubuntu-latest"
   steps:
-    - name: "Install syft"
-      # gh is preinstalled on ubuntu-latest
-      shell: "bash"
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
-          | sh -s -- -b /usr/local/bin v1.44.0
     - name: "Download release artifacts"
       shell: "bash"
       env:
@@ -288,34 +261,33 @@ smoke-sbom:
         mkdir -p sbom-check && cd sbom-check
         gh release download "$GITHUB_REF_NAME" \
           --repo vadimpiven/node_reqwest \
-          --pattern "*.cdx.json" \
           --pattern "*.node.gz" \
           --pattern "package.tar.gz"
-    - name: "Validate SBOM content"
-      shell: "bash"
-      run: |
-        cd sbom-check
-        for sbom in *.cdx.json; do
-          jq -e '.bomFormat == "CycloneDX"' "$sbom"
-          jq -e '.specVersion | startswith("1.")' "$sbom"
-        done
-    - name: "Verify attestations"
+    - name: "Verify attestation + extract SBOM"
       shell: "bash"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         cd sbom-check
         for artifact in *.node.gz package.tar.gz; do
+          # Verifies signature + transparency log inclusion, returns the
+          # attestation bundle (which embeds the SBOM as its predicate).
           gh attestation verify "$artifact" \
             --owner vadimpiven \
-            --predicate-type https://cyclonedx.org/bom
+            --predicate-type https://cyclonedx.org/bom \
+            --format json > "${artifact}.attestation.json"
+          # Extract the SBOM predicate and validate its shape.
+          jq -e '.[0].verificationResult.statement.predicate.bomFormat == "CycloneDX"' \
+            "${artifact}.attestation.json"
         done
 ```
 
 `gh attestation verify` reads the public transparency log; default `contents: read` is sufficient.
-`GITHUB_TOKEN` env is for rate limits only.
+`GITHUB_TOKEN` env is for rate limits only. The verify call returns the full attestation bundle
+including the SBOM predicate — no separate SBOM download needed since the SBOM lives in the
+attestation, not as a release asset.
 
-### 11. Add local mise task
+### 10. Add local mise task
 
 ```toml
 # mise.toml — workspace target dir is at repo root (./target/)
@@ -341,17 +313,19 @@ sources = ["Cargo.lock", "packages/*/Cargo.toml"]
 
 Add `/bom.json` to `.gitignore`.
 
-### 12. Update README
+### 11. Update README
 
 In `packages/node/README.md` > "Installation safety", after existing provenance text:
 
-> A [CycloneDX][cyclonedx] SBOM is attached to each GitHub Release: per-target Rust SBOMs (derived
-> from the `cargo-auditable` `.dep-v0` section embedded in each `.node.gz` binary) and a JS SBOM
-> for the npm tarball. Both are verifiable via the [GitHub Attestations API][gh-attest]:
+> A [CycloneDX][cyclonedx] SBOM is attested for every release artifact: per-target Rust SBOMs
+> (derived from the `cargo-auditable` `.dep-v0` section embedded in each `.node.gz` binary) and a
+> JS SBOM for the npm tarball. The SBOM lives inside the attestation predicate, retrievable via
+> the [GitHub Attestations API][gh-attest]:
 >
 > ```bash
 > gh attestation verify <artifact> --owner vadimpiven \
->   --predicate-type https://cyclonedx.org/bom
+>   --predicate-type https://cyclonedx.org/bom \
+>   --format json | jq '.[0].verificationResult.statement.predicate'
 > ```
 
 ## Scope of impact
@@ -359,12 +333,13 @@ In `packages/node/README.md` > "Installation safety", after existing provenance 
 - **`regular.yaml`**: unchanged in workflow logic. All builds (dev + CI) now go through
   `cargo auditable build` via `build:cargo` — negligible overhead, single code path.
 - **`release.yaml`**:
-  - `build-addon`: `cargo auditable build`, verify metadata, per-target Syft SBOM, attestation,
-    upload (§3–7).
-  - `build-packages`: lockfile-bundled tarball, Syft scan, JS SBOM attestation, upload (§8–9).
-  - `smoke-sbom` (new): single-runner SBOM/attestation verification (§10).
+  - `build-addon`: `cargo auditable build`, verify metadata, per-target Syft SBOM, attestation
+    (§3–6). Existing release upload unchanged — SBOMs live in the attestation predicate.
+  - `build-packages`: lockfile-bundled tarball, Syft scan, JS SBOM attestation (§7–8). Existing
+    release upload unchanged.
+  - `smoke-sbom` (new): single-runner attestation verification + SBOM extraction (§9).
   - `smoke-test`: unchanged.
-- **Local dev**: `mise run sbom` produces a host-target CycloneDX SBOM (§11).
+- **Local dev**: `mise run sbom` produces a host-target CycloneDX SBOM (§10).
 - **node-addon-slsa**: unchanged.
 
 ## Consumer scenarios
@@ -387,21 +362,30 @@ cargo audit bin node_modules/node-reqwest/dist/node_reqwest.node
 
 ### Bulk CVE response
 
-CVE drops for `rustls@0.23.x`. Security team downloads per-target SBOMs from the release, greps
-the affected crate, identifies impacted installations — target-exact, no false positives from
-features compiled out on their platform.
+CVE drops for `rustls@0.23.x`. Security team fetches each artifact's attestation, extracts the
+SBOM predicate, greps the affected crate, identifies impacted installations — target-exact, no
+false positives from features compiled out on their platform:
+
+```bash
+gh attestation verify <artifact> --owner vadimpiven \
+  --predicate-type https://cyclonedx.org/bom \
+  --format json \
+  | jq '.[0].verificationResult.statement.predicate.components[]
+        | select(.name == "rustls") | .version'
+```
 
 ## Implementation order
 
-Sections 1–12 are written in commit order:
+Sections 1–11 are written in commit order:
 
-- §1 + §2 (mise pins) land first — subsequent CI changes assume the tools are installed.
+- §1 + §2 (mise pins + Dockerfile bake) land first — subsequent CI changes assume the tools are
+  installed.
 - §3 + §4 are tightly coupled (auditable build + verify) — land together.
-- §5–§7 extend `build-addon` (Rust SBOM gen, attest, upload).
-- §8–§9 extend `build-packages` (JS SBOM gen, attest, upload).
-- §10 adds the verification job.
-- §11 is local-dev convenience — lands anytime.
-- §12 (README) lands last.
+- §5 + §6 extend `build-addon` (Rust SBOM gen, attest).
+- §7 + §8 extend `build-packages` (JS SBOM gen, attest).
+- §9 adds the verification job.
+- §10 is local-dev convenience — lands anytime.
+- §11 (README) lands last.
 
 After each set of CI changes, `mise run check` must pass (gate enforced by the Stop hook per
 `CLAUDE.md`). To validate the actual workflow, push a release-candidate tag (e.g. `v0.0.0-rc1`) —
@@ -418,9 +402,10 @@ Before the first real `v*` release tag, push a release-candidate tag and verify:
    preserves `.dep-v0`.
 3. Syft (§5) emits CycloneDX 1.6 with > 50 cargo-auditable components per target.
 4. `actions/attest-sbom` attestations appear in the public transparency log.
-5. JS SBOM (§8) contains transitive deps — look for resolved versions of indirect entries
+5. JS SBOM (§7) contains transitive deps — look for resolved versions of indirect entries
    (e.g. transitive `undici` or `@types/*`) to confirm `pnpm-lock.yaml` was bundled.
-6. `smoke-sbom` (§10) passes end-to-end.
+6. `smoke-sbom` (§9) passes end-to-end — attestation verifies AND the embedded SBOM predicate
+   is well-formed CycloneDX.
 7. `cargo audit bin` works on a notarized macOS `.node` extracted from `.node.gz` — confirms
    consumers can audit independently.
 
