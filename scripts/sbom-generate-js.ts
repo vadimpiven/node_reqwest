@@ -29,6 +29,7 @@ runScript("Generate JS SBOM", async () => {
     "node-reqwest",
     "--prod",
     "--legacy",
+    "--ignore-scripts",
     deployDir.path,
   ]);
   await runCommand("syft", [
