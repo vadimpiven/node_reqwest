@@ -93,10 +93,20 @@ jobs:
         with:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           run: 'pnpm -F "{packages/node}" run pack-addon'
+      - name: "Generate Rust SBOM"
+        uses: "./.github/actions/shell"
+        with:
+          docker-service: "${{ needs.init.outputs.docker-service }}"
+          run: "mise run sbom:rust"
       - name: "Attest build provenance"
         uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
         with:
           subject-path: "packages/node/dist/*.gz"
+      - name: "Attest Rust SBOM"
+        uses: "actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e" # v4.1.0
+        with:
+          subject-path: "packages/node/dist/*.node.gz"
+          sbom-path: "packages/node/dist/node_reqwest.cdx.json"
       - name: "Upload node addon"
         shell: "bash"
         env:
@@ -139,10 +149,20 @@ jobs:
           run: |
             pnpm -F "{packages/node}" run bump-version
             pnpm -F "{packages/node}" run build:ts
+      - name: "Generate JS SBOM"
+        uses: "./.github/actions/shell"
+        with:
+          docker-service: "${{ needs.init.outputs.docker-service }}"
+          run: "mise run sbom:js"
       - name: "Attest node build provenance"
         uses: "actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32" # v4.1.0
         with:
           subject-path: "packages/node/package.tar.gz"
+      - name: "Attest JS SBOM"
+        uses: "actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e" # v4.1.0
+        with:
+          subject-path: "packages/node/package.tar.gz"
+          sbom-path: "packages/node/package.cdx.json"
       - name: "Upload pre-packed tarball"
         uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
         with:

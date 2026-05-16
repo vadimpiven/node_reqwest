@@ -70,6 +70,14 @@
       "depNameTemplate": "github:{{packageName}}",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^(?:{{versionPrefix}})?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update CARGO_AUDITABLE_VERSION in mise.toml (consumed by scripts/setup-postinstall.ts)",
+      "managerFilePatterns": ["/^mise\\.toml$/"],
+      "matchStrings": ["CARGO_AUDITABLE_VERSION\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "cargo-auditable",
+      "datasourceTemplate": "crate"
     }
   ],
   "pinDigests": true,
