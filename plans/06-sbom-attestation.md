@@ -55,16 +55,49 @@ binary only embeds the deps the linker actually consumed.
 Pinned directly (not `anchore/sbom-action`, which lags Syft by 1–2 minor versions). Syft ≥ 1.15
 enables `cargo-auditable-binary-cataloger` by default; ≥ 1.8 emits CycloneDX 1.6 by default.
 
-### 2. Install cargo-auditable via mise
+### 2. Install cargo-auditable via mise + Dockerfile
+
+mise installs from upstream GitHub release binaries on every target where one exists. The single
+gap is linux-arm64 inside the manylinux_2_28 build container — upstream's only arm64 Linux binary
+is gnu/glibc 2.39, which won't execute on glibc 2.28. Handle that one case at image-build time
+inside the Dockerfile so there's zero per-CI-run compile.
 
 ```toml
 # mise.toml — add under [tools]
-"cargo:cargo-auditable" = "0.7.4"
+[tools."github:rust-secure-code/cargo-auditable"]
+version = "0.7.4"
+[tools."github:rust-secure-code/cargo-auditable".platforms]
+linux-x64    = { asset_pattern = "*-x86_64-unknown-linux-musl.tar.xz" }
+macos-x64    = { asset_pattern = "*-x86_64-apple-darwin.tar.xz" }
+macos-arm64  = { asset_pattern = "*-aarch64-apple-darwin.tar.xz" }
+windows-x64  = { asset_pattern = "*-x86_64-pc-windows-msvc.zip" }
+windows-arm64 = { asset_pattern = "*-aarch64-pc-windows-msvc.zip" }
+# linux-arm64: no manylinux-compatible upstream binary; installed via Dockerfile
 ```
 
-`cargo:` backend tries `cargo binstall` first (already pinned at `mise.toml:53`), falls back to
-source build. The fallback path is load-bearing on linux-arm64: only published arm64 Linux binary
-is glibc 2.39, our manylinux_2_28 base has glibc 2.28 — binstall fails, source build wins.
+Linux x86_64 uses the `musl` asset — static, runs in any container. macOS and Windows use native
+binaries. No `linux-arm64` entry means mise skips installation on that target; the Dockerfile must
+provide the binary.
+
+In the project Dockerfile at the repo root, after the mise install block (Dockerfile:27-32), add a
+step that installs cargo-auditable into the manylinux image. Run only on the arm64 build (the
+x86_64 build picks it up from mise's musl asset; doing this for both arches is harmless but
+unnecessary):
+
+```dockerfile
+# Dockerfile — after mise install, before user setup
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    if [ "$(uname -m)" = "aarch64" ]; then \
+      eval "$(mise activate bash)" && \
+      cargo install cargo-auditable --version 0.7.4 --locked \
+        --root /usr/local && \
+      cargo-auditable --version; \
+    fi
+```
+
+Single compile per image rebuild, cached in a Docker layer. Subsequent `docker build` runs reuse
+the layer; CI runs see a pre-installed binary. Bump `--version` in lockstep with the mise.toml pin
+when upgrading.
 
 ### 3. Compile release builds with cargo-auditable
 
