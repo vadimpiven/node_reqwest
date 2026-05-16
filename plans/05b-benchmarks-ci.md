@@ -37,14 +37,14 @@ median + p95 latency exceed the documented threshold versus `undici.Agent`.
 ```text
 GitHub Action (Node 20 + 22 matrix)
   └─► Build cache restore (or build)
-       └─► pnpm run bench:setup (TLS certs)
-            └─► Per-benchmark job (if: always())
-                 ├─► Start server (background, PID captured)
-                 ├─► curl --retry readiness probe
-                 ├─► Run cronometro (warmup → 30 samples)
-                 ├─► Compare p50 + p95 vs undici.Agent
-                 ├─► Cleanup (close agents) → upload artifact
-                 └─► kill $(cat server.pid)
+       └─► Per-benchmark job (if: always())
+            ├─► Start server (background, PID captured)
+            │     └─► HTTP/2 server self-generates TLS cert in-memory
+            ├─► curl --retry readiness probe
+            ├─► Run cronometro (warmup → 30 samples)
+            ├─► Compare p50 + p95 vs undici.Agent
+            ├─► Cleanup (close agents) → upload artifact
+            └─► kill $(cat server.pid)
 ```
 
 ## Implementation
@@ -209,15 +209,17 @@ const dispatchOpts = {
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 import process from "node:process";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { Agent as UndiciAgent } from "undici";
 import { Agent as NodeReqwestAgent } from "../dist/index.ts";
 import { cronometro } from "cronometro";
 import { makeParallelRequests, printResults, warmup } from "./_util/index.ts";
 import { config } from "./config.ts";
 
-const ca = readFileSync(join(import.meta.dirname, "../test/fixtures/cert.pem"));
+// CA comes from the server's stdout marker (BENCH_EMIT_CA=1 in the
+// server). CI captures it and passes via BENCH_CA env. See 05a.
+const ca = process.env.BENCH_CA
+    ? Buffer.from(process.env.BENCH_CA, "base64").toString("utf8")
+    : "";
 const serverUrl = process.env.SERVER_URL ?? "https://localhost:3001";
 const verifyTls = process.env.BENCH_VERIFY_TLS === "1";
 
@@ -225,7 +227,7 @@ const verifyTls = process.env.BENCH_VERIFY_TLS === "1";
 // stays true when verifyTls=1 so we exercise the cert path.
 const undiciAgent = new UndiciAgent({
     allowH2: true,
-    connect: { ca, rejectUnauthorized: verifyTls },
+    connect: verifyTls ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: false },
 });
 
 // node_reqwest accepts `ca` as PEM string(s) at the top-level options bag,
@@ -234,7 +236,7 @@ const undiciAgent = new UndiciAgent({
 const nodeReqwestAgent = new NodeReqwestAgent({
     allowH2: true,
     rejectUnauthorized: verifyTls,
-    ca: [ca.toString("utf8")],
+    ca: verifyTls ? [ca] : undefined,
 });
 
 // (runUndici, runReqwest, warmup, cronometro, checkRegression, finally-cleanup:
@@ -291,14 +293,12 @@ jobs:
             - run: pnpm install
             - run: pnpm -F core build
             - run: pnpm -F node_reqwest build
-            - run: pnpm -F node_reqwest run bench:setup
             - uses: actions/upload-artifact@v4
               with:
                   name: bench-build-node${{ matrix.node }}
                   path: |
                       packages/node/index.node
                       packages/node/dist
-                      packages/node/test/fixtures
                   retention-days: 1
 
     bench-http1-get:
@@ -360,8 +360,10 @@ jobs:
             fail-fast: false
             matrix:
                 node: ["20", "22"]
-        # (boots bench:server:http2 on port 3001 with curl -k retry probe;
-        # runs bench:http2 then bench:http2 with BENCH_VERIFY_TLS=1 smoke variant)
+        # Boots bench:server:http2 on port 3001 with BENCH_EMIT_CA=1; the
+        # CI step captures the __BENCH_CA__ stdout marker and exports
+        # BENCH_CA. Curl -k retry probe for readiness. Runs bench:http2,
+        # then re-runs with BENCH_VERIFY_TLS=1 as a smoke variant.
 
     bench-http2-post:
         needs: build

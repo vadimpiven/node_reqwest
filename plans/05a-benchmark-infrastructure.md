@@ -177,19 +177,35 @@ runServer(server, "http1-server");
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 import http2 from "node:http2";
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
 import process from "node:process";
+import { generate } from "selfsigned";
 import { runServer } from "./run-server.ts";
 
-const fixturesDir = join(import.meta.dirname, "../../test/fixtures");
+// In-memory self-signed cert at server startup. No fixture files, no
+// setup step.
+const { cert, private: key } = generate(
+    [{ name: "commonName", value: "localhost" }],
+    {
+        keySize: 2048,
+        algorithm: "sha256",
+        extensions: [
+            {
+                name: "subjectAltName",
+                altNames: [
+                    { type: 2, value: "localhost" },
+                    { type: 7, ip: "127.0.0.1" },
+                    { type: 7, ip: "::1" },
+                ],
+            },
+        ],
+    },
+);
 
-if (!existsSync(join(fixturesDir, "key.pem"))) {
-    console.error("TLS certificates not found. Run: pnpm run bench:setup");
-    process.exit(1);
+// Expose the CA so the bench client can trust it without
+// rejectUnauthorized: false (BENCH_VERIFY_TLS=1 mode).
+if (process.env.BENCH_EMIT_CA === "1") {
+    process.stdout.write(`__BENCH_CA__${Buffer.from(cert).toString("base64")}\n`);
 }
-const key = readFileSync(join(fixturesDir, "key.pem"));
-const cert = readFileSync(join(fixturesDir, "cert.pem"));
 
 const responseBody = Buffer.from("Hello, World!");
 
@@ -222,37 +238,18 @@ runServer(server, "http2-server");
 Minimum Node target is 20.11+ (project requirement); `import.meta.dirname` is
 available since Node 20.11 / 22+.
 
-### packages/node/benchmarks/servers/setup-certs.sh
-
-```bash
-#!/usr/bin/env bash
-# SPDX-License-Identifier: Apache-2.0 OR MIT
-
-set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FIXTURES_DIR="${SCRIPT_DIR}/../../test/fixtures"
-
-mkdir -p "${FIXTURES_DIR}"
-
-if [[ ! -f "${FIXTURES_DIR}/key.pem" ]]; then
-  openssl req -x509 -newkey rsa:2048 \
-    -keyout "${FIXTURES_DIR}/key.pem" \
-    -out "${FIXTURES_DIR}/cert.pem" \
-    -days 365 -nodes \
-    -subj "/CN=localhost"
-  echo "Generated TLS certificates in ${FIXTURES_DIR}"
-else
-  echo "TLS certificates already exist"
-fi
-```
+TLS certs are generated in-memory by the HTTP/2 server at startup via the
+`selfsigned` npm package — no `openssl` invocation, no on-disk fixtures, no
+`bench:setup` step. The HTTP/2 client uses `rejectUnauthorized: false` by
+default; setting `BENCH_VERIFY_TLS=1` flips the server to emit its CA cert on
+stdout (parsed by CI) and the client to pass it via `tls.ca`, exercising the
+verification path that catches a silent TLS bypass.
 
 ### packages/node/package.json (scripts)
 
 ```json
 {
     "scripts": {
-        "bench:setup": "bash benchmarks/servers/setup-certs.sh",
         "bench:server:http1": "tsx benchmarks/servers/http1-server.ts",
         "bench:server:http2": "tsx benchmarks/servers/http2-server.ts",
         "bench:http1": "tsx benchmarks/http1.ts",
@@ -287,11 +284,6 @@ packages/node/
 │   └── servers/
 │       ├── http1-server.ts
 │       ├── http2-server.ts
-│       ├── run-server.ts
-│       └── setup-certs.sh
-├── test/
-│   └── fixtures/
-│       ├── key.pem (generated)
-│       └── cert.pem (generated)
+│       └── run-server.ts
 └── package.json
 ```

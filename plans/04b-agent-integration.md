@@ -345,17 +345,12 @@ function buildCreationOptions(options?: AgentOptions): AgentCreationOptions {
         }
     }
 
-    // Proxy: default is NO proxy (matches undici). Opt into env via
-    // `{ type: "system" }`.
+    // Proxy default: `{ type: "system" }` — honors HTTP_PROXY/HTTPS_PROXY
+    // env vars. Deliberate divergence from undici (which has no implicit
+    // proxy). Rationale: node-reqwest's selling point is "system proxy
+    // out of the box" (see packages/node/README.md). To opt out, pass
+    // `proxy: { type: "custom", uri: "" }` or set HTTP_PROXY="".
     const proxy: ProxyOptions = options?.proxy ?? { type: "system" };
-    // ^ NOTE: per Node Important review, undici's true default is no
-    //   proxy. We diverge intentionally — most blocks run behind a
-    //   corporate HTTP_PROXY and expecting it is the pit-of-success
-    //   path. If you want strict undici parity, pass `{ type: "custom",
-    //   uri: "" }` ... — TBD: confirm with platform team before GA.
-    //
-    // [TODO: decision pending — keep system default for blocks, or
-    //  match undici strictly? Filed in plans/_decisions.md]
 
     return {
         allowH2: options?.allowH2 ?? true,
@@ -1100,9 +1095,45 @@ describe("E2E Options", () => {
     });
 
     it("TLS error with self-signed cert", async () => {
-        // Uses a public self-signed test endpoint or a test fixture
-        // server with self-signed cert (set up in tests/fixtures/tls/).
-        // [TODO: wire fixture per tests/fixtures/tls/README]
+        // Generate a throwaway cert in-memory via `selfsigned`. No
+        // on-disk fixtures.
+        const { generate } = await import("selfsigned");
+        const { cert, private: key } = generate(
+            [{ name: "commonName", value: "localhost" }],
+            { keySize: 2048, algorithm: "sha256" },
+        );
+        const { createServer } = await import("node:https");
+        const server = createServer({ cert, key }, (_, res) => {
+            res.writeHead(200);
+            res.end("ok");
+        });
+        await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+        const port = (server.address() as AddressInfo).port;
+
+        agent = new Agent(); // default rejectUnauthorized: true
+
+        const err = await new Promise<Error>((resolve) => {
+            agent!.dispatch(
+                { origin: `https://127.0.0.1:${port}`, path: "/", method: "GET" },
+                {
+                    onResponseError: (_c, e) => resolve(e),
+                    onResponseEnd: () =>
+                        resolve(new Error("expected TLS error")),
+                },
+            );
+        });
+        await new Promise<void>((r) => server.close(() => r()));
+        expect(err).toBeInstanceOf(SocketError);
+    });
+
+    it("trusts a CA passed via tls.ca", async () => {
+        const { generate } = await import("selfsigned");
+        const { cert, private: key } = generate(
+            [{ name: "commonName", value: "localhost" }],
+            { keySize: 2048, algorithm: "sha256" },
+        );
+        // ... start server with cert, build Agent({ tls: { ca: [cert] } }),
+        //     assert dispatch succeeds.
     });
 
     it("maxResponseSize caps decoded body", async () => {
