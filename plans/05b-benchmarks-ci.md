@@ -1,148 +1,188 @@
 # Benchmarks + CI (Chunk 05b)
 
 Four `cronometro` benchmark scripts (HTTP/1 GET, HTTP/1 POST stream, HTTP/2 GET, HTTP/2
-POST stream) compare `node_reqwest` against undici. CI fails when `node_reqwest` mean
-latency exceeds 105% of undici's.
+POST stream) compare `node_reqwest` against undici. CI fails when `node_reqwest`
+median + p95 latency exceed the documented threshold versus `undici.Agent`.
+
+## Methodology
+
+- **Comparator**: `undici.Agent` is the default-config peer of `node_reqwest`'s
+  `Agent` and is used for every benchmark in this chunk. `undici.Pool` /
+  `undici.Client` ship explicit connection-limit + pipelining knobs we do not
+  expose; comparing against them is apples-to-oranges. (A separate `Pool` /
+  `Client` benchmark may be added later as an explicit pool-tuning scenario;
+  it does not gate CI.)
+- **Warmup**: 100 sequential requests before each cronometro invocation
+  (`config.warmupRequests`), plus `warmup: true` in cronometro options. Primes the
+  connection pool, TLS handshake, and V8 JIT before timed samples.
+- **Samples**: 30 iterations (`SAMPLES=30`) × `PARALLEL=100` requests each.
+- **Metrics**: cronometro reports `mean`, `standardError`, `percentiles[50]`,
+  `percentiles[95]`. The regression check uses **median (p50) and p95 latency
+  ratios**, not raw mean.
+- **Threshold (shared `ubuntu-latest`)**: soft fail (warn) at 10%, hard fail at
+  15%. Both p50 and p95 must satisfy `node_reqwest / undici ≤ 1.15`. Variance
+  on shared runners commonly hits 10% — a tighter bound flaps. Equivalent
+  throughput ratio: `node_reqwest_throughput / undici_throughput ≥ 0.87` on
+  median. The 00-overview "≥95% throughput" headline target is the goal on
+  dedicated hardware; CI tracks the looser shared-runner bound.
+- **No `errorThreshold`**: zero tolerated request failures. Masked errors hide
+  connection-reset bugs.
+- **TLS**: HTTP/2 benchmarks run two variants — `rejectUnauthorized: false` for
+  perf, and a `rejectUnauthorized: true` smoke variant that exercises the cert
+  trust path (skipped from regression gating, asserted only to succeed). This
+  catches silent TLS bypass where `ca:` is accepted but ignored.
 
 ## Flow
 
 ```text
-GitHub Action
-  └─► pnpm run bench:setup (TLS certs)
-       └─► Start servers (background)
-            └─► Run cronometro
-                 └─► Compare node_reqwest vs undici
-                      └─► Exit 1 if mean > 105% of undici
+GitHub Action (Node 20 + 22 matrix)
+  └─► Build cache restore (or build)
+       └─► pnpm run bench:setup (TLS certs)
+            └─► Per-benchmark job (if: always())
+                 ├─► Start server (background, PID captured)
+                 ├─► curl --retry readiness probe
+                 ├─► Run cronometro (warmup → 30 samples)
+                 ├─► Compare p50 + p95 vs undici.Agent
+                 ├─► Cleanup (close agents) → upload artifact
+                 └─► kill $(cat server.pid)
 ```
 
 ## Implementation
 
-### packages/node/benchmarks/http1.js
+### packages/node/benchmarks/http1.ts
 
-```javascript
+```typescript
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import { Pool as UndiciPool } from "undici";
-// Note: This imports from the built output. Ensure `pnpm build` is run first.
-import { Agent as NodeReqwestAgent } from "../dist/index.js";
+import process from "node:process";
+import { Agent as UndiciAgent } from "undici";
+import { Agent as NodeReqwestAgent } from "../dist/index.ts";
 import { cronometro } from "cronometro";
-import { makeParallelRequests, printResults } from "./_util/index.js";
-import { config } from "./config.js";
+import { makeParallelRequests, printResults, warmup } from "./_util/index.ts";
+import { config } from "./config.ts";
 
-const serverUrl = process.env.SERVER_URL || "http://localhost:3000";
+const serverUrl = process.env.SERVER_URL ?? "http://localhost:3000";
 
-const undiciPool = new UndiciPool(serverUrl, {
-    connections: config.connections,
-    pipelining: config.pipelining,
-});
-
+const undiciAgent = new UndiciAgent();
 const nodeReqwestAgent = new NodeReqwestAgent();
 
 const requestOptions = {
     path: "/",
-    method: "GET",
+    method: "GET" as const,
     headersTimeout: config.headersTimeout,
     bodyTimeout: config.bodyTimeout,
 };
 
-const experiments = {
-    "undici - dispatch": () => {
-        return makeParallelRequests((resolve, reject) => {
-            undiciPool.dispatch(
-                { origin: serverUrl, ...requestOptions },
-                {
-                    onRequestStart() {},
-                    onResponseStart() {},
-                    onResponseData() {},
-                    onResponseEnd() {
-                        resolve();
-                    },
-                    onResponseError(_controller, err) {
-                        reject(err);
-                    },
-                },
-            );
-        }, config.parallelRequests);
-    },
+function runUndici(resolve: () => void, reject: (err: Error) => void): void {
+    undiciAgent.dispatch(
+        { origin: serverUrl, ...requestOptions },
+        {
+            onRequestStart() {},
+            onResponseStart() {},
+            onResponseData() {},
+            onResponseEnd() { resolve(); },
+            onResponseError(_c, err) { reject(err); },
+        },
+    );
+}
 
-    "node_reqwest - dispatch": () => {
-        return makeParallelRequests((resolve, reject) => {
-            nodeReqwestAgent.dispatch(
-                { origin: serverUrl, ...requestOptions },
-                {
-                    onRequestStart() {},
-                    onResponseStart() {},
-                    onResponseData() {},
-                    onResponseEnd() {
-                        resolve();
-                    },
-                    onResponseError(_controller, err) {
-                        reject(err);
-                    },
-                },
-            );
-        }, config.parallelRequests);
-    },
+function runReqwest(resolve: () => void, reject: (err: Error) => void): void {
+    nodeReqwestAgent.dispatch(
+        { origin: serverUrl, ...requestOptions },
+        {
+            onRequestStart() {},
+            onResponseStart() {},
+            onResponseData() {},
+            onResponseEnd() { resolve(); },
+            onResponseError(_c, err) { reject(err); },
+        },
+    );
+}
+
+const experiments = {
+    "undici.Agent - dispatch": () =>
+        makeParallelRequests(runUndici, config.parallelRequests),
+    "node_reqwest - dispatch": () =>
+        makeParallelRequests(runReqwest, config.parallelRequests),
 };
+
+await warmup(runUndici, config.warmupRequests);
+await warmup(runReqwest, config.warmupRequests);
 
 cronometro(
     experiments,
-    {
-        iterations: config.iterations,
-        errorThreshold: config.errorThreshold,
-        print: false,
-    },
-    (err, results) => {
-        if (err) throw err;
-
-        printResults(results, config.parallelRequests);
-
-        const undiciResult = results["undici - dispatch"];
-        const reqwestResult = results["node_reqwest - dispatch"];
-
-        if (undiciResult.success && reqwestResult.success) {
-            const ratio = reqwestResult.mean / undiciResult.mean;
-            if (ratio > 1.05) {
-                console.error(
-                    `Performance regression: node_reqwest is ${((ratio - 1) * 100).toFixed(2)}% slower than undici`,
-                );
-                process.exit(1);
-            }
-            console.log(
-                `Performance OK: node_reqwest is within ${((ratio - 1) * 100).toFixed(2)}% of undici`,
-            );
+    { iterations: config.iterations, warmup: true, print: false },
+    async (err, results) => {
+        let exitCode = 0;
+        try {
+            if (err) throw err;
+            printResults(results, config.parallelRequests);
+            exitCode = checkRegression(results, "undici.Agent - dispatch",
+                "node_reqwest - dispatch");
+        } finally {
+            await Promise.allSettled([undiciAgent.close(), nodeReqwestAgent.close()]);
+            process.exit(exitCode);
         }
-
-        undiciPool.close();
-        nodeReqwestAgent.close();
     },
 );
+
+function checkRegression(
+    results: Record<string, { success: boolean; percentiles?: Record<string, number> }>,
+    baseline: string,
+    candidate: string,
+): number {
+    const b = results[baseline];
+    const c = results[candidate];
+    if (!b?.success || !c?.success) {
+        console.error("One or more benchmarks failed");
+        return 1;
+    }
+    const bP50 = b.percentiles?.["50"] ?? 0;
+    const bP95 = b.percentiles?.["95"] ?? 0;
+    const cP50 = c.percentiles?.["50"] ?? 0;
+    const cP95 = c.percentiles?.["95"] ?? 0;
+    const r50 = cP50 / bP50;
+    const r95 = cP95 / bP95;
+    console.log(`p50 ratio: ${r50.toFixed(3)} | p95 ratio: ${r95.toFixed(3)}`);
+    if (r50 > 1.15 || r95 > 1.15) {
+        console.error(`Hard regression: p50=${r50.toFixed(3)} p95=${r95.toFixed(3)}`);
+        return 1;
+    }
+    if (r50 > 1.10 || r95 > 1.10) {
+        console.warn(`Soft regression: p50=${r50.toFixed(3)} p95=${r95.toFixed(3)}`);
+    }
+    return 0;
+}
 ```
 
-### packages/node/benchmarks/http1-post.js
+Cleanup happens in `finally` **before** `process.exit`, so sockets close even on
+regression. `await` is used on agent `close()` calls (Node-review: `nodeReqwestAgent.close()`
+was previously fire-and-forget).
 
-```javascript
+### packages/node/benchmarks/http1-post.ts
+
+Structurally identical to `http1.ts`, with POST + streaming body:
+
+```typescript
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import { Pool as UndiciPool } from "undici";
-import { Agent as NodeReqwestAgent } from "../dist/index.js";
+import process from "node:process";
+import { Agent as UndiciAgent } from "undici";
+import { Agent as NodeReqwestAgent } from "../dist/index.ts";
 import { cronometro } from "cronometro";
-import { makeParallelRequests, printResults } from "./_util/index.js";
-import { config } from "./config.js";
 import { Readable } from "node:stream";
+import { makeParallelRequests, printResults, warmup } from "./_util/index.ts";
+import { config } from "./config.ts";
 
-const serverUrl = process.env.SERVER_URL || "http://localhost:3000";
-const bodySize = parseInt(process.env.BODY_SIZE, 10) || 1024; // 1KB default
+const serverUrl = process.env.SERVER_URL ?? "http://localhost:3000";
+const bodySize = Number.parseInt(process.env.BODY_SIZE ?? "", 10);
+const BODY_SIZE = Number.isFinite(bodySize) ? bodySize : 1024;
 
-const undiciPool = new UndiciPool(serverUrl, {
-    connections: config.connections,
-    pipelining: config.pipelining,
-});
-
+const undiciAgent = new UndiciAgent();
 const nodeReqwestAgent = new NodeReqwestAgent();
 
-function createStreamBody() {
-    const chunk = Buffer.alloc(bodySize, "x");
+function createStreamBody(): Readable {
+    const chunk = Buffer.alloc(BODY_SIZE, "x");
     return new Readable({
         read() {
             this.push(chunk);
@@ -151,345 +191,65 @@ function createStreamBody() {
     });
 }
 
-const experiments = {
-    "undici - POST stream": () => {
-        return makeParallelRequests((resolve, reject) => {
-            undiciPool.dispatch(
-                {
-                    origin: serverUrl,
-                    path: "/upload",
-                    method: "POST",
-                    headers: { "content-type": "application/octet-stream" },
-                    body: createStreamBody(),
-                    headersTimeout: config.headersTimeout,
-                    bodyTimeout: config.bodyTimeout,
-                },
-                {
-                    onRequestStart() {},
-                    onResponseStart() {},
-                    onResponseData() {},
-                    onResponseEnd() {
-                        resolve();
-                    },
-                    onResponseError(_controller, err) {
-                        reject(err);
-                    },
-                },
-            );
-        }, config.parallelRequests);
-    },
-
-    "node_reqwest - POST stream": () => {
-        return makeParallelRequests((resolve, reject) => {
-            nodeReqwestAgent.dispatch(
-                {
-                    origin: serverUrl,
-                    path: "/upload",
-                    method: "POST",
-                    headers: { "content-type": "application/octet-stream" },
-                    body: createStreamBody(),
-                    headersTimeout: config.headersTimeout,
-                    bodyTimeout: config.bodyTimeout,
-                },
-                {
-                    onRequestStart() {},
-                    onResponseStart() {},
-                    onResponseData() {},
-                    onResponseEnd() {
-                        resolve();
-                    },
-                    onResponseError(_controller, err) {
-                        reject(err);
-                    },
-                },
-            );
-        }, config.parallelRequests);
-    },
-};
-
-cronometro(
-    experiments,
-    {
-        iterations: config.iterations,
-        errorThreshold: config.errorThreshold,
-        print: false,
-    },
-    (err, results) => {
-        if (err) throw err;
-
-        console.log(`\nPOST Streaming Body Benchmark (${bodySize} bytes per request):`);
-        printResults(results, config.parallelRequests);
-
-        const undiciResult = results["undici - POST stream"];
-        const reqwestResult = results["node_reqwest - POST stream"];
-
-        if (undiciResult.success && reqwestResult.success) {
-            const ratio = reqwestResult.mean / undiciResult.mean;
-            if (ratio > 1.05) {
-                console.error(
-                    `Performance regression: node_reqwest POST is ${((ratio - 1) * 100).toFixed(2)}% slower than undici`,
-                );
-                process.exit(1);
-            }
-            console.log(
-                `Performance OK: node_reqwest POST is within ${((ratio - 1) * 100).toFixed(2)}% of undici`,
-            );
-        }
-
-        undiciPool.close();
-        nodeReqwestAgent.close();
-    },
-);
-```
-
-### packages/node/benchmarks/http2.js
-
-```javascript
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-
-import { Client as UndiciClient } from "undici";
-// Note: This imports from the built output. Ensure `pnpm build` is run first.
-import { Agent as NodeReqwestAgent } from "../dist/index.js";
-import { cronometro } from "cronometro";
-import { makeParallelRequests, printResults } from "./_util/index.js";
-import { config } from "./config.js";
-import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ca = readFileSync(join(__dirname, "../test/fixtures/cert.pem"));
-
-const serverUrl = process.env.SERVER_URL || "https://localhost:3001";
-
-const undiciClient = new UndiciClient(serverUrl, {
-    connect: { ca, rejectUnauthorized: false },
-    allowH2: true,
-});
-
-const nodeReqwestAgent = new NodeReqwestAgent({
-    connection: {
-        allowH2: true,
-        rejectUnauthorized: false,
-        ca: [ca.toString()],
-    },
-});
-
-const requestOptions = {
-    path: "/",
-    method: "GET",
+const dispatchOpts = {
+    path: "/upload",
+    method: "POST" as const,
+    headers: { "content-type": "application/octet-stream" },
     headersTimeout: config.headersTimeout,
     bodyTimeout: config.bodyTimeout,
 };
 
-const experiments = {
-    "undici - dispatch (H2)": () => {
-        return makeParallelRequests((resolve, reject) => {
-            undiciClient.dispatch(
-                { origin: serverUrl, ...requestOptions },
-                {
-                    onRequestStart() {},
-                    onResponseStart() {},
-                    onResponseData() {},
-                    onResponseEnd() {
-                        resolve();
-                    },
-                    onResponseError(_controller, err) {
-                        reject(err);
-                    },
-                },
-            );
-        }, config.parallelRequests);
-    },
-
-    "node_reqwest - dispatch (H2)": () => {
-        return makeParallelRequests((resolve, reject) => {
-            nodeReqwestAgent.dispatch(
-                { origin: serverUrl, ...requestOptions },
-                {
-                    onRequestStart() {},
-                    onResponseStart() {},
-                    onResponseData() {},
-                    onResponseEnd() {
-                        resolve();
-                    },
-                    onResponseError(_controller, err) {
-                        reject(err);
-                    },
-                },
-            );
-        }, config.parallelRequests);
-    },
-};
-
-cronometro(
-    experiments,
-    {
-        iterations: config.iterations,
-        errorThreshold: config.errorThreshold,
-        print: false,
-    },
-    (err, results) => {
-        if (err) throw err;
-
-        printResults(results, config.parallelRequests);
-
-        const undiciResult = results["undici - dispatch (H2)"];
-        const reqwestResult = results["node_reqwest - dispatch (H2)"];
-
-        if (undiciResult.success && reqwestResult.success) {
-            const ratio = reqwestResult.mean / undiciResult.mean;
-            if (ratio > 1.05) {
-                console.error(
-                    `Performance regression: node_reqwest is ${((ratio - 1) * 100).toFixed(2)}% slower than undici (H2)`,
-                );
-                process.exit(1);
-            }
-            console.log(
-                `Performance OK: node_reqwest H2 is within ${((ratio - 1) * 100).toFixed(2)}% of undici`,
-            );
-        }
-
-        undiciClient.close();
-        nodeReqwestAgent.close();
-    },
-);
+// (runUndici, runReqwest, warmup, cronometro, checkRegression, finally-cleanup:
+// identical pattern to http1.ts. Each dispatch() builds a fresh stream body.)
 ```
 
-### packages/node/benchmarks/http2-post.js
+### packages/node/benchmarks/http2.ts
 
-```javascript
+```typescript
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import { Client as UndiciClient } from "undici";
-import { Agent as NodeReqwestAgent } from "../dist/index.js";
-import { cronometro } from "cronometro";
-import { makeParallelRequests, printResults } from "./_util/index.js";
-import { config } from "./config.js";
+import process from "node:process";
 import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { Readable } from "node:stream";
+import { join } from "node:path";
+import { Agent as UndiciAgent } from "undici";
+import { Agent as NodeReqwestAgent } from "../dist/index.ts";
+import { cronometro } from "cronometro";
+import { makeParallelRequests, printResults, warmup } from "./_util/index.ts";
+import { config } from "./config.ts";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ca = readFileSync(join(__dirname, "../test/fixtures/cert.pem"));
+const ca = readFileSync(join(import.meta.dirname, "../test/fixtures/cert.pem"));
+const serverUrl = process.env.SERVER_URL ?? "https://localhost:3001";
+const verifyTls = process.env.BENCH_VERIFY_TLS === "1";
 
-const serverUrl = process.env.SERVER_URL || "https://localhost:3001";
-const bodySize = parseInt(process.env.BODY_SIZE, 10) || 1024;
-
-const undiciClient = new UndiciClient(serverUrl, {
-    connect: { ca, rejectUnauthorized: false },
+// undici.Agent options: connect.ca passes the trust anchor; rejectUnauthorized
+// stays true when verifyTls=1 so we exercise the cert path.
+const undiciAgent = new UndiciAgent({
     allowH2: true,
+    connect: { ca, rejectUnauthorized: verifyTls },
 });
 
+// node_reqwest accepts `ca` as PEM string(s) at the top-level options bag,
+// matching the AgentOptions shape (see 04b). When verifyTls=1, the bench
+// asserts the cert is actually checked (no silent bypass).
 const nodeReqwestAgent = new NodeReqwestAgent({
-    connection: {
-        allowH2: true,
-        rejectUnauthorized: false,
-        ca: [ca.toString()],
-    },
+    allowH2: true,
+    rejectUnauthorized: verifyTls,
+    ca: [ca.toString("utf8")],
 });
 
-function createStreamBody() {
-    const chunk = Buffer.alloc(bodySize, "x");
-    return new Readable({
-        read() {
-            this.push(chunk);
-            this.push(null);
-        },
-    });
-}
-
-const experiments = {
-    "undici - POST stream (H2)": () => {
-        return makeParallelRequests((resolve, reject) => {
-            undiciClient.dispatch(
-                {
-                    origin: serverUrl,
-                    path: "/upload",
-                    method: "POST",
-                    headers: { "content-type": "application/octet-stream" },
-                    body: createStreamBody(),
-                    headersTimeout: config.headersTimeout,
-                    bodyTimeout: config.bodyTimeout,
-                },
-                {
-                    onRequestStart() {},
-                    onResponseStart() {},
-                    onResponseData() {},
-                    onResponseEnd() {
-                        resolve();
-                    },
-                    onResponseError(_controller, err) {
-                        reject(err);
-                    },
-                },
-            );
-        }, config.parallelRequests);
-    },
-
-    "node_reqwest - POST stream (H2)": () => {
-        return makeParallelRequests((resolve, reject) => {
-            nodeReqwestAgent.dispatch(
-                {
-                    origin: serverUrl,
-                    path: "/upload",
-                    method: "POST",
-                    headers: { "content-type": "application/octet-stream" },
-                    body: createStreamBody(),
-                    headersTimeout: config.headersTimeout,
-                    bodyTimeout: config.bodyTimeout,
-                },
-                {
-                    onRequestStart() {},
-                    onResponseStart() {},
-                    onResponseData() {},
-                    onResponseEnd() {
-                        resolve();
-                    },
-                    onResponseError(_controller, err) {
-                        reject(err);
-                    },
-                },
-            );
-        }, config.parallelRequests);
-    },
-};
-
-cronometro(
-    experiments,
-    {
-        iterations: config.iterations,
-        errorThreshold: config.errorThreshold,
-        print: false,
-    },
-    (err, results) => {
-        if (err) throw err;
-
-        console.log(`\nPOST Streaming Body Benchmark H2 (${bodySize} bytes per request):`);
-        printResults(results, config.parallelRequests);
-
-        const undiciResult = results["undici - POST stream (H2)"];
-        const reqwestResult = results["node_reqwest - POST stream (H2)"];
-
-        if (undiciResult.success && reqwestResult.success) {
-            const ratio = reqwestResult.mean / undiciResult.mean;
-            if (ratio > 1.05) {
-                console.error(
-                    `Performance regression: node_reqwest POST H2 is ${((ratio - 1) * 100).toFixed(2)}% slower than undici`,
-                );
-                process.exit(1);
-            }
-            console.log(
-                `Performance OK: node_reqwest POST H2 is within ${((ratio - 1) * 100).toFixed(2)}% of undici`,
-            );
-        }
-
-        undiciClient.close();
-        nodeReqwestAgent.close();
-    },
-);
+// (runUndici, runReqwest, warmup, cronometro, checkRegression, finally-cleanup:
+// identical pattern to http1.ts.)
 ```
+
+Both clients receive the same CA trust anchor. The `BENCH_VERIFY_TLS=1` variant
+runs the bench with `rejectUnauthorized: true` to confirm `ca:` is honored —
+without this, an implementation that silently treats `ca` as a no-op and skips
+verification would pass the perf bench unnoticed.
+
+### packages/node/benchmarks/http2-post.ts
+
+Combines the http2.ts TLS setup with the http1-post.ts streaming-body pattern.
+Same `verifyTls` smoke variant. Cleanup in `finally` before exit.
 
 ### .github/workflows/benchmark.yml
 
@@ -504,109 +264,176 @@ on:
             - ".github/workflows/benchmark.yml"
 
 jobs:
-    benchmark:
+    build:
         runs-on: ubuntu-latest
-        timeout-minutes: 15
-
+        strategy:
+            matrix:
+                node: ["20", "22"]
+        outputs:
+            cache-key: ${{ steps.cache-key.outputs.key }}
         steps:
             - uses: actions/checkout@v4
-
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
-
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
               with:
-                  node-version: "22"
+                  node-version: ${{ matrix.node }}
                   cache: "pnpm"
+            - uses: dtolnay/rust-toolchain@stable
+            - id: cache-key
+              run: echo "key=bench-${{ matrix.node }}-${{ hashFiles('**/Cargo.lock', '**/pnpm-lock.yaml') }}" >> "$GITHUB_OUTPUT"
+            - uses: actions/cache@v4
+              with:
+                  path: |
+                      packages/node/index.node
+                      packages/node/dist
+                      packages/core/target
+                  key: ${{ steps.cache-key.outputs.key }}
+            - run: pnpm install
+            - run: pnpm -F core build
+            - run: pnpm -F node_reqwest build
+            - run: pnpm -F node_reqwest run bench:setup
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: bench-build-node${{ matrix.node }}
+                  path: |
+                      packages/node/index.node
+                      packages/node/dist
+                      packages/node/test/fixtures
+                  retention-days: 1
 
-            - name: Setup Rust
-              uses: dtolnay/rust-toolchain@stable
-
-            - name: Install dependencies
-              run: pnpm install
-
-            - name: Build core package
-              run: pnpm -F core build
-
-            - name: Build node package
-              run: pnpm -F node_reqwest build
-
-            - name: Setup TLS certificates
-              run: pnpm -F node_reqwest run bench:setup
-
+    bench-http1-get:
+        needs: build
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                node: ["20", "22"]
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node }}
+                  cache: "pnpm"
+            - uses: actions/download-artifact@v4
+              with:
+                  name: bench-build-node${{ matrix.node }}
+                  path: packages/node/
+            - run: pnpm install
             - name: Start HTTP/1 server
               run: |
                   pnpm -F node_reqwest run bench:server:http1 &
-                  sleep 2
-
-            - name: Run HTTP/1 GET benchmarks
+                  echo $! > server.pid
+                  for i in $(seq 1 30); do
+                      curl -sf http://localhost:3000/ -o /dev/null && break
+                      sleep 1
+                  done
+            - name: Run benchmark
               run: pnpm -F node_reqwest run bench:http1
-              env:
-                  SAMPLES: 10
-                  PARALLEL: 100
-                  CONNECTIONS: 50
+              env: { SAMPLES: 30, PARALLEL: 100, CONNECTIONS: 50 }
+            - name: Stop server
+              if: always()
+              run: kill "$(cat server.pid)" || true
+            - uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: bench-http1-get-node${{ matrix.node }}
+                  path: packages/node/benchmarks/*.json
+                  if-no-files-found: ignore
 
-            - name: Run HTTP/1 POST streaming benchmarks
-              run: pnpm -F node_reqwest run bench:http1:post
-              env:
-                  SAMPLES: 10
-                  PARALLEL: 100
-                  CONNECTIONS: 50
-                  BODY_SIZE: 4096
+    bench-http1-post:
+        needs: build
+        runs-on: ubuntu-latest
+        if: always()
+        strategy:
+            fail-fast: false
+            matrix:
+                node: ["20", "22"]
+        # (identical shape to bench-http1-get; runs bench:http1:post with BODY_SIZE=4096
+        # and uploads its artifact)
 
-            - name: Stop HTTP/1, Start HTTP/2 server
-              run: |
-                  pkill -f http1-server.js || true
-                  pnpm -F node_reqwest run bench:server:http2 &
-                  sleep 2
+    bench-http2-get:
+        needs: build
+        runs-on: ubuntu-latest
+        if: always()
+        strategy:
+            fail-fast: false
+            matrix:
+                node: ["20", "22"]
+        # (boots bench:server:http2 on port 3001 with curl -k retry probe;
+        # runs bench:http2 then bench:http2 with BENCH_VERIFY_TLS=1 smoke variant)
 
-            - name: Run HTTP/2 GET benchmarks
-              run: pnpm -F node_reqwest run bench:http2
-              env:
-                  SAMPLES: 10
-                  PARALLEL: 100
-                  CONNECTIONS: 50
-
-            - name: Run HTTP/2 POST streaming benchmarks
-              run: pnpm -F node_reqwest run bench:http2:post
-              env:
-                  SAMPLES: 10
-                  PARALLEL: 100
-                  CONNECTIONS: 50
-                  BODY_SIZE: 4096
+    bench-http2-post:
+        needs: build
+        runs-on: ubuntu-latest
+        if: always()
+        strategy:
+            fail-fast: false
+            matrix:
+                node: ["20", "22"]
+        # (identical to bench-http2-get for POST streaming)
 ```
+
+Key CI properties:
+
+- **Build job** compiles once per Node version, caches `index.node` + `dist`, and
+  uploads as an artifact downloaded by every bench job. Avoids 4× Rust rebuilds.
+- **Per-bench jobs** with `if: always()` and `fail-fast: false`: a flaky
+  HTTP/1 GET does not block HTTP/2 results.
+- **Server readiness**: `curl --retry`-style poll loop (`for i in $(seq 1 30);
+  do curl -sf ... && break; sleep 1; done`) replaces blind `sleep 2`. HTTP/2
+  jobs use `curl -k` (self-signed cert).
+- **PID-based shutdown**: `echo $! > server.pid` then `kill $(cat server.pid)`
+  in an `if: always()` step. No `pkill -f` foot-gun.
+- **Node matrix**: 20 + 22. Project targets Node 20+ (per CLAUDE.md);
+  regressions on 20 are caught.
+- **Artifacts**: each bench uploads its results JSON. Historical baselines
+  accumulate per-PR. Future work: `benchmark-action/github-action-benchmark`
+  for trend tracking.
 
 ## Thresholds
 
-| Metric           | Threshold        |
-| :--------------- | :--------------- |
-| **Throughput**   | ≥ 95% of undici  |
-| **Mean Latency** | ≤ 105% of undici |
-| **CI Timeout**   | 15 minutes       |
+| Metric                              | Threshold                  |
+| :---------------------------------- | :------------------------- |
+| **p50 latency (shared runner)**     | ≤ 1.10× soft, ≤ 1.15× hard |
+| **p95 latency (shared runner)**     | ≤ 1.10× soft, ≤ 1.15× hard |
+| **Throughput target (dedicated)**   | ≥ 95% of undici            |
+| **Sample count**                    | 30 iterations × 100 par.   |
+| **Warmup**                          | 100 requests pre-bench     |
+| **CI Timeout per bench job**        | 10 minutes                 |
 
 ## Environment Variables
 
-| Variable      | Default        | Purpose                         |
-| :------------ | :------------- | :------------------------------ |
-| `SAMPLES`     | 10             | Number of iterations            |
-| `PARALLEL`    | 100            | Parallel requests per iteration |
-| `CONNECTIONS` | 50             | Connection pool size            |
-| `SERVER_URL`  | localhost:3000 | Target server                   |
-| `BODY_SIZE`   | 1024           | Size of POST body in bytes      |
+| Variable           | Default        | Purpose                              |
+| :----------------- | :------------- | :----------------------------------- |
+| `SAMPLES`          | 30             | Number of iterations                 |
+| `WARMUP`           | 100            | Warmup requests before samples       |
+| `PARALLEL`         | 100            | Parallel requests per iteration      |
+| `CONNECTIONS`      | 50             | Connection pool size                 |
+| `SERVER_URL`       | localhost      | Target server                        |
+| `BODY_SIZE`        | 1024           | Size of POST body in bytes           |
+| `BENCH_VERIFY_TLS` | unset          | `1` enables `rejectUnauthorized:true`|
+
+## Dependency pinning
+
+- `wiremock = "0.6.5"` workspace pin (unit/integration tests, not benchmarks).
+- `undici` version comes from the project's pnpm catalog peer-range — bench
+  scripts use whichever undici the consumer resolves.
+- Any new dep introduced by these scripts (none expected beyond `tsx` already
+  in catalog) must respect `minimumReleaseAge: 1440` (pnpm-workspace.yaml).
 
 ## File Structure
 
 ```text
 packages/node/
 ├── benchmarks/
-│   ├── config.js
-│   ├── http1.js
-│   ├── http1-post.js
-│   ├── http2.js
-│   ├── http2-post.js
+│   ├── config.ts
+│   ├── http1.ts
+│   ├── http1-post.ts
+│   ├── http2.ts
+│   ├── http2-post.ts
 │   └── _util/
-│       └── index.js
+│       └── index.ts
 .github/workflows/
 └── benchmark.yml
 ```
