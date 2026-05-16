@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "preinstall": "npx only-allow pnpm && rustup show",
-    "postinstall": "node ./scripts/setup-playwright.ts",
+    "postinstall": "node ./scripts/setup-postinstall.ts",
     "prepare": "husky",
     "test": "pnpm --recursive --if-present run test",
     "setup-zed": "node ./scripts/setup-zed.ts"

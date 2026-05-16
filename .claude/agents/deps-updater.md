@@ -29,7 +29,9 @@ Launch ALL of the following sub-agents IN PARALLEL using the Task tool with `run
     - Update version numbers in mise.toml
     - Respect pinned versions with comments explaining why (e.g. sccache)
     - Also update .mise-version with latest mise release: `gh api repos/jdx/mise/releases/latest --jq '.tag_name'`
-    - Tools to check: jqlang/jq, mikefarah/yq, BurntSushi/ripgrep, aquasecurity/trivy, google/yamlfmt, koalaman/shellcheck, gitleaks/gitleaks, rhysd/actionlint, astral-sh/uv, cargo-bins/cargo-binstall, nextest-rs/nextest, mstange/samply, hadolint/hadolint, EmbarkStudios/cargo-deny, crate-ci/typos, taiki-e/cargo-llvm-cov, mvdan/sh
+    - Tools to check: jqlang/jq, mikefarah/yq, BurntSushi/ripgrep, aquasecurity/trivy, google/yamlfmt, koalaman/shellcheck, gitleaks/gitleaks, rhysd/actionlint, astral-sh/uv, cargo-bins/cargo-binstall, anchore/syft, nextest-rs/nextest, mstange/samply, hadolint/hadolint, EmbarkStudios/cargo-deny, crate-ci/typos, taiki-e/cargo-llvm-cov, mvdan/sh
+    - Also update env vars in mise.toml `[env]` that pin crate versions:
+        - `CARGO_AUDITABLE_VERSION` (cargo-auditable, consumed by scripts/setup-postinstall.ts) — look up latest via `curl -s "https://crates.io/api/v1/crates/cargo-auditable" | jq -r '.crate.max_stable_version'`
 
 4. **Python deps** - Update Python dependencies
     - IMPORTANT: The project uses `exclude-newer = "1 day"` in pyproject.toml, which means uv will reject any package version published less than 1 day ago. You MUST respect this cooldown period.

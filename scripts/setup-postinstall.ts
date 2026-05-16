@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { runCommand } from "./helpers/run-command.ts";
 import { runScript } from "./helpers/run-script.ts";
 
-runScript("Playwright setup", async () => {
+runScript("Workspace postinstall", async () => {
   if (process.env.MISE_ENV !== "docker") {
     await runCommand("playwright", ["install-deps"]);
   } else {
@@ -20,4 +20,11 @@ runScript("Playwright setup", async () => {
     ).resolve("electron/install.js");
     await runCommand(process.execPath, [electronInstall]);
   }
+
+  const args = ["install", "cargo-auditable", "--locked"];
+  const version = process.env["CARGO_AUDITABLE_VERSION"];
+  if (version !== undefined && version !== "") {
+    args.push("--version", version);
+  }
+  await runCommand("cargo", args);
 });

@@ -36,6 +36,9 @@ _.path = ["{{ config_root }}/.cache/native/cargo/bin", "{{ config_root }}/node_m
 # Set Python virtual environment path
 _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
+# Consumed by scripts/setup-postinstall.ts to pin cargo-auditable.
+CARGO_AUDITABLE_VERSION = "0.7.4"
+
 [tools]
 node = "24.15.0"
 rust.version = "nightly-2026-05-13"
@@ -51,6 +54,7 @@ rust.version = "nightly-2026-05-13"
 "aqua:astral-sh/uv" = "0.11.14"
 "aqua:cli/cli" = "2.92.0"
 "aqua:cargo-bins/cargo-binstall" = "1.19.1"
+"aqua:anchore/syft" = "1.44.0"
 
 # Tools with non-standard version prefix
 [tools."github:nextest-rs/nextest"]
@@ -743,3 +747,15 @@ sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 description = "Run all tests"
 alias = "t"
 depends = ["test:core", "test:meta", "test:node"]
+
+# ============================================================================
+# SBOM TASKS - Generate and validate CycloneDX SBOMs
+# ============================================================================
+
+[tasks."sbom:rust"]
+description = "Generate CycloneDX SBOM from the node addon's .dep-v0 section"
+run = "node scripts/sbom-generate-rust.ts"
+
+[tasks."sbom:js"]
+description = "Generate CycloneDX SBOM from the node package's runtime deps"
+run = "node scripts/sbom-generate-js.ts"
