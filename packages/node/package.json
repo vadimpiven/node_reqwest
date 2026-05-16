@@ -87,7 +87,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "undici": ">=7.0.0"
+    "undici": "^7.0.0 || ^8.0.0"
   },
   "engines": {
     "node": ">=22.12.0"
