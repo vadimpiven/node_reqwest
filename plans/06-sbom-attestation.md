@@ -114,81 +114,11 @@ command. `build-addon` invokes `pnpm -F "{packages/node}" run ci-build` (release
 cargo-auditable runs wherever that runs (host on macOS/Windows, manylinux Docker on Linux). PE
 binaries on Windows get `.dep-v0` in a PE section, same mechanism as ELF/Mach-O.
 
-### 4. Verify auditable metadata in build-addon
+### 4. Ship pnpm-lock.yaml inside the npm tarball
 
-New step in `release.yaml > build-addon`, between "Sign and notarize" (release.yaml:87) and "Pack
-node addon" (release.yaml:91). Placement matters: running after sign+notarize verifies signing did
-not strip `.dep-v0`.
-
-```yaml
-- name: "Verify auditable metadata"
-  uses: "./.github/actions/shell"
-  with:
-    docker-service: ${{ needs.init.outputs.docker-service }}
-    run: |
-      cargo auditable info packages/node/dist/node_reqwest.node
-```
-
-Exits non-zero if `.dep-v0` is missing — fails the release rather than shipping an SBOM-blind
-binary.
-
-### 5. Generate per-target Rust SBOM in build-addon
-
-New steps after "Pack node addon", before "Attest build provenance" (release.yaml:96). Each
-matrix entry produces exactly one `.node.gz` named
-`dist/node_reqwest-v{version}-{platform}-{arch}.node.gz`.
-
-```yaml
-- name: "Generate Rust SBOM"
-  shell: "bash"
-  run: |
-    mkdir -p packages/node/dist/sbom
-    f=(packages/node/dist/*.node.gz)
-    base="$(basename "${f[0]}" .node.gz)"
-    syft scan "file:${f[0]}" \
-      --override-default-catalogers cargo-auditable-binary-cataloger \
-      -o cyclonedx-json="packages/node/dist/sbom/${base}.cdx.json"
-- name: "Validate Rust SBOM"
-  shell: "bash"
-  run: |
-    sbom=(packages/node/dist/sbom/*.cdx.json)
-    jq -e '.bomFormat == "CycloneDX"' "${sbom[0]}"
-    # Catches the empty-SBOM failure mode if Syft's default cataloger selection
-    # changes upstream and deselects cargo-auditable silently.
-    jq -e '
-      [.components[]?
-        | select(.properties[]?.value
-          == "cargo-auditable-binary-cataloger")
-      ] | length > 50
-    ' "${sbom[0]}"
-```
-
-Runs on host shell, not Docker — Syft is verification-only; mise installs it on the runner. `syft
-scan file:...` auto-extracts the `.gz`. Explicit cataloger override defends against
-anchore/syft#2031 (default selection occasionally deselects binary catalogers). Works identically
-for Mach-O, ELF, and PE.
-
-### 6. Attest Rust SBOM in build-addon
-
-New step after "Attest build provenance":
-
-```yaml
-- name: "Attest Rust SBOM"
-  uses: "actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e" # v4.1.0
-  with:
-    subject-path: "packages/node/dist/*.node.gz"
-    sbom-path: "packages/node/dist/sbom/*.cdx.json"
-```
-
-`actions/attest-sbom` loads one SBOM as predicate and attaches it to all matched subjects (no
-stem-pairing). Per-matrix-entry, both globs resolve to a single file — single-subject,
-single-predicate, no ambiguity.
-
-### 7. Generate JS SBOM in build-packages
-
-Ship the lockfile inside the tarball so Syft's pnpm cataloger sees the full resolved tree (without
-it, only direct deps from `package.json` appear). `pnpm pack` resolves `files` relative to the
-package directory — so copy the root lockfile in before pack:
+Without the lockfile inside `package.tar.gz`, Syft's pnpm cataloger only sees direct deps from
+`package.json`. `pnpm pack` resolves `files` relative to the package dir, so copy the root
+lockfile in before pack:
 
 ```jsonc
 // packages/node/package.json
@@ -203,41 +133,115 @@ package directory — so copy the root lockfile in before pack:
 Add `packages/node/pnpm-lock.yaml` to `.gitignore` (transient copy; source of truth stays at repo
 root).
 
-New steps in `release.yaml > build-packages`, after "Build and pack node package", before "Attest
-node build provenance":
+### 5. Define mise SBOM tasks
 
-```yaml
-- name: "Generate JS SBOM"
-  shell: "bash"
-  run: |
-    syft scan "file:packages/node/package.tar.gz" \
-      -o cyclonedx-json="packages/node/node_reqwest-${GITHUB_REF_NAME}-js.cdx.json"
-- name: "Validate JS SBOM"
-  shell: "bash"
-  run: |
-    jq -e '.bomFormat == "CycloneDX"' \
-      packages/node/node_reqwest-*-js.cdx.json
-    jq -e '
-      [.components[]? | select(.type == "library")] | length > 0
-    ' packages/node/node_reqwest-*-js.cdx.json
+All SBOM work — verify, generate, validate — lives in `mise.toml` as portable tasks. CI calls them
+verbatim; local dev calls them verbatim. Same code path, same outputs, both platforms (bash,
+PowerShell, git-bash on Windows runners).
+
+```toml
+# mise.toml
+
+# Verify cargo-auditable embedded .dep-v0. Exits non-zero if missing.
+[tasks."sbom:verify"]
+description = "Check .dep-v0 is present in the built addon"
+run = "cargo auditable info packages/node/dist/node_reqwest.node"
+
+# Generate Rust SBOM from the addon binary (always at this fixed path post-build).
+[tasks."sbom:rust"]
+description = "Generate CycloneDX SBOM from the addon's .dep-v0 section"
+depends = ["sbom:verify"]
+run = [
+  '''syft scan packages/node/dist/node_reqwest.node --override-default-catalogers cargo-auditable-binary-cataloger -o cyclonedx-json=packages/node/dist/node_reqwest.cdx.json''',
+  '''jq -e '.bomFormat == "CycloneDX"' packages/node/dist/node_reqwest.cdx.json''',
+  '''jq -e '[.components[]? | select(.properties[]?.value == "cargo-auditable-binary-cataloger")] | length > 50' packages/node/dist/node_reqwest.cdx.json''',
+]
+
+# Generate JS SBOM from the packed tarball (always at this fixed path post-pack).
+[tasks."sbom:js"]
+description = "Generate CycloneDX SBOM from the packed npm tarball"
+run = [
+  '''syft scan packages/node/package.tar.gz -o cyclonedx-json=packages/node/package.cdx.json''',
+  '''jq -e '.bomFormat == "CycloneDX"' packages/node/package.cdx.json''',
+  '''jq -e '[.components[]? | select(.type == "library")] | length > 0' packages/node/package.cdx.json''',
+]
 ```
 
-### 8. Attest JS SBOM
+Add `packages/node/dist/node_reqwest.cdx.json` and `packages/node/package.cdx.json` to
+`.gitignore`.
 
-New step after "Attest node build provenance":
+Portability notes:
+
+- Each `run` entry is a single command — no bash loops, no glob expansion, no host-target probing.
+  The addon is always at `packages/node/dist/node_reqwest.node` regardless of target (Linux/macOS
+  `.so/.dylib` get renamed to `.node` by the build); Syft reads `.dep-v0` from ELF / Mach-O / PE
+  with the same invocation.
+- TOML triple-single-quote literals carry jq filters unescaped.
+- Output paths are fixed — no `${GITHUB_REF_NAME}` or per-target naming. Each matrix entry writes
+  its own `node_reqwest.cdx.json` in its own runner workspace; the attest step picks it up by
+  literal path.
+
+### 6. Verify auditable metadata in build-addon
 
 ```yaml
+# New step between "Sign and notarize" (release.yaml:87) and "Pack node addon"
+# (release.yaml:91). After sign+notarize ensures signing didn't strip .dep-v0.
+- name: "Verify auditable metadata"
+  shell: "bash"
+  run: mise run sbom:verify
+```
+
+### 7. Generate per-target Rust SBOM in build-addon
+
+```yaml
+# New step after "Pack node addon", before "Attest build provenance" (release.yaml:96).
+- name: "Generate Rust SBOM"
+  shell: "bash"
+  run: mise run sbom:rust
+```
+
+Each matrix entry produces one `.node` (the source) and one `.cdx.json` (the SBOM) in its own
+workspace.
+
+### 8. Attest Rust SBOM in build-addon
+
+```yaml
+# New step after "Attest build provenance".
+- name: "Attest Rust SBOM"
+  uses: "actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e" # v4.1.0
+  with:
+    subject-path: "packages/node/dist/*.node.gz"
+    sbom-path: "packages/node/dist/node_reqwest.cdx.json"
+```
+
+`actions/attest-sbom` loads one SBOM as predicate and attaches it to all matched subjects (no
+stem-pairing). Per-matrix-entry, exactly one subject and one predicate.
+
+### 9. Generate JS SBOM in build-packages
+
+```yaml
+# New step in build-packages, after "Build and pack node package", before
+# "Attest node build provenance".
+- name: "Generate JS SBOM"
+  shell: "bash"
+  run: mise run sbom:js
+```
+
+### 10. Attest JS SBOM
+
+```yaml
+# New step after "Attest node build provenance".
 - name: "Attest JS SBOM"
   uses: "actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e" # v4.1.0
   with:
     subject-path: "packages/node/package.tar.gz"
-    sbom-path: "packages/node/node_reqwest-*-js.cdx.json"
+    sbom-path: "packages/node/package.cdx.json"
 ```
 
 Existing upload step in `build-packages` (release.yaml:155-160) is unchanged — SBOMs live in the
 attestation predicate, not as separate release assets.
 
-### 9. New job: smoke-sbom
+### 11. New job: smoke-sbom
 
 Add a top-level job under `jobs:` in `release.yaml`, alongside the existing `smoke-test`
 (release.yaml:203). Single-runner since SBOM/attestation verification doesn't depend on OS.
@@ -287,33 +291,7 @@ smoke-sbom:
 including the SBOM predicate — no separate SBOM download needed since the SBOM lives in the
 attestation, not as a release asset.
 
-### 10. Add local mise task
-
-```toml
-# mise.toml — workspace target dir is at repo root (./target/)
-[tasks.sbom]
-description = "Generate CycloneDX SBOM for node package (release build)"
-depends = ["setup:rust"]
-run = """
-cargo auditable build -r --locked -p node
-bin=""
-for candidate in target/release/libnode_reqwest.so \
-                 target/release/libnode_reqwest.dylib \
-                 target/release/node_reqwest.dll; do
-  [ -f "$candidate" ] && bin="$candidate" && break
-done
-[ -n "$bin" ] || { echo "no built artifact found"; exit 1; }
-syft scan "file:$bin" \
-  --override-default-catalogers cargo-auditable-binary-cataloger \
-  -o cyclonedx-json=bom.json
-jq -e '.components | length' bom.json
-"""
-sources = ["Cargo.lock", "packages/*/Cargo.toml"]
-```
-
-Add `/bom.json` to `.gitignore`.
-
-### 11. Update README
+### 12. Update README
 
 In `packages/node/README.md` > "Installation safety", after existing provenance text:
 
@@ -333,13 +311,13 @@ In `packages/node/README.md` > "Installation safety", after existing provenance 
 - **`regular.yaml`**: unchanged in workflow logic. All builds (dev + CI) now go through
   `cargo auditable build` via `build:cargo` — negligible overhead, single code path.
 - **`release.yaml`**:
-  - `build-addon`: `cargo auditable build`, verify metadata, per-target Syft SBOM, attestation
-    (§3–6). Existing release upload unchanged — SBOMs live in the attestation predicate.
-  - `build-packages`: lockfile-bundled tarball, Syft scan, JS SBOM attestation (§7–8). Existing
-    release upload unchanged.
-  - `smoke-sbom` (new): single-runner attestation verification + SBOM extraction (§9).
+  - `build-addon`: three `mise run sbom:*` calls (verify, rust) + Rust attestation (§6–8).
+  - `build-packages`: lockfile bundling (§4) + `mise run sbom:js` + JS attestation (§9–10).
+    Existing release upload unchanged — SBOMs live in the attestation predicate.
+  - `smoke-sbom` (new): single-runner attestation verification + SBOM extraction (§11).
   - `smoke-test`: unchanged.
-- **Local dev**: `mise run sbom` produces a host-target CycloneDX SBOM (§10).
+- **Local dev**: `mise run sbom:rust` (after `pnpm -F packages/node run ci-build`) produces a
+  host-target SBOM. `mise run sbom:js` runs after `build:ts` produces the tarball.
 - **node-addon-slsa**: unchanged.
 
 ## Consumer scenarios
@@ -376,16 +354,18 @@ gh attestation verify <artifact> --owner vadimpiven \
 
 ## Implementation order
 
-Sections 1–11 are written in commit order:
+Sections 1–12 are written in commit order:
 
 - §1 + §2 (mise pins + Dockerfile bake) land first — subsequent CI changes assume the tools are
   installed.
-- §3 + §4 are tightly coupled (auditable build + verify) — land together.
-- §5 + §6 extend `build-addon` (Rust SBOM gen, attest).
-- §7 + §8 extend `build-packages` (JS SBOM gen, attest).
-- §9 adds the verification job.
-- §10 is local-dev convenience — lands anytime.
-- §11 (README) lands last.
+- §3 (cargo-auditable in build:cargo) lands next — it's a one-line edit that all later sections
+  depend on.
+- §4 (ship lockfile) is independent of §3 but small — bundle either way.
+- §5 (mise tasks) defines the building blocks. Must land before §6–§10 which reference them.
+- §6 + §7 + §8 extend `build-addon` (verify, Rust SBOM gen, Rust attest).
+- §9 + §10 extend `build-packages` (JS SBOM gen, JS attest).
+- §11 adds the verification job.
+- §12 (README) lands last.
 
 After each set of CI changes, `mise run check` must pass (gate enforced by the Stop hook per
 `CLAUDE.md`). To validate the actual workflow, push a release-candidate tag (e.g. `v0.0.0-rc1`) —
@@ -398,13 +378,14 @@ Before the first real `v*` release tag, push a release-candidate tag and verify:
 
 1. `build-addon` produces `.dep-v0` in the binary across all matrix targets (Linux x64/arm64
    manylinux, macOS x64/arm64, Windows x64/arm64).
-2. `cargo auditable info` (§4) succeeds on the signed+notarized binary — confirms signing
+2. `mise run sbom:verify` (§6) succeeds on the signed+notarized binary — confirms signing
    preserves `.dep-v0`.
-3. Syft (§5) emits CycloneDX 1.6 with > 50 cargo-auditable components per target.
+3. `mise run sbom:rust` (§7) emits CycloneDX 1.6 with > 50 cargo-auditable components per target.
 4. `actions/attest-sbom` attestations appear in the public transparency log.
-5. JS SBOM (§7) contains transitive deps — look for resolved versions of indirect entries
-   (e.g. transitive `undici` or `@types/*`) to confirm `pnpm-lock.yaml` was bundled.
-6. `smoke-sbom` (§9) passes end-to-end — attestation verifies AND the embedded SBOM predicate
+5. `mise run sbom:js` output (§9) contains transitive deps — look for resolved versions of
+   indirect entries (e.g. transitive `undici` or `@types/*`) to confirm `pnpm-lock.yaml` was
+   bundled.
+6. `smoke-sbom` (§11) passes end-to-end — attestation verifies AND the embedded SBOM predicate
    is well-formed CycloneDX.
 7. `cargo audit bin` works on a notarized macOS `.node` extracted from `.node.gz` — confirms
    consumers can audit independently.
