@@ -1,23 +1,21 @@
 # DispatchController (Chunk 04a)
 
-## Problem/Purpose
+Internal implementation of `Dispatcher.DispatchController` with state
+buffering. `abort`/`pause`/`resume` calls made before the native request
+handle exists are queued and applied via an internal `setRequestHandle()`
+seam.
 
-Implement the `Dispatcher.DispatchController` interface to provide users with a standard
-way to control requests, including state buffering before native handle is established.
+This class is **not** part of the public export surface — users only see
+the `DispatchController` interface that undici defines. See review:
+Architect I2 + Node Important.
 
-## Solution
-
-Create `DispatchControllerImpl` that manages internal state (`#aborted`, `#paused`) and
-synchronizes with the native `RequestHandle` through late-binding via `setRequestHandle()`.
-
-## Architecture
+## Flow
 
 ```text
-User
-  └─► DispatchController.abort()
-       └─► Buffer State (if no handle yet)
-            └─► setRequestHandle(handle)
-                 └─► Apply Buffered State to Native Handle
+handler.onRequestStart(controller, {})
+  └─► controller.abort(reason)   // no handle yet — buffer state
+       └─► (later) setRequestHandle(handle)
+            └─► applies buffered abort/pause to native handle
 ```
 
 ## Implementation
@@ -32,16 +30,29 @@ import type { Dispatcher } from "undici";
 import type { Addon, RequestHandle } from "./addon-def.ts";
 
 /**
- * DispatchController implementation with state buffering.
- *
- * Allows abort/pause/resume before native handle is established.
+ * Symbol-keyed internal seam for late handle binding.
+ * Not exposed to user code: users receive the controller via
+ * `handler.onRequestStart(controller, {})` and only ever see the
+ * public `Dispatcher.DispatchController` interface.
  */
-export class DispatchControllerImpl implements Dispatcher.DispatchController {
+export const kSetRequestHandle = Symbol("node_reqwest.setRequestHandle");
+
+/**
+ * DispatchController with state buffering.
+ *
+ * Buffering exists because `handler.onRequestStart(controller, {})` is
+ * called *before* the native request is constructed. A handler that
+ * synchronously calls `controller.abort()` from `onRequestStart` must
+ * still cancel the request once the native handle materializes.
+ *
+ * @internal — not part of the public export surface.
+ */
+export class DispatchController implements Dispatcher.DispatchController {
     #aborted = false;
     #paused = false;
     #reason: Error | null = null;
     #requestHandle: RequestHandle | null = null;
-    #addon: Addon;
+    readonly #addon: Addon;
 
     constructor(addon: Addon) {
         this.#addon = addon;
@@ -60,12 +71,18 @@ export class DispatchControllerImpl implements Dispatcher.DispatchController {
     }
 
     /**
-     * Set the native request handle. Applies any buffered state.
+     * Bind the native request handle and flush any buffered state.
+     * Calling twice is a no-op: subsequent calls are ignored to keep
+     * lifecycle deterministic (Agent owns binding; user code never sees
+     * this method).
+     *
+     * @internal
      */
-    setRequestHandle(handle: RequestHandle): void {
+    [kSetRequestHandle](handle: RequestHandle): void {
+        if (this.#requestHandle !== null) return; // idempotent
+
         this.#requestHandle = handle;
 
-        // Apply buffered state
         if (this.#aborted) {
             this.#addon.requestHandleAbort(handle);
         } else if (this.#paused) {
@@ -73,11 +90,18 @@ export class DispatchControllerImpl implements Dispatcher.DispatchController {
         }
     }
 
-    abort(reason: Error): void {
+    /**
+     * Abort the in-flight request. Undici's signature is `abort(reason?)`
+     * with any value; we coerce non-Error reasons into a wrapping Error
+     * so that downstream handlers always receive a real Error instance.
+     */
+    abort(reason?: unknown): void {
         if (this.#aborted) return;
 
         this.#aborted = true;
-        this.#reason = reason;
+        this.#reason = reason instanceof Error
+            ? reason
+            : new Error(typeof reason === "string" ? reason : "Aborted");
 
         if (this.#requestHandle) {
             this.#addon.requestHandleAbort(this.#requestHandle);
@@ -86,9 +110,7 @@ export class DispatchControllerImpl implements Dispatcher.DispatchController {
 
     pause(): void {
         if (this.#paused) return;
-
         this.#paused = true;
-
         if (this.#requestHandle) {
             this.#addon.requestHandlePause(this.#requestHandle);
         }
@@ -96,9 +118,7 @@ export class DispatchControllerImpl implements Dispatcher.DispatchController {
 
     resume(): void {
         if (!this.#paused) return;
-
         this.#paused = false;
-
         if (this.#requestHandle) {
             this.#addon.requestHandleResume(this.#requestHandle);
         }
@@ -109,16 +129,23 @@ export class DispatchControllerImpl implements Dispatcher.DispatchController {
 ### packages/node/tests/vitest/controller.test.ts
 
 ```typescript
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 import { describe, it, expect, vi } from "vitest";
 
-import { DispatchControllerImpl } from "../../export/dispatch-controller.ts";
 import type { Addon, RequestHandle } from "../../export/addon-def.ts";
+import {
+    DispatchController,
+    kSetRequestHandle,
+} from "../../export/dispatch-controller.ts";
 
-function createMockAddon(): Addon & {
+type MockAddon = Addon & {
     requestHandleAbort: ReturnType<typeof vi.fn>;
     requestHandlePause: ReturnType<typeof vi.fn>;
     requestHandleResume: ReturnType<typeof vi.fn>;
-} {
+};
+
+function createMockAddon(): MockAddon {
     return {
         hello: vi.fn(() => "hello"),
         agentCreate: vi.fn(),
@@ -128,17 +155,13 @@ function createMockAddon(): Addon & {
         requestHandleAbort: vi.fn(),
         requestHandlePause: vi.fn(),
         requestHandleResume: vi.fn(),
-    } as unknown as Addon & {
-        requestHandleAbort: ReturnType<typeof vi.fn>;
-        requestHandlePause: ReturnType<typeof vi.fn>;
-        requestHandleResume: ReturnType<typeof vi.fn>;
-    };
+    } as unknown as MockAddon;
 }
 
 describe("DispatchController", () => {
-    it("should buffer abort state when no handle", () => {
+    it("buffers abort until handle is set", () => {
         const addon = createMockAddon();
-        const ctrl = new DispatchControllerImpl(addon);
+        const ctrl = new DispatchController(addon);
         const error = new Error("User abort");
 
         ctrl.abort(error);
@@ -147,60 +170,52 @@ describe("DispatchController", () => {
         expect(ctrl.reason).toBe(error);
         expect(addon.requestHandleAbort).not.toHaveBeenCalled();
 
-        const mockHandle = {} as RequestHandle;
-        ctrl.setRequestHandle(mockHandle);
-
-        expect(addon.requestHandleAbort).toHaveBeenCalledWith(mockHandle);
+        const handle = {} as RequestHandle;
+        ctrl[kSetRequestHandle](handle);
+        expect(addon.requestHandleAbort).toHaveBeenCalledWith(handle);
     });
 
-    it("should buffer pause state when no handle", () => {
+    it("buffers pause until handle is set", () => {
         const addon = createMockAddon();
-        const ctrl = new DispatchControllerImpl(addon);
+        const ctrl = new DispatchController(addon);
 
         ctrl.pause();
-
         expect(ctrl.paused).toBe(true);
         expect(addon.requestHandlePause).not.toHaveBeenCalled();
 
-        const mockHandle = {} as RequestHandle;
-        ctrl.setRequestHandle(mockHandle);
-
-        expect(addon.requestHandlePause).toHaveBeenCalledWith(mockHandle);
+        const handle = {} as RequestHandle;
+        ctrl[kSetRequestHandle](handle);
+        expect(addon.requestHandlePause).toHaveBeenCalledWith(handle);
     });
 
-    it("should call abort on handle if already set", () => {
+    it("calls native abort immediately when handle already bound", () => {
         const addon = createMockAddon();
-        const ctrl = new DispatchControllerImpl(addon);
-        const mockHandle = {} as RequestHandle;
+        const ctrl = new DispatchController(addon);
+        const handle = {} as RequestHandle;
 
-        ctrl.setRequestHandle(mockHandle);
+        ctrl[kSetRequestHandle](handle);
         ctrl.abort(new Error("test"));
-
-        expect(addon.requestHandleAbort).toHaveBeenCalledWith(mockHandle);
+        expect(addon.requestHandleAbort).toHaveBeenCalledWith(handle);
     });
 
-    it("should handle pause and resume", () => {
+    it("supports pause / resume after handle binding", () => {
         const addon = createMockAddon();
-        const ctrl = new DispatchControllerImpl(addon);
-        const mockHandle = {} as RequestHandle;
-
-        ctrl.setRequestHandle(mockHandle);
+        const ctrl = new DispatchController(addon);
+        const handle = {} as RequestHandle;
+        ctrl[kSetRequestHandle](handle);
 
         ctrl.pause();
-        expect(ctrl.paused).toBe(true);
-        expect(addon.requestHandlePause).toHaveBeenCalledWith(mockHandle);
+        expect(addon.requestHandlePause).toHaveBeenCalledWith(handle);
 
         ctrl.resume();
         expect(ctrl.paused).toBe(false);
-        expect(addon.requestHandleResume).toHaveBeenCalledWith(mockHandle);
+        expect(addon.requestHandleResume).toHaveBeenCalledWith(handle);
     });
 
-    it("should ignore duplicate abort calls", () => {
+    it("ignores duplicate abort calls (first reason wins)", () => {
         const addon = createMockAddon();
-        const ctrl = new DispatchControllerImpl(addon);
-        const mockHandle = {} as RequestHandle;
-
-        ctrl.setRequestHandle(mockHandle);
+        const ctrl = new DispatchController(addon);
+        ctrl[kSetRequestHandle]({} as RequestHandle);
 
         ctrl.abort(new Error("first"));
         ctrl.abort(new Error("second"));
@@ -209,48 +224,63 @@ describe("DispatchController", () => {
         expect(ctrl.reason?.message).toBe("first");
     });
 
-    it("should not call pause if already paused", () => {
+    it("ignores duplicate pause / no-op resume", () => {
         const addon = createMockAddon();
-        const ctrl = new DispatchControllerImpl(addon);
-        const mockHandle = {} as RequestHandle;
-
-        ctrl.setRequestHandle(mockHandle);
+        const ctrl = new DispatchController(addon);
+        ctrl[kSetRequestHandle]({} as RequestHandle);
 
         ctrl.pause();
         ctrl.pause();
-
         expect(addon.requestHandlePause).toHaveBeenCalledTimes(1);
+
+        const ctrl2 = new DispatchController(addon);
+        ctrl2[kSetRequestHandle]({} as RequestHandle);
+        ctrl2.resume();
+        expect(addon.requestHandleResume).not.toHaveBeenCalled();
     });
 
-    it("should not call resume if not paused", () => {
+    it("coerces non-Error abort reason to Error", () => {
         const addon = createMockAddon();
-        const ctrl = new DispatchControllerImpl(addon);
-        const mockHandle = {} as RequestHandle;
+        const ctrl = new DispatchController(addon);
 
-        ctrl.setRequestHandle(mockHandle);
+        ctrl.abort("string reason");
+        expect(ctrl.reason).toBeInstanceOf(Error);
+        expect(ctrl.reason?.message).toBe("string reason");
+    });
 
-        ctrl.resume();
+    it("setRequestHandle called twice is a no-op", () => {
+        const addon = createMockAddon();
+        const ctrl = new DispatchController(addon);
+        const first = {} as RequestHandle;
+        const second = {} as RequestHandle;
 
-        expect(addon.requestHandleResume).not.toHaveBeenCalled();
+        ctrl[kSetRequestHandle](first);
+        ctrl[kSetRequestHandle](second);
+        ctrl.abort(new Error("x"));
+
+        // Abort routes to the first handle, never the second.
+        expect(addon.requestHandleAbort).toHaveBeenCalledTimes(1);
+        expect(addon.requestHandleAbort).toHaveBeenCalledWith(first);
     });
 });
 ```
 
-## Tables
+## Summary
 
-| Metric           | Value                                       |
-| :--------------- | :------------------------------------------ |
-| **Interface**    | `Dispatcher.DispatchController`             |
-| **State Fields** | `#aborted`, `#paused`, `#reason`            |
-| **Late Binding** | `setRequestHandle()` applies buffered state |
-| **Tests**        | 7 controller state tests                    |
+| Metric           | Value                                                |
+| :--------------- | :--------------------------------------------------- |
+| **Interface**    | `Dispatcher.DispatchController` (public)             |
+| **Class export** | `DispatchController` — internal, not re-exported     |
+| **Seam**         | `[kSetRequestHandle]` — symbol-keyed, `@internal`    |
+| **State fields** | `#aborted`, `#paused`, `#reason`, `#requestHandle`   |
+| **Tests**        | 8 controller state tests (incl. double-bind no-op)   |
 
 ## File Structure
 
 ```text
 packages/node/
 ├── export/
-│   └── dispatch-controller.ts
+│   └── dispatch-controller.ts   # class + kSetRequestHandle symbol
 └── tests/vitest/
     └── controller.test.ts
 ```

@@ -1,15 +1,9 @@
 # Core Types + Backpressure Primitives (Chunk 02a)
 
-## Problem/Purpose
+## Purpose
 
-Define foundational types for the undici-compatible dispatcher including backpressure
-primitives, lifecycle management (close/destroy), and controller-based API.
-
-## Solution
-
-Implement core HTTP data structures, `DispatchHandler` trait, `RequestController`
-with atomic pause state and cancellation token, and `Lifecycle` trait for graceful
-shutdown with request tracking.
+Foundational types for the undici-compatible dispatcher: HTTP data structures, handler trait,
+controller with pause/cancel, and lifecycle trait for graceful shutdown.
 
 ## Architecture
 
@@ -96,8 +90,7 @@ impl Method {
 
 /// Options for dispatching a request.
 ///
-/// Note: Cannot derive Clone because reqwest::Body is not Clone.
-/// This is intentional - bodies are consumed during request execution.
+/// Not Clone: `reqwest::Body` is not Clone; bodies are consumed during execution.
 pub struct DispatchOptions {
     /// Origin URL (scheme + host + port), e.g., "https://example.com:8080"
     pub origin: Option<String>,
@@ -108,13 +101,17 @@ pub struct DispatchOptions {
     pub query: String,
     pub method: Method,
     pub headers: HashMap<String, Vec<String>>,
-    /// Request body. Supports both materialized (Bytes) and streaming bodies.
-    /// None for bodyless requests like GET/HEAD.
+    /// Request body. Supports materialized (Bytes) or streaming bodies.
+    /// None for bodyless requests (GET/HEAD).
     pub body: Option<reqwest::Body>,
-    /// Time (ms) to wait for response headers. 0 = use default (300000ms).
-    pub headers_timeout_ms: u64,
-    /// Idle time (ms) between body chunks. 0 = use default (300000ms).
-    pub body_timeout_ms: u64,
+    /// Time (ms) to wait for response headers.
+    /// `None` = use `AgentConfig::headers_timeout`. `Some(0)` is invalid and
+    /// must be rejected at the FFI boundary (`InvalidArgumentError`).
+    pub headers_timeout_ms: Option<u64>,
+    /// Idle time (ms) between body chunks. Same semantics as above.
+    pub body_timeout_ms: Option<u64>,
+    /// Per-request connect timeout override.
+    pub connect_timeout_ms: Option<u64>,
 }
 
 impl std::fmt::Debug for DispatchOptions {
@@ -128,6 +125,7 @@ impl std::fmt::Debug for DispatchOptions {
             .field("body", &self.body.as_ref().map(|_| "<body>"))
             .field("headers_timeout_ms", &self.headers_timeout_ms)
             .field("body_timeout_ms", &self.body_timeout_ms)
+            .field("connect_timeout_ms", &self.connect_timeout_ms)
             .finish()
     }
 }
@@ -141,8 +139,9 @@ impl Default for DispatchOptions {
             method: Method::Get,
             headers: HashMap::new(),
             body: None,
-            headers_timeout_ms: 300_000, // 5 minutes, matches undici
-            body_timeout_ms: 300_000,    // 5 minutes, matches undici
+            headers_timeout_ms: None,
+            body_timeout_ms: None,
+            connect_timeout_ms: None,
         }
     }
 }
@@ -171,9 +170,9 @@ pub trait DispatchHandler: Send + Sync {
     async fn on_response_error(&self, error: CoreError);
 }
 
-/// Pause state for backpressure signaling using watch channel.
+/// Pause state for backpressure signaling.
 ///
-/// Uses `tokio::sync::watch` for race-condition-free state synchronization.
+/// Uses `tokio::sync::watch` for race-free state sync.
 pub struct PauseState {
     sender: watch::Sender<bool>,
     receiver: watch::Receiver<bool>,
@@ -192,10 +191,13 @@ impl PauseState {
     }
 
     /// Block until not paused. Returns immediately if not paused.
-    /// Uses wait_for for atomic check-and-wait to avoid race conditions.
+    /// `wait_for` performs an atomic check-and-wait.
+    ///
+    /// Pause is chunk-granular: a chunk already in flight from reqwest will
+    /// be delivered before pause takes effect. Callers needing strict
+    /// pre-chunk gating should drain the controller before pausing.
     pub async fn wait_if_paused(&self) {
         let mut rx = self.receiver.clone();
-        // wait_for handles the initial check + waiting atomically
         let _ = rx.wait_for(|paused| !*paused).await;
     }
 
@@ -268,23 +270,10 @@ impl RequestController {
     }
 }
 
-/// Trait for managing dispatcher lifecycle.
-///
-/// Implementations must track active requests and handle graceful/abrupt shutdown.
-#[async_trait]
-pub trait Lifecycle: Send + Sync {
-    /// Close gracefully: wait for all pending requests to complete.
-    async fn close(&self);
-
-    /// Destroy abruptly: cancel all pending requests with the given error.
-    async fn destroy(&self, error: CoreError);
-
-    /// Check if the dispatcher is closed.
-    fn is_closed(&self) -> bool;
-
-    /// Check if the dispatcher is destroyed.
-    fn is_destroyed(&self) -> bool;
-}
+// Lifecycle methods (`close`, `destroy`, `is_closed`, `is_destroyed`) are
+// declared inherent on `Agent` in 02b. A trait here would have a single impl
+// and add indirection without polymorphism. `DispatchHandler` stays a trait
+// because it has multiple implementations (`MockHandler`, `JsDispatchHandler`).
 
 #[cfg(test)]
 mod tests {
@@ -334,9 +323,8 @@ mod tests {
 
     #[tokio::test]
     async fn pause_state_wait_for_immediate_resume() {
-        // Test that wait_if_paused returns immediately when not paused
+        // wait_if_paused returns immediately when not paused
         let state = PauseState::new();
-        // Should complete instantly
         tokio::time::timeout(std::time::Duration::from_millis(10), state.wait_if_paused())
             .await
             .expect("should not timeout");
@@ -358,11 +346,32 @@ use reqwest::Client;
 use crate::error::CoreError;
 
 /// Configuration for creating an Agent.
+///
+/// The agent-level timeout fields supply defaults for per-request overrides
+/// in `DispatchOptions`. When the per-request value is `None`, the agent's
+/// default is used. `max_redirections = 0` (the default) matches undici:
+/// the dispatcher returns 30x responses to the caller verbatim. Any non-zero
+/// value enables `reqwest::redirect::Policy::limited(n)`.
+///
+/// Security: `Agent::new` always calls `cookie_store(false)` and never
+/// installs a cookie provider. A shared jar across requests is a cross-tenant
+/// leak hazard in multi-user server contexts, so the dispatcher refuses to
+/// keep one. Drop the `cookies` reqwest feature from `Cargo.toml` unless a
+/// future per-request cookie-header helper needs it.
 #[derive(Debug, Clone, Default)]
 pub struct AgentConfig {
+    /// Total request timeout (reqwest-level). `None` = no limit.
     pub timeout: Option<Duration>,
+    /// Default per-request connect timeout.
     pub connect_timeout: Option<Duration>,
+    /// Default per-request headers timeout (response status + headers).
+    pub headers_timeout: Option<Duration>,
+    /// Default per-request body timeout (idle between chunks).
+    pub body_timeout: Option<Duration>,
+    /// Pool idle timeout (socket close after idleness).
     pub pool_idle_timeout: Option<Duration>,
+    /// 0 = no redirects (undici default). Else cap via `Policy::limited(n)`.
+    pub max_redirections: u32,
 }
 
 /// HTTP Agent managing connection pooling.
@@ -371,9 +380,10 @@ pub struct Agent {
 }
 
 impl Agent {
-    /// Create a new Agent with the given configuration.
+    /// Create a new Agent with the given configuration. See 02b for the
+    /// full implementation including redirect policy and lifecycle state.
     pub fn new(config: AgentConfig) -> Result<Self, CoreError> {
-        let mut builder = Client::builder();
+        let mut builder = Client::builder().cookie_store(false);
 
         if let Some(timeout) = config.timeout {
             builder = builder.timeout(timeout);
@@ -384,6 +394,12 @@ impl Agent {
         if let Some(timeout) = config.pool_idle_timeout {
             builder = builder.pool_idle_timeout(timeout);
         }
+
+        builder = builder.redirect(if config.max_redirections == 0 {
+            reqwest::redirect::Policy::none()
+        } else {
+            reqwest::redirect::Policy::limited(config.max_redirections as usize)
+        });
 
         let client = builder
             .build()
@@ -434,18 +450,17 @@ pub mod error;
 
 pub use agent::{Agent, AgentConfig};
 pub use dispatcher::{
-    DispatchHandler, DispatchOptions, Lifecycle, Method, PauseState, RequestController,
-    ResponseStart,
+    DispatchHandler, DispatchOptions, Method, PauseState, RequestController, ResponseStart,
 };
 pub use error::CoreError;
 ```
 
-## Tables
+## Summary
 
 | Metric            | Value                                                    |
 | :---------------- | :------------------------------------------------------- |
 | **Dependencies**  | `reqwest`, `tokio`, `tokio-util`, `async-trait`, `bytes` |
-| **Pause State**   | `tokio::sync::watch` (race-condition-free)               |
+| **Pause State**   | `tokio::sync::watch` (race-free)                         |
 | **Thread Safety** | All types are `Send + Sync`                              |
 | **Tests**         | 5 unit tests                                             |
 

@@ -1,14 +1,8 @@
 # Dispatcher Implementation - Master Plan
 
-## Problem/Purpose
-
-Provide an undici-compatible HTTP dispatcher for Node.js implemented in Rust using
-`reqwest`. Full Dispatcher API compliance with performance matching undici.
-
-## Solution
-
-Multi-layered architecture: Rust core engine → Neon FFI → TypeScript integration.
-Ordered implementation ensures each chunk builds on previous ones with testable results.
+Undici-compatible HTTP dispatcher for Node.js, implemented in Rust via `reqwest`.
+Performance targets vs. undici on the median across cronometro samples:
+throughput ratio ≥ 0.95, latency ratio (median and p95) ≤ 1.05.
 
 ## Architecture
 
@@ -21,8 +15,8 @@ TypeScript Layer (undici Dispatcher API)
        │
 FFI Boundary (Neon / Channel) — All operations non-blocking
        │
-       ├── JsDispatchHandler (callback marshaling via Channel)
-       ├── JsBodyReader (pull-based: Rust requests → JS reads → oneshot response)
+       ├── JsDispatchHandler (response: ack-gated push to JS via Channel)
+       ├── JsBodyReader (request body: pull-based, Rust polls JS via oneshot)
        └── RequestHandleInstance (control)
        │
 Rust Core (reqwest / tokio)
@@ -32,16 +26,29 @@ Rust Core (reqwest / tokio)
        ├── RequestController (cancel + backpressure)
        └── CoreError (undici-compatible codes)
 
-Body Streaming Flow (non-blocking):
-┌──────────┐                          ┌──────────┐
-│  Rust    │  Channel::send(request)  │    JS    │
-│  async   │ ───────────────────────► │  event   │
-│  task    │                          │  loop    │
-│          │  oneshot::send(chunk)    │          │
-│          │ ◄─────────────────────── │          │
-│  await   │                          │ read()   │
-└──────────┘                          └──────────┘
+Response data — ack-gated push (Rust → JS, with backpressure):
+┌──────────┐                                ┌──────────┐
+│  Rust    │  Channel::send(chunk, ack_tx)  │    JS    │
+│  async   │ ─────────────────────────────► │  event   │
+│  task    │                                │  loop    │
+│          │  ack_tx.send(()) on callback   │          │
+│  await   │ ◄───────────────────────────── │  return  │
+└──────────┘                                └──────────┘
+
+Request body — pull-based (Rust pulls from JS reader):
+┌──────────┐                                ┌──────────┐
+│  Rust    │  Channel::send(read, chunk_tx) │    JS    │
+│  body    │ ─────────────────────────────► │  reader  │
+│  stream  │                                │  .read() │
+│          │  chunk_tx.send(bytes | done)   │          │
+│  await   │ ◄───────────────────────────── │          │
+└──────────┘                                └──────────┘
 ```
+
+Both flows use a single oneshot per step; the directions differ. Response
+chunks travel Rust→JS, gated on a JS→Rust ack. Request body chunks travel
+JS→Rust, gated on a Rust→JS pull. Same primitive ("ack-gated oneshot"),
+opposite producer/consumer roles.
 
 ## Implementation Sequence
 
@@ -98,26 +105,36 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | Lifecycle (close/destroy) | Rust trait with request tracking                   | Graceful shutdown + request cancellation         |
 | expectContinue            | Not exposed                                        | reqwest handles internally for H2                |
 
-## Undici Dispatcher Compliance Checklist
+## Undici Dispatcher Compliance
 
-| Feature                   | Status | Notes                                      |
-| :------------------------ | :----- | :----------------------------------------- |
-| dispatch() method         | ✅     | Core functionality                         |
-| DispatchOptions           | ✅     | All fields mapped                          |
-| DispatchHandler callbacks | ✅     | onRequestStart, onResponseStart, etc.      |
-| DispatchController        | ✅     | abort(), pause(), resume()                 |
-| Error codes (UND*ERR*\*)  | ✅     | Symbol.for instanceof                      |
-| close() / destroy()       | ✅     | Lifecycle trait with request tracking      |
-| connect event             | ✅     | Per-origin, on first successful response   |
-| disconnect event          | ✅     | On connection loss after established       |
-| connectionError event     | ✅     | On initial connection failure              |
-| throwOnError              | ✅     | ResponseError for 4xx/5xx status codes     |
-| drain event               | ⚠️     | Not emitted (dispatch always returns true) |
-| CONNECT method            | ❌     | NotSupportedError                          |
-| Upgrade requests          | ❌     | NotSupportedError                          |
-| HTTP trailers             | ❌     | reqwest doesn't expose                     |
+| Feature                     | Status | Notes                                                   |
+| :-------------------------- | :----- | :------------------------------------------------------ |
+| dispatch() method           | done   | Core functionality                                      |
+| DispatchOptions             | done   | All fields mapped                                       |
+| DispatchHandler callbacks   | done   | onRequestStart, onResponseStart, etc.                   |
+| DispatchController          | done   | abort(), pause(), resume()                              |
+| Error codes (UND_ERR_*)     | done   | Symbol.for instanceof                                   |
+| close() / destroy()         | done   | Lifecycle trait with request tracking                   |
+| request / stream / pipeline | done   | Inherit undici Dispatcher defaults on top of dispatch() |
+| disconnect event            | done   | On connection loss after established                    |
+| connectionError event       | done   | On initial connection failure                           |
+| throwOnError                | done   | ResponseError for 4xx/5xx status codes                  |
+| CONNECT method              | no     | NotSupportedError (rejected at FFI parse)               |
+| Upgrade requests            | no     | NotSupportedError (rejected at FFI parse)               |
 
-## Tables
+## Behavioral Differences
+
+| Behavior                | Divergence                                                |
+| :---------------------- | :-------------------------------------------------------- |
+| connect event           | Fires on first response start, not socket establishment   |
+| drain event             | Never emitted (dispatch always returns true)              |
+| HTTP trailers           | Not exposed (reqwest limitation)                          |
+| Status reason phrase    | Uses `canonical_reason`; server-supplied phrase discarded |
+| maxRedirections default | `0` (matches undici); follows undici, not reqwest default |
+
+See `99-unsupported-features.md` for full divergence table and rationale.
+
+## Configuration
 
 | Configuration       | Value        |
 | :------------------ | :----------- |
@@ -177,8 +194,27 @@ packages/node/
 └── benchmark.yml
 ```
 
-## Security Considerations
+## Security
 
-- Headers passed through without filtering or logging (security-sensitive)
-- No credentials stored beyond reqwest's internal TLS session cache
-- Sensitive headers (Authorization, Cookie) handled at application layer
+- **TLS backend pinned**: reqwest configured with `rustls-tls-native-roots`
+  only. Single stack across platforms; honors system root store; no
+  OpenSSL/Schannel/SecureTransport drift.
+- **Redirects disabled by default**: `redirect(Policy::none())` matches
+  undici's `maxRedirections: 0`. No silent auto-follow, no protocol
+  downgrade, no SSRF amplification. Callers opt in per-request.
+- **No implicit cookie jar**: `cookie_store(false)` set explicitly even
+  though the `cookies` reqwest feature is compiled in. Matches undici;
+  prevents cross-tenant cookie leakage.
+- **Header CRLF validation**: header names and values rejected at the TS
+  layer (RFC 7230 token / VCHAR + obs-text) before crossing the FFI.
+  Stops request smuggling and CRLF injection with a precise error
+  identifying the offending header.
+- **Error redaction**: URL userinfo and response body fragments stripped
+  from error messages before crossing the FFI. Bearer tokens in
+  `https://user:pass@host/` URLs never reach JS `Error.message`.
+- **Panic safety across FFI**: release profile sets `panic = "abort"` and
+  each Neon `Channel::send` closure runs inside `catch_unwind`. A panic
+  inside a callback cannot unwind across the C ABI.
+- **CA input caps**: `ca` option capped at 32 entries × 256 KiB each;
+  oversize or malformed input rejected with a fixed `InvalidArgumentError`
+  message that does not echo input bytes.

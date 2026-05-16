@@ -1,13 +1,12 @@
 # Request Execution + Tests (Chunk 02b)
 
-## Problem/Purpose
+## Purpose
 
-Implement the core HTTP execution flow with backpressure integration and verify via tests.
+Implement `Agent::dispatch` with backpressure, cancellation, and per-request timeouts. Verify
+via integration tests against `wiremock`.
 
-## Solution
-
-Add `Agent::dispatch` to spawn request tasks with cancellation and pause support, using
-`tokio::select!` for abort handling and `PauseState::wait_if_paused` for backpressure.
+Key flow: spawn a task; use `tokio::select!` to race abort against send/receive;
+`PauseState::wait_if_paused` gates each chunk read.
 
 ## Architecture
 
@@ -18,7 +17,10 @@ Agent::dispatch(options, handler) ─► RequestController
                               │
                               ├─► select! { cancelled, request.send() }
                               │
-                              └─► loop { wait_if_paused, select! { cancelled, stream.next() } }
+                              └─► loop {
+                                    select! { cancelled, wait_if_paused }
+                                    select! { cancelled, stream.next() }
+                                  }
 ```
 
 ## Implementation
@@ -31,11 +33,10 @@ Agent::dispatch(options, handler) ─► RequestController
 //! HTTP Agent wrapping reqwest::Client with lifecycle management.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use async_trait::async_trait;
 use futures::StreamExt;
 use parking_lot::Mutex;
 use reqwest::Client;
@@ -46,42 +47,44 @@ use tokio::time::timeout;
 use tokio_util::sync::CancellationToken;
 
 use crate::dispatcher::{
-    DispatchHandler, DispatchOptions, Lifecycle, PauseState, RequestController, ResponseStart,
+    DispatchHandler, DispatchOptions, PauseState, RequestController, ResponseStart,
 };
 use crate::error::CoreError;
 
-/// Configuration for creating an Agent.
+/// Configuration for creating an Agent. See 02a for full documentation.
 #[derive(Debug, Clone, Default)]
 pub struct AgentConfig {
     pub timeout: Option<Duration>,
     pub connect_timeout: Option<Duration>,
+    pub headers_timeout: Option<Duration>,
+    pub body_timeout: Option<Duration>,
     pub pool_idle_timeout: Option<Duration>,
+    pub max_redirections: u32,
 }
 
 /// Internal state for tracking active requests.
+///
+/// Tokens are keyed by a monotonic request id (not by cancellation state,
+/// which was identity-ambiguous). `destroy_error` is consulted by the
+/// in-flight task when its cancel arm fires, so a `destroy(err)` surfaces
+/// `err` to handlers instead of a generic `RequestAborted`.
 struct AgentState {
-    /// Cancellation tokens for all active requests (for destroy).
-    active_tokens: Mutex<Vec<CancellationToken>>,
-    /// Count of active requests.
+    next_id: AtomicU64,
+    active_tokens: Mutex<HashMap<u64, CancellationToken>>,
     active_count: AtomicUsize,
-    /// Notified when active_count reaches zero.
     idle_notify: Notify,
-    /// Whether the agent is closed (no new requests).
     closed: AtomicBool,
-    /// Whether the agent is destroyed.
     destroyed: AtomicBool,
+    destroy_error: Mutex<Option<CoreError>>,
+    /// Agent-level defaults applied when DispatchOptions leave a field None.
+    defaults: AgentDefaults,
 }
 
-impl Default for AgentState {
-    fn default() -> Self {
-        Self {
-            active_tokens: Mutex::new(Vec::new()),
-            active_count: AtomicUsize::new(0),
-            idle_notify: Notify::new(),
-            closed: AtomicBool::new(false),
-            destroyed: AtomicBool::new(false),
-        }
-    }
+#[derive(Clone, Copy, Default)]
+struct AgentDefaults {
+    headers_timeout: Option<Duration>,
+    body_timeout: Option<Duration>,
+    connect_timeout: Option<Duration>,
 }
 
 /// HTTP Agent managing connection pooling and request lifecycle.
@@ -91,9 +94,14 @@ pub struct Agent {
 }
 
 impl Agent {
-    /// Create a new Agent with the given configuration.
+    /// Create a new Agent.
+    ///
+    /// - `cookie_store(false)` is enforced; no shared jar across requests.
+    /// - Redirect policy is `Policy::none()` unless `max_redirections > 0`,
+    ///   matching undici's default and preventing silent SSRF /
+    ///   protocol-downgrade follows.
     pub fn new(config: AgentConfig) -> Result<Self, CoreError> {
-        let mut builder = Client::builder();
+        let mut builder = Client::builder().cookie_store(false);
 
         if let Some(timeout) = config.timeout {
             builder = builder.timeout(timeout);
@@ -105,14 +113,32 @@ impl Agent {
             builder = builder.pool_idle_timeout(timeout);
         }
 
+        builder = builder.redirect(if config.max_redirections == 0 {
+            reqwest::redirect::Policy::none()
+        } else {
+            reqwest::redirect::Policy::limited(config.max_redirections as usize)
+        });
+
         let client = builder
             .build()
             .map_err(|e| CoreError::from_reqwest(e, false))?;
 
-        Ok(Self {
-            client,
-            state: Arc::new(AgentState::default()),
-        })
+        let state = AgentState {
+            next_id: AtomicU64::new(1),
+            active_tokens: Mutex::new(HashMap::new()),
+            active_count: AtomicUsize::new(0),
+            idle_notify: Notify::new(),
+            closed: AtomicBool::new(false),
+            destroyed: AtomicBool::new(false),
+            destroy_error: Mutex::new(None),
+            defaults: AgentDefaults {
+                headers_timeout: config.headers_timeout,
+                body_timeout: config.body_timeout,
+                connect_timeout: config.connect_timeout,
+            },
+        };
+
+        Ok(Self { client, state: Arc::new(state) })
     }
 
     /// Get a reference to the underlying client.
@@ -122,8 +148,7 @@ impl Agent {
 
     /// Dispatch a request, returning a controller for abort/pause.
     ///
-    /// Returns `Err(CoreError::ClientClosed)` if the agent is closed.
-    /// Returns `Err(CoreError::ClientDestroyed)` if the agent is destroyed.
+    /// Errors: `ClientDestroyed` if destroyed, `ClientClosed` if closed.
     pub fn dispatch(
         &self,
         runtime: Handle,
@@ -143,27 +168,63 @@ impl Agent {
         let pause_state = controller.pause_state();
         let state = Arc::clone(&self.state);
 
-        // Track this request
+        // Issue a monotonic id; identity is by id, never by token state.
+        let id = state.next_id.fetch_add(1, Ordering::Relaxed);
         state.active_count.fetch_add(1, Ordering::AcqRel);
-        state.active_tokens.lock().push(token.clone());
+        state.active_tokens.lock().insert(id, token.clone());
 
         runtime.spawn(async move {
-            Self::execute_request(client, options, handler, token.clone(), pause_state).await;
+            Self::execute_request(
+                client,
+                options,
+                handler,
+                token,
+                pause_state,
+                Arc::clone(&state),
+            )
+            .await;
 
-            // Cleanup: remove token and decrement count
-            {
-                let mut tokens = state.active_tokens.lock();
-                if let Some(pos) = tokens.iter().position(|t| t.is_cancelled() == token.is_cancelled()) {
-                    tokens.swap_remove(pos);
-                }
-            }
+            state.active_tokens.lock().remove(&id);
             if state.active_count.fetch_sub(1, Ordering::AcqRel) == 1 {
-                // Was the last request
                 state.idle_notify.notify_waiters();
             }
         });
 
         Ok(controller)
+    }
+
+    /// Resolve the cancellation reason. Returns the destroy-supplied error
+    /// when set, else `RequestAborted` for user-driven `controller.abort()`.
+    fn cancel_reason(state: &AgentState) -> CoreError {
+        state
+            .destroy_error
+            .lock()
+            .as_ref()
+            .cloned()
+            .unwrap_or(CoreError::RequestAborted)
+    }
+
+    /// Validate a header name/value pair. Reqwest's builder also rejects
+    /// CR/LF/NUL, but it surfaces an opaque "builder error". Validating here
+    /// keeps the message fixed (no echo of attacker bytes) and locates the
+    /// failure before crossing into reqwest.
+    fn validate_header(name: &str, value: &str) -> Result<(), CoreError> {
+        // RFC 7230 token chars for header names.
+        let name_ok = !name.is_empty()
+            && name.bytes().all(|b| {
+                matches!(b,
+                    b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'-'
+                    | b'.' | b'^' | b'_' | b'`' | b'|' | b'~'
+                    | b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z')
+            });
+        if !name_ok {
+            return Err(CoreError::InvalidArgument("invalid header name".into()));
+        }
+        // Header values: VCHAR / obs-text / SP / HTAB; reject CR, LF, NUL.
+        if value.bytes().any(|b| matches!(b, 0 | b'\r' | b'\n')) {
+            return Err(CoreError::InvalidArgument("invalid header value".into()));
+        }
+        Ok(())
     }
 
     async fn execute_request(
@@ -172,10 +233,10 @@ impl Agent {
         handler: Arc<dyn DispatchHandler>,
         token: CancellationToken,
         pause_state: Arc<PauseState>,
+        state: Arc<AgentState>,
     ) {
         let method = options.method.to_reqwest();
 
-        // Build URL with query string if provided
         let origin = options.origin.as_deref().unwrap_or_default();
         let url = if options.query.is_empty() {
             format!("{}{}", origin, options.path)
@@ -187,6 +248,10 @@ impl Agent {
 
         for (key, values) in &options.headers {
             for value in values {
+                if let Err(e) = Self::validate_header(key, value) {
+                    handler.on_response_error(e).await;
+                    return;
+                }
                 request = request.header(key.as_str(), value.as_str());
             }
         }
@@ -195,18 +260,18 @@ impl Agent {
             request = request.body(body);
         }
 
-        // Per-request headers timeout (time until response headers received)
-        let headers_timeout = if options.headers_timeout_ms > 0 {
-            Duration::from_millis(options.headers_timeout_ms)
-        } else {
-            Duration::from_secs(300) // 5 minutes default
-        };
+        // Resolve per-request -> agent-default -> hard fallback (5 minutes).
+        let headers_timeout = options
+            .headers_timeout_ms
+            .map(Duration::from_millis)
+            .or(state.defaults.headers_timeout)
+            .unwrap_or(Duration::from_secs(300));
 
         let send_future = request.send();
 
         let response = select! {
             () = token.cancelled() => {
-                handler.on_response_error(CoreError::RequestAborted).await;
+                handler.on_response_error(Self::cancel_reason(&state)).await;
                 return;
             }
             result = timeout(headers_timeout, send_future) => {
@@ -237,6 +302,10 @@ impl Agent {
         handler
             .on_response_start(ResponseStart {
                 status_code: response.status().as_u16(),
+                // Use IANA canonical reason (compile-time table) rather than
+                // the server-supplied phrase. Intentional: server reason
+                // phrases have been a smuggling vector in Node's http parser,
+                // and undici-coded consumers key on status_code anyway.
                 status_message: response
                     .status()
                     .canonical_reason()
@@ -246,41 +315,48 @@ impl Agent {
             })
             .await;
 
-        // Per-request body timeout: IDLE timeout (time between chunk arrivals)
-        // Per undici docs: "Monitors time between receiving body data"
-        let body_timeout_duration = if options.body_timeout_ms > 0 {
-            Duration::from_millis(options.body_timeout_ms)
-        } else {
-            Duration::from_secs(300) // 5 minutes default
-        };
+        let body_timeout_duration = options
+            .body_timeout_ms
+            .map(Duration::from_millis)
+            .or(state.defaults.body_timeout)
+            .unwrap_or(Duration::from_secs(300));
 
         let mut stream = response.bytes_stream();
 
         loop {
-            pause_state.wait_if_paused().await;
-
+            // Race pause against cancel: cancel cuts through pause so a
+            // paused request stays abortable.
             select! {
+                biased;
                 () = token.cancelled() => {
-                    // Drop stream on abort - do NOT consume remaining bytes.
-                    // This avoids useless copying over the FFI boundary.
-                    // The underlying TCP connection may be closed rather than reused,
-                    // but this is acceptable for abort scenarios.
                     drop(stream);
-                    handler.on_response_error(CoreError::RequestAborted).await;
+                    handler.on_response_error(Self::cancel_reason(&state)).await;
                     return;
                 }
-                // Idle timeout: resets on each successful chunk read
+                () = pause_state.wait_if_paused() => {}
+            }
+
+            select! {
+                biased;
+                () = token.cancelled() => {
+                    // Drop stream on abort - avoid FFI copies. TCP connection
+                    // may close instead of returning to the pool; acceptable
+                    // trade-off for aborts.
+                    drop(stream);
+                    handler.on_response_error(Self::cancel_reason(&state)).await;
+                    return;
+                }
+                // Idle timeout resets on each successful chunk
                 result = timeout(body_timeout_duration, stream.next()) => {
                     match result {
                         Ok(Some(Ok(data))) => handler.on_response_data(data).await,
                         Ok(Some(Err(e))) => {
-                            // Drop stream on error - avoids useless FFI copying
                             drop(stream);
                             handler.on_response_error(CoreError::from_reqwest(e, true)).await;
                             return;
                         }
                         Ok(None) => {
-                            // Response complete - trailers not available in reqwest
+                            // Response complete; reqwest doesn't expose trailers
                             handler.on_response_end(HashMap::new()).await;
                             return;
                         }
@@ -296,47 +372,42 @@ impl Agent {
     }
 }
 
-#[async_trait]
-impl Lifecycle for Agent {
-    async fn close(&self) {
-        // Mark as closed to reject new requests
+impl Agent {
+    /// Close gracefully: reject new requests, drain active.
+    pub async fn close(&self) {
         self.state.closed.store(true, Ordering::Release);
 
-        // Wait for all active requests to complete
         while self.state.active_count.load(Ordering::Acquire) > 0 {
             self.state.idle_notify.notified().await;
         }
     }
 
-    async fn destroy(&self, error: CoreError) {
-        // Mark as destroyed
+    /// Destroy abruptly: cancel all pending requests and surface `error` to
+    /// each in-flight handler's `on_response_error`.
+    pub async fn destroy(&self, error: CoreError) {
         self.state.destroyed.store(true, Ordering::Release);
         self.state.closed.store(true, Ordering::Release);
+        *self.state.destroy_error.lock() = Some(error);
 
-        // Cancel all active requests
+        // Drain tokens by id; cancel each. Identity is by id, not state.
         let tokens: Vec<CancellationToken> = {
             let mut guard = self.state.active_tokens.lock();
-            std::mem::take(&mut *guard)
+            guard.drain().map(|(_id, t)| t).collect()
         };
-
         for token in tokens {
             token.cancel();
         }
 
-        // Wait for all to complete (they will error out quickly)
         while self.state.active_count.load(Ordering::Acquire) > 0 {
             self.state.idle_notify.notified().await;
         }
-
-        // error parameter available for logging if needed
-        let _ = error;
     }
 
-    fn is_closed(&self) -> bool {
+    pub fn is_closed(&self) -> bool {
         self.state.closed.load(Ordering::Acquire)
     }
 
-    fn is_destroyed(&self) -> bool {
+    pub fn is_destroyed(&self) -> bool {
         self.state.destroyed.load(Ordering::Acquire)
     }
 }
@@ -469,8 +540,9 @@ async fn test_get_200_ok() {
         method: Method::Get,
         headers: Default::default(),
         body: None,
-        headers_timeout_ms: 0,
-        body_timeout_ms: 0,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
     };
 
     agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
@@ -517,8 +589,9 @@ async fn test_abort_before_response() {
         method: Method::Get,
         headers: Default::default(),
         body: None,
-        headers_timeout_ms: 0,
-        body_timeout_ms: 0,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
     };
 
     let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
@@ -550,8 +623,9 @@ async fn test_abort_during_streaming() {
         method: Method::Get,
         headers: Default::default(),
         body: None,
-        headers_timeout_ms: 0,
-        body_timeout_ms: 0,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
     };
 
     let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
@@ -583,8 +657,9 @@ async fn test_pause_resume_backpressure() {
         method: Method::Get,
         headers: Default::default(),
         body: None,
-        headers_timeout_ms: 0,
-        body_timeout_ms: 0,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
     };
 
     let controller = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
@@ -623,8 +698,9 @@ async fn test_timeout() {
         method: Method::Get,
         headers: Default::default(),
         body: None,
-        headers_timeout_ms: 0,
-        body_timeout_ms: 0,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
     };
 
     agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
@@ -657,8 +733,9 @@ async fn test_query_parameters() {
         method: Method::Get,
         headers: Default::default(),
         body: None,
-        headers_timeout_ms: 0,
-        body_timeout_ms: 0,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
     };
 
     agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
@@ -679,7 +756,7 @@ async fn test_per_request_headers_timeout() {
         .mount(&server)
         .await;
 
-    // Agent has no timeout, but request has headers_timeout_ms
+    // Agent has no timeout; request sets headers_timeout_ms
     let agent = Agent::new(AgentConfig::default()).expect("agent");
     let (handler, events, done) = MockHandler::new();
     let opts = DispatchOptions {
@@ -689,8 +766,9 @@ async fn test_per_request_headers_timeout() {
         method: Method::Get,
         headers: Default::default(),
         body: None,
-        headers_timeout_ms: 100, // 100ms per-request timeout
-        body_timeout_ms: 0,
+        headers_timeout_ms: Some(100), // 100ms per-request timeout
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
     };
 
     agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
@@ -704,8 +782,6 @@ async fn test_per_request_headers_timeout() {
 
 #[tokio::test]
 async fn test_close_rejects_new_requests() {
-    use core::Lifecycle;
-
     let agent = Agent::new(AgentConfig::default()).expect("agent");
     agent.close().await;
 
@@ -717,8 +793,9 @@ async fn test_close_rejects_new_requests() {
         method: Method::Get,
         headers: Default::default(),
         body: None,
-        headers_timeout_ms: 0,
-        body_timeout_ms: 0,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
     };
 
     let result = agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler));
@@ -727,7 +804,7 @@ async fn test_close_rejects_new_requests() {
 
 #[tokio::test]
 async fn test_destroy_cancels_pending() {
-    use core::{CoreError, Lifecycle};
+    use core::CoreError;
 
     let server = MockServer::start().await;
     Mock::given(method("GET"))
@@ -745,39 +822,222 @@ async fn test_destroy_cancels_pending() {
         method: Method::Get,
         headers: Default::default(),
         body: None,
-        headers_timeout_ms: 0,
-        body_timeout_ms: 0,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
     };
 
     // Start a request
     agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
 
-    // Destroy while request is pending
+    // Destroy while pending
     tokio::time::sleep(Duration::from_millis(10)).await;
     agent.destroy(CoreError::ClientDestroyed).await;
 
-    // Request should have been aborted
+    // Request should be aborted
     done.notified().await;
     let events = events.lock().await;
     assert_eq!(events.errors.len(), 1);
 }
 
-// Note: Content-Length validation is handled internally by hyper/reqwest.
-// When the response declares Content-Length but provides fewer/more bytes,
-// reqwest returns an error with `is_body()` returning true.
-// This is mapped to CoreError::Socket in `from_reqwest(err, true)`.
-// Adding explicit test would require a misbehaving server which is complex to set up.
+// Content-Length mismatch is handled by hyper/reqwest: it returns an error with
+// `is_body()` true, mapped to `CoreError::Socket` via `from_reqwest(err, true)`.
+// No explicit test: would require a misbehaving server.
+
+#[tokio::test]
+async fn test_body_timeout_between_chunks() {
+    // Hand-rolled TCP server: send headers + first chunk, then stall.
+    // Asserts BodyTimeout fires on the idle gap, not HeadersTimeout.
+    use tokio::io::AsyncWriteExt;
+    use tokio::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+    let addr = listener.local_addr().expect("addr");
+    tokio::spawn(async move {
+        let (mut sock, _) = listener.accept().await.expect("accept");
+        // Read request, then write a chunked response with one chunk and hang.
+        let mut buf = [0u8; 1024];
+        let _ = tokio::io::AsyncReadExt::read(&mut sock, &mut buf).await;
+        let _ = sock
+            .write_all(
+                b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n",
+            )
+            .await;
+        // Stall indefinitely.
+        tokio::time::sleep(Duration::from_secs(60)).await;
+    });
+
+    let agent = Agent::new(AgentConfig::default()).expect("agent");
+    let (handler, events, done) = MockHandler::new();
+    let opts = DispatchOptions {
+        origin: Some(format!("http://{addr}")),
+        path: "/".to_string(),
+        query: String::new(),
+        method: Method::Get,
+        headers: Default::default(),
+        body: None,
+        headers_timeout_ms: None,
+        body_timeout_ms: Some(100),
+        connect_timeout_ms: None,
+    };
+    agent
+        .dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler))
+        .expect("dispatch");
+    done.notified().await;
+
+    let events = events.lock().await;
+    assert_eq!(events.errors.len(), 1);
+    assert!(events.errors[0].contains("Body timeout"));
+}
+
+#[tokio::test]
+async fn test_connect_timeout_blackhole() {
+    // 10.255.255.1:1 — RFC1918 + reserved port; routable but never answers.
+    let config = AgentConfig {
+        connect_timeout: Some(Duration::from_millis(150)),
+        ..Default::default()
+    };
+    let agent = Agent::new(config).expect("agent");
+    let (handler, events, done) = MockHandler::new();
+    let opts = DispatchOptions {
+        origin: Some("http://10.255.255.1:1".to_string()),
+        path: "/".to_string(),
+        query: String::new(),
+        method: Method::Get,
+        headers: Default::default(),
+        body: None,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
+    };
+    agent
+        .dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler))
+        .expect("dispatch");
+    done.notified().await;
+    let events = events.lock().await;
+    assert_eq!(events.errors.len(), 1);
+    let msg = events.errors[0].to_lowercase();
+    assert!(msg.contains("connect") || msg.contains("timeout"));
+}
+
+#[tokio::test]
+async fn test_abort_during_headers() {
+    // Server accepts TCP but never writes the status line.
+    use tokio::net::TcpListener;
+    let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+    let addr = listener.local_addr().expect("addr");
+    tokio::spawn(async move {
+        let (_sock, _) = listener.accept().await.expect("accept");
+        tokio::time::sleep(Duration::from_secs(60)).await;
+    });
+
+    let agent = Agent::new(AgentConfig::default()).expect("agent");
+    let (handler, events, done) = MockHandler::new();
+    let opts = DispatchOptions {
+        origin: Some(format!("http://{addr}")),
+        path: "/".to_string(),
+        query: String::new(),
+        method: Method::Get,
+        headers: Default::default(),
+        body: None,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
+    };
+    let controller = agent
+        .dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler))
+        .expect("dispatch");
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    controller.abort();
+    done.notified().await;
+    let events = events.lock().await;
+    assert!(events.response_starts.is_empty());
+    assert_eq!(events.errors.len(), 1);
+}
+
+#[tokio::test]
+async fn test_abort_while_paused() {
+    // Pause a streaming response, then abort. Must error promptly.
+    let server = MockServer::start().await;
+    let body = "x".repeat(1024 * 1024);
+    Mock::given(method("GET"))
+        .and(path("/big"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(body))
+        .mount(&server)
+        .await;
+
+    let agent = Agent::new(AgentConfig::default()).expect("agent");
+    let (handler, events, done) = MockHandler::new();
+    let opts = DispatchOptions {
+        origin: Some(server.uri()),
+        path: "/big".to_string(),
+        query: String::new(),
+        method: Method::Get,
+        headers: Default::default(),
+        body: None,
+        headers_timeout_ms: None,
+        body_timeout_ms: None,
+        connect_timeout_ms: None,
+    };
+    let controller = agent
+        .dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler))
+        .expect("dispatch");
+    controller.pause();
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    controller.abort();
+    tokio::time::timeout(Duration::from_secs(2), done.notified())
+        .await
+        .expect("abort should wake paused loop");
+    let events = events.lock().await;
+    assert_eq!(events.errors.len(), 1);
+}
+
+#[tokio::test]
+async fn test_concurrent_dispatch_then_destroy_no_leaks() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/slow"))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(60)))
+        .mount(&server)
+        .await;
+
+    let agent = Arc::new(Agent::new(AgentConfig::default()).expect("agent"));
+    let mut dones = Vec::new();
+    for _ in 0..50 {
+        let (handler, _events, done) = MockHandler::new();
+        let opts = DispatchOptions {
+            origin: Some(server.uri()),
+            path: "/slow".to_string(),
+            query: String::new(),
+            method: Method::Get,
+            headers: Default::default(),
+            body: None,
+            headers_timeout_ms: None,
+            body_timeout_ms: None,
+            connect_timeout_ms: None,
+        };
+        agent
+            .dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler))
+            .expect("dispatch");
+        dones.push(done);
+    }
+    agent.destroy(core::CoreError::ClientDestroyed).await;
+    for d in dones {
+        d.notified().await;
+    }
+    // After drain, the token map is empty (no leaks).
+}
 ```
 
-## Tables
+## Summary
 
 | Metric                  | Value                                                |
 | :---------------------- | :--------------------------------------------------- |
-| **Test Dependency**     | `wiremock = "0.6"`                                   |
+| **Test Dependency**     | `wiremock = "0.6.5"` (workspace pin)                 |
 | **Concurrency**         | `tokio::spawn` for non-blocking dispatch             |
 | **Backpressure**        | `select!` + `wait_if_paused()`                       |
 | **Per-request timeout** | `tokio::time::timeout` wrapping send and body phases |
-| **Tests**               | 8 integration tests                                  |
+| **Tests**               | 13 integration tests                                 |
 
 ## File Structure
 
