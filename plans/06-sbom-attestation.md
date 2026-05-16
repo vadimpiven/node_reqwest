@@ -110,45 +110,91 @@ root).
 
 All SBOM work lives in `mise.toml`. CI and local dev call the same tasks.
 
+Validation lives in node scripts (matches the existing pattern in `scripts/`, per CLAUDE.md
+> Scripts). mise tasks chain `syft` then `node scripts/<validate>.ts` — every `run` entry is a
+binary call with plain args, portable across cmd.exe, PowerShell, bash, sh.
+
+```typescript
+// scripts/sbom-validate-rust.ts
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+import fs from "node:fs";
+import { runScript } from "./helpers/run-script.ts";
+
+const MIN_COMPONENTS = 50;
+
+runScript("Validate Rust SBOM", async () => {
+  const path = "packages/node/dist/node_reqwest.cdx.json";
+  const bom = JSON.parse(fs.readFileSync(path, "utf8")) as {
+    components?: Array<{ properties?: Array<{ value?: string }> }>;
+  };
+  const count = (bom.components ?? []).filter((c) =>
+    c.properties?.some((p) => p.value === "cargo-auditable-binary-cataloger"),
+  ).length;
+  if (count <= MIN_COMPONENTS) {
+    throw new Error(
+      `expected > ${MIN_COMPONENTS} cargo-auditable components in ${path}, got ${count}`,
+    );
+  }
+  console.log(`OK: ${count} cargo-auditable components`);
+});
+```
+
+```typescript
+// scripts/sbom-validate-js.ts
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+import fs from "node:fs";
+import { runScript } from "./helpers/run-script.ts";
+
+runScript("Validate JS SBOM", async () => {
+  const path = "packages/node/package.cdx.json";
+  const bom = JSON.parse(fs.readFileSync(path, "utf8")) as {
+    components?: Array<{ type?: string }>;
+  };
+  const count = (bom.components ?? []).filter((c) => c.type === "library").length;
+  if (count === 0) {
+    throw new Error(`expected > 0 library components in ${path}, got 0`);
+  }
+  console.log(`OK: ${count} library components`);
+});
+```
+
 ```toml
-# mise.toml — all three tasks set shell="bash -c" because the jq filters use
-# single-quoted args. mise on Windows defaults to cmd.exe, which doesn't strip
-# single quotes, so the filter would reach jq with stray quotes. git-bash is
-# available on GitHub Actions Windows runners and on any Git-for-Windows dev box.
+# mise.toml — no `shell` override needed; every `run` entry is a binary
+# invocation with plain args, portable across all OS shells.
 
 # Exits non-zero if .dep-v0 missing.
 [tasks."sbom:verify"]
 description = "Check .dep-v0 is present in the built addon"
-shell = "bash -c"
 run = "cargo auditable info packages/node/dist/node_reqwest.node"
 
 [tasks."sbom:rust"]
 description = "Generate CycloneDX SBOM from the addon's .dep-v0 section"
 depends = ["sbom:verify"]
-shell = "bash -c"
 run = [
-  '''syft scan packages/node/dist/node_reqwest.node --override-default-catalogers cargo-auditable-binary-cataloger -o cyclonedx-json=packages/node/dist/node_reqwest.cdx.json''',
-  '''jq -e '.bomFormat == "CycloneDX"' packages/node/dist/node_reqwest.cdx.json''',
-  '''jq -e '[.components[]? | select(.properties[]?.value == "cargo-auditable-binary-cataloger")] | length > 50' packages/node/dist/node_reqwest.cdx.json''',
+  "syft scan packages/node/dist/node_reqwest.node --override-default-catalogers cargo-auditable-binary-cataloger -o cyclonedx-json=packages/node/dist/node_reqwest.cdx.json",
+  "node scripts/sbom-validate-rust.ts",
 ]
 
 [tasks."sbom:js"]
 description = "Generate CycloneDX SBOM from the packed npm tarball"
-shell = "bash -c"
 run = [
-  '''syft scan packages/node/package.tar.gz -o cyclonedx-json=packages/node/package.cdx.json''',
-  '''jq -e '.bomFormat == "CycloneDX"' packages/node/package.cdx.json''',
-  '''jq -e '[.components[]? | select(.type == "library")] | length > 0' packages/node/package.cdx.json''',
+  "syft scan packages/node/package.tar.gz -o cyclonedx-json=packages/node/package.cdx.json",
+  "node scripts/sbom-validate-js.ts",
 ]
 ```
 
 Add `packages/node/dist/node_reqwest.cdx.json` and `packages/node/package.cdx.json` to
-`.gitignore`.
+`.gitignore`. The `bomFormat == "CycloneDX"` check is dropped — Syft's `-o cyclonedx-json` already
+guarantees that field; the validators catch the genuine failure mode (Syft ran but the cataloger
+silently produced zero components).
 
 - **Fixed paths in / out**: each matrix entry writes one SBOM in its own workspace; the attest
   step picks it up by literal name.
 - **No host-target probing**: Syft reads `.dep-v0` from ELF / Mach-O / PE identically.
-- **bash on all platforms**: `shell = "bash -c"` per task — uses git-bash on Windows.
+- **No shell idioms**: every `run` entry is a binary call with plain args. Works on cmd.exe,
+  PowerShell, bash, sh — no `shell = "..."` override, no jq dependency.
 
 ### 6. Wire SBOM steps into `release.yaml`
 
