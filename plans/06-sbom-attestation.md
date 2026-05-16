@@ -99,19 +99,20 @@ Single compile per image rebuild, cached in a Docker layer. Subsequent `docker b
 the layer; CI runs see a pre-installed binary. Bump `--version` in lockstep with the mise.toml pin
 when upgrading.
 
-### 3. Compile release builds with cargo-auditable
+### 3. Compile all builds with cargo-auditable
 
 ```jsonc
-// packages/node/package.json — patch ci-build (currently line 64)
-"build:cargo": "cargo build",
-"build:cargo:release": "cargo auditable build -r --locked",
-"ci-build": "pnpm run build:cargo:release && pnpm run build:ts",
+// packages/node/package.json — patch build:cargo (currently line 53)
+"build:cargo": "cargo auditable build",
+// ci-build stays as-is (line 64); -r --locked are forwarded to cargo auditable build:
+"ci-build": "pnpm run build:cargo -r --locked && pnpm run build:ts"
 ```
 
-`build-addon` invokes `pnpm -F "{packages/node}" run ci-build` (release.yaml:86); cargo-auditable
-runs wherever that runs (host on macOS/Windows, manylinux Docker on Linux). Dev `pnpm run build`
-stays on plain `cargo build` — no auditable overhead for non-release work. PE binaries on Windows
-get `.dep-v0` in a PE section, same mechanism as ELF/Mach-O.
+cargo-auditable is a thin wrapper that delegates to `cargo build` and embeds a compressed dep
+manifest into a binary section — overhead is negligible, so dev and release builds use the same
+command. `build-addon` invokes `pnpm -F "{packages/node}" run ci-build` (release.yaml:86);
+cargo-auditable runs wherever that runs (host on macOS/Windows, manylinux Docker on Linux). PE
+binaries on Windows get `.dep-v0` in a PE section, same mechanism as ELF/Mach-O.
 
 ### 4. Verify auditable metadata in build-addon
 
@@ -355,7 +356,8 @@ In `packages/node/README.md` > "Installation safety", after existing provenance 
 
 ## Scope of impact
 
-- **`regular.yaml`**: unchanged. Dev builds stay on plain `cargo build`.
+- **`regular.yaml`**: unchanged in workflow logic. All builds (dev + CI) now go through
+  `cargo auditable build` via `build:cargo` — negligible overhead, single code path.
 - **`release.yaml`**:
   - `build-addon`: `cargo auditable build`, verify metadata, per-target Syft SBOM, attestation,
     upload (§3–7).
