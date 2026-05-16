@@ -78,7 +78,13 @@ Windows.
 
 Without the lockfile inside `package.tar.gz`, Syft's pnpm cataloger only sees direct deps from
 `package.json`. `pnpm pack` resolves `files` relative to the package dir, so copy the root
-lockfile in before pack:
+lockfile in before pack. Use `shx` for a portable `cp` (the project has Windows dev runners; bare
+`cp` breaks there).
+
+```yaml
+# pnpm-workspace.yaml — add to catalog: section (exact pin, per project convention)
+shx: 0.4.0
+```
 
 ```jsonc
 // packages/node/package.json
@@ -87,7 +93,14 @@ lockfile in before pack:
   "export_dist/**/*",
   "pnpm-lock.yaml"
 ],
-"build:ts": "vite build && typedoc && cp ../../pnpm-lock.yaml . && pnpm pack --out package.tar.gz"
+"devDependencies": {
+  "shx": "catalog:"
+  // ...existing entries
+},
+"scripts": {
+  "build:ts": "vite build && typedoc && shx cp ../../pnpm-lock.yaml . && pnpm pack --out package.tar.gz"
+  // ...
+}
 ```
 
 Add `packages/node/pnpm-lock.yaml` to `.gitignore` (transient copy; source of truth stays at repo
@@ -98,16 +111,21 @@ root).
 All SBOM work lives in `mise.toml`. CI and local dev call the same tasks.
 
 ```toml
-# mise.toml
+# mise.toml — all three tasks set shell="bash -c" because the jq filters use
+# single-quoted args. mise on Windows defaults to cmd.exe, which doesn't strip
+# single quotes, so the filter would reach jq with stray quotes. git-bash is
+# available on GitHub Actions Windows runners and on any Git-for-Windows dev box.
 
 # Exits non-zero if .dep-v0 missing.
 [tasks."sbom:verify"]
 description = "Check .dep-v0 is present in the built addon"
+shell = "bash -c"
 run = "cargo auditable info packages/node/dist/node_reqwest.node"
 
 [tasks."sbom:rust"]
 description = "Generate CycloneDX SBOM from the addon's .dep-v0 section"
 depends = ["sbom:verify"]
+shell = "bash -c"
 run = [
   '''syft scan packages/node/dist/node_reqwest.node --override-default-catalogers cargo-auditable-binary-cataloger -o cyclonedx-json=packages/node/dist/node_reqwest.cdx.json''',
   '''jq -e '.bomFormat == "CycloneDX"' packages/node/dist/node_reqwest.cdx.json''',
@@ -116,6 +134,7 @@ run = [
 
 [tasks."sbom:js"]
 description = "Generate CycloneDX SBOM from the packed npm tarball"
+shell = "bash -c"
 run = [
   '''syft scan packages/node/package.tar.gz -o cyclonedx-json=packages/node/package.cdx.json''',
   '''jq -e '.bomFormat == "CycloneDX"' packages/node/package.cdx.json''',
@@ -129,7 +148,7 @@ Add `packages/node/dist/node_reqwest.cdx.json` and `packages/node/package.cdx.js
 - **Fixed paths in / out**: each matrix entry writes one SBOM in its own workspace; the attest
   step picks it up by literal name.
 - **No host-target probing**: Syft reads `.dep-v0` from ELF / Mach-O / PE identically.
-- **One command per `run` entry**: portable across bash, PowerShell, git-bash.
+- **bash on all platforms**: `shell = "bash -c"` per task — uses git-bash on Windows.
 
 ### 6. Wire SBOM steps into `release.yaml`
 
