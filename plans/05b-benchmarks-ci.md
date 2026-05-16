@@ -1,24 +1,18 @@
 # Benchmarks + CI (Chunk 05b)
 
-## Problem/Purpose
+Four `cronometro` benchmark scripts (HTTP/1 GET, HTTP/1 POST stream, HTTP/2 GET, HTTP/2
+POST stream) compare `node_reqwest` against undici. CI fails when `node_reqwest` mean
+latency exceeds 105% of undici's.
 
-Automate performance verification and ensure `node_reqwest` remains competitive with
-undici on HTTP/1 and HTTP/2.
-
-## Solution
-
-Create benchmark scripts comparing `node_reqwest` vs `undici` using `cronometro`, with
-strict pass/fail criteria in GitHub Actions.
-
-## Architecture
+## Flow
 
 ```text
 GitHub Action
   └─► pnpm run bench:setup (TLS certs)
-       └─► Start Servers (background)
+       └─► Start servers (background)
             └─► Run cronometro
                  └─► Compare node_reqwest vs undici
-                      └─► Exit 1 if < 95% performance
+                      └─► Exit 1 if mean > 105% of undici
 ```
 
 ## Implementation
@@ -583,7 +577,7 @@ jobs:
                   BODY_SIZE: 4096
 ```
 
-## Tables
+## Thresholds
 
 | Metric           | Threshold        |
 | :--------------- | :--------------- |
@@ -591,13 +585,15 @@ jobs:
 | **Mean Latency** | ≤ 105% of undici |
 | **CI Timeout**   | 15 minutes       |
 
-| Environment Variable | Default        | Purpose                         |
-| :------------------- | :------------- | :------------------------------ |
-| `SAMPLES`            | 10             | Number of iterations            |
-| `PARALLEL`           | 100            | Parallel requests per iteration |
-| `CONNECTIONS`        | 50             | Connection pool size            |
-| `SERVER_URL`         | localhost:3000 | Target server                   |
-| `BODY_SIZE`          | 1024           | Size of POST body in bytes      |
+## Environment Variables
+
+| Variable      | Default        | Purpose                         |
+| :------------ | :------------- | :------------------------------ |
+| `SAMPLES`     | 10             | Number of iterations            |
+| `PARALLEL`    | 100            | Parallel requests per iteration |
+| `CONNECTIONS` | 50             | Connection pool size            |
+| `SERVER_URL`  | localhost:3000 | Target server                   |
+| `BODY_SIZE`   | 1024           | Size of POST body in bytes      |
 
 ## File Structure
 

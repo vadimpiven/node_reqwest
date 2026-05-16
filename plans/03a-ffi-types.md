@@ -1,15 +1,15 @@
 # FFI Types + Basic Bindings (Chunk 03a)
 
-## Problem/Purpose
+## Purpose
 
-Initialize the Neon-based FFI boundary using Neon's global tokio runtime and establish
-core TypeScript interfaces for the native addon.
+Stand up the Neon FFI boundary on Neon's global tokio runtime and define the TypeScript
+addon interface.
 
-## Solution
+## Approach
 
-Use `neon::macro_internal::spawn` which leverages the shared global tokio runtime
-(automatically initialized by Neon with `tokio-rt-multi-thread` feature). Define
-TypeScript interfaces matching the existing `addon-def.ts` structure.
+- Use `neon::macro_internal::spawn` (backed by Neon's shared tokio runtime via the
+  `tokio-rt-multi-thread` feature).
+- Mirror the existing `addon-def.ts` shape for TypeScript types.
 
 ## Architecture
 
@@ -92,24 +92,24 @@ fn agent_create<'cx>(
     cx: &mut FunctionContext<'cx>,
     options: Handle<'cx, JsObject>,
 ) -> JsResult<'cx, JsBox<AgentInstance>> {
-    // timeout: Total request timeout (request start to response complete)
+    // timeout: total request timeout (start → response complete)
     let timeout: Handle<JsNumber> = options.get(cx, "timeout")?;
-    // keepAliveTimeout: How long to keep idle connections alive (maps to pool_idle_timeout)
+    // keepAliveTimeout maps to reqwest's pool_idle_timeout
     let keep_alive_timeout: Handle<JsNumber> = options.get(cx, "keepAliveTimeout")?;
 
     let timeout_ms = timeout.value(cx) as u64;
     let pool_idle_timeout_ms = keep_alive_timeout.value(cx) as u64;
 
-    // Note: reqwest doesn't expose direct connect_timeout separate from total timeout.
-    // The reqwest Client::connect_timeout only applies to the TCP connect phase.
-    // We use the keepAliveTimeout as pool_idle_timeout since that's the most appropriate mapping.
+    // reqwest's connect_timeout only covers the TCP connect phase and is not
+    // separately exposed here; pool_idle_timeout is the closest match for
+    // keepAliveTimeout.
     let config = AgentConfig {
         timeout: if timeout_ms > 0 {
             Some(Duration::from_millis(timeout_ms))
         } else {
             None
         },
-        connect_timeout: None, // Let reqwest use its default
+        connect_timeout: None, // reqwest default
         pool_idle_timeout: if pool_idle_timeout_ms > 0 {
             Some(Duration::from_millis(pool_idle_timeout_ms))
         } else {
@@ -177,8 +177,8 @@ export type AgentCreationOptions = {
     rejectUnauthorized: boolean;
     /** Total request timeout in milliseconds. */
     timeout: number;
-    // Note: 'connections' and 'pipelining' are not supported by reqwest.
-    // Note: 'maxCachedSessions' and 'keepAliveInitialDelay' are not directly configurable.
+    // Not supported by reqwest: 'connections', 'pipelining'.
+    // Not directly configurable: 'maxCachedSessions', 'keepAliveInitialDelay'.
 };
 
 export type AgentDispatchOptions = {
@@ -194,8 +194,8 @@ export type AgentDispatchOptions = {
     query: string;
     reset: boolean;
     throwOnError: boolean;
-    // Note: 'upgrade' is not supported (NotSupportedError thrown)
-    // Note: 'expectContinue' is not exposed (reqwest handles internally for H2)
+    // 'upgrade' is not supported (throws NotSupportedError).
+    // 'expectContinue' is not exposed (reqwest handles H2 internally).
 };
 
 export interface AgentInstance {
@@ -215,7 +215,7 @@ export type DispatchCallbacks = {
     onResponseData: (chunk: Buffer) => void;
     onResponseEnd: (trailers: Record<string, string | string[]>) => void;
     onResponseError: (error: CoreErrorInfo) => void;
-    /** Called on WebSocket/upgrade - deferred, not implemented in MVP. */
+    /** WebSocket/upgrade — deferred, not in MVP. */
     onRequestUpgrade?: (
         statusCode: number,
         headers: Record<string, string | string[]>,
@@ -275,9 +275,9 @@ describe("Addon Smoke Tests", () => {
 });
 ```
 
-## Tables
+## Key Choices
 
-| Metric            | Value                              |
+| Item              | Value                              |
 | :---------------- | :--------------------------------- |
 | **FFI Framework** | Neon with `tokio-rt-multi-thread`  |
 | **Allocator**     | `mimalloc`                         |

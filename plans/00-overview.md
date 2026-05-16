@@ -1,14 +1,7 @@
 # Dispatcher Implementation - Master Plan
 
-## Problem/Purpose
-
-Provide an undici-compatible HTTP dispatcher for Node.js implemented in Rust using
-`reqwest`. Full Dispatcher API compliance with performance matching undici.
-
-## Solution
-
-Multi-layered architecture: Rust core engine → Neon FFI → TypeScript integration.
-Ordered implementation ensures each chunk builds on previous ones with testable results.
+Undici-compatible HTTP dispatcher for Node.js, implemented in Rust via `reqwest`.
+Target: full Dispatcher API compliance, performance ≥95% of undici.
 
 ## Architecture
 
@@ -98,26 +91,26 @@ Each chunk is self-contained with testable output. Later chunks depend on earlie
 | Lifecycle (close/destroy) | Rust trait with request tracking                   | Graceful shutdown + request cancellation         |
 | expectContinue            | Not exposed                                        | reqwest handles internally for H2                |
 
-## Undici Dispatcher Compliance Checklist
+## Undici Dispatcher Compliance
 
 | Feature                   | Status | Notes                                      |
 | :------------------------ | :----- | :----------------------------------------- |
-| dispatch() method         | ✅     | Core functionality                         |
-| DispatchOptions           | ✅     | All fields mapped                          |
-| DispatchHandler callbacks | ✅     | onRequestStart, onResponseStart, etc.      |
-| DispatchController        | ✅     | abort(), pause(), resume()                 |
-| Error codes (UND*ERR*\*)  | ✅     | Symbol.for instanceof                      |
-| close() / destroy()       | ✅     | Lifecycle trait with request tracking      |
-| connect event             | ✅     | Per-origin, on first successful response   |
-| disconnect event          | ✅     | On connection loss after established       |
-| connectionError event     | ✅     | On initial connection failure              |
-| throwOnError              | ✅     | ResponseError for 4xx/5xx status codes     |
-| drain event               | ⚠️     | Not emitted (dispatch always returns true) |
-| CONNECT method            | ❌     | NotSupportedError                          |
-| Upgrade requests          | ❌     | NotSupportedError                          |
-| HTTP trailers             | ❌     | reqwest doesn't expose                     |
+| dispatch() method         | done   | Core functionality                         |
+| DispatchOptions           | done   | All fields mapped                          |
+| DispatchHandler callbacks | done   | onRequestStart, onResponseStart, etc.      |
+| DispatchController        | done   | abort(), pause(), resume()                 |
+| Error codes (UND_ERR_*)   | done   | Symbol.for instanceof                      |
+| close() / destroy()       | done   | Lifecycle trait with request tracking      |
+| connect event             | done   | Per-origin, on first successful response   |
+| disconnect event          | done   | On connection loss after established       |
+| connectionError event     | done   | On initial connection failure              |
+| throwOnError              | done   | ResponseError for 4xx/5xx status codes     |
+| drain event               | n/a    | Not emitted (dispatch always returns true) |
+| CONNECT method            | no     | NotSupportedError                          |
+| Upgrade requests          | no     | NotSupportedError                          |
+| HTTP trailers             | no     | reqwest doesn't expose                     |
 
-## Tables
+## Configuration
 
 | Configuration       | Value        |
 | :------------------ | :----------- |
@@ -177,8 +170,8 @@ packages/node/
 └── benchmark.yml
 ```
 
-## Security Considerations
+## Security
 
-- Headers passed through without filtering or logging (security-sensitive)
-- No credentials stored beyond reqwest's internal TLS session cache
-- Sensitive headers (Authorization, Cookie) handled at application layer
+- Headers pass through without filtering or logging.
+- No credentials stored beyond reqwest's TLS session cache.
+- Sensitive headers (Authorization, Cookie) handled at application layer.

@@ -1,13 +1,13 @@
 # Error Types (Chunk 01)
 
-## Problem/Purpose
+Rust `CoreError` enum mapped to undici-compatible TypeScript error classes.
+TypeScript classes use `Symbol.for` for cross-library `instanceof`.
 
-Error types with undici compatibility: Rust `CoreError` + TypeScript classes.
+Estimated time: 1.5 hours. Dependencies: `thiserror = "2.0"`, `reqwest`.
+11 error classes (10 specific + 1 base).
 
-## Solution
-
-`CoreError` enum with undici metadata. TypeScript classes use `Symbol.for` for
-cross-library `instanceof`.
+`SecureProxyConnectionError` is omitted: reqwest does not distinguish proxy TLS
+errors from general socket errors.
 
 ## Architecture
 
@@ -21,6 +21,17 @@ Rust CoreError ─┬─► error_code()   ─► "UND_ERR_*"
                          │
                          ▼
               createUndiciError(info) ─► JavaScript Error
+```
+
+## File Structure
+
+```text
+packages/core/src/
+├── lib.rs
+└── error.rs
+packages/node/
+├── export/errors.ts
+└── tests/vitest/errors.test.ts
 ```
 
 ## Implementation
@@ -385,26 +396,4 @@ describe("Undici Error Classes", () => {
         expect(err.statusCode).toBe(400);
     });
 });
-```
-
-## Tables
-
-| Metric              | Value                          |
-| :------------------ | :----------------------------- |
-| **Rust Dependency** | `thiserror = "2.0"`, `reqwest` |
-| **Error Classes**   | 11 (10 specific + 1 base)      |
-| **Est. Time**       | 1.5 hours                      |
-
-**Note:** `SecureProxyConnectionError` is not implemented as reqwest doesn't
-distinguish proxy TLS errors from general socket errors.
-
-## File Structure
-
-```text
-packages/core/src/
-├── lib.rs
-└── error.rs
-packages/node/
-├── export/errors.ts
-└── tests/vitest/errors.test.ts
 ```

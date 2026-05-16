@@ -1,9 +1,7 @@
 # Unsupported Features
 
-## Purpose
-
-Document undici Dispatcher features not supported by `node_reqwest` due to `reqwest`
-limitations or scope decisions.
+undici Dispatcher features not supported by `node_reqwest`, plus behavioral differences
+and error mapping.
 
 ## Not Supported
 
@@ -18,7 +16,7 @@ limitations or scope decisions.
 | **drain event**      | dispatch() always returns true    | N/A                   |
 | **expectContinue**   | reqwest handles internally for H2 | N/A                   |
 
-## Behavioral Differences from undici
+## Behavioral Differences
 
 | Behavior                      | undici                                           | node_reqwest                                          |
 | :---------------------------- | :----------------------------------------------- | :---------------------------------------------------- |
@@ -48,9 +46,9 @@ limitations or scope decisions.
 - Response bodies dropped on abort/error (connection may close rather than reuse)
 - `bodyTimeout` is an idle timeout (between chunks), not total timeout
 
-## Future Enhancements (Post-undici compliance)
+## Future Enhancements
 
 1. WebSocket/Upgrade support via hyper directly
 2. CONNECT method for tunneling
-3. Proper drain event with configurable concurrency limits
+3. drain event with configurable concurrency limits
 4. HTTP trailers if hyper exposes them

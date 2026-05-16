@@ -1,15 +1,9 @@
 # Core Types + Backpressure Primitives (Chunk 02a)
 
-## Problem/Purpose
+## Purpose
 
-Define foundational types for the undici-compatible dispatcher including backpressure
-primitives, lifecycle management (close/destroy), and controller-based API.
-
-## Solution
-
-Implement core HTTP data structures, `DispatchHandler` trait, `RequestController`
-with atomic pause state and cancellation token, and `Lifecycle` trait for graceful
-shutdown with request tracking.
+Foundational types for the undici-compatible dispatcher: HTTP data structures, handler trait,
+controller with pause/cancel, and lifecycle trait for graceful shutdown.
 
 ## Architecture
 
@@ -96,8 +90,7 @@ impl Method {
 
 /// Options for dispatching a request.
 ///
-/// Note: Cannot derive Clone because reqwest::Body is not Clone.
-/// This is intentional - bodies are consumed during request execution.
+/// Not Clone: `reqwest::Body` is not Clone; bodies are consumed during execution.
 pub struct DispatchOptions {
     /// Origin URL (scheme + host + port), e.g., "https://example.com:8080"
     pub origin: Option<String>,
@@ -108,12 +101,12 @@ pub struct DispatchOptions {
     pub query: String,
     pub method: Method,
     pub headers: HashMap<String, Vec<String>>,
-    /// Request body. Supports both materialized (Bytes) and streaming bodies.
-    /// None for bodyless requests like GET/HEAD.
+    /// Request body. Supports materialized (Bytes) or streaming bodies.
+    /// None for bodyless requests (GET/HEAD).
     pub body: Option<reqwest::Body>,
-    /// Time (ms) to wait for response headers. 0 = use default (300000ms).
+    /// Time (ms) to wait for response headers. 0 = default (300_000ms).
     pub headers_timeout_ms: u64,
-    /// Idle time (ms) between body chunks. 0 = use default (300000ms).
+    /// Idle time (ms) between body chunks. 0 = default (300_000ms).
     pub body_timeout_ms: u64,
 }
 
@@ -171,9 +164,9 @@ pub trait DispatchHandler: Send + Sync {
     async fn on_response_error(&self, error: CoreError);
 }
 
-/// Pause state for backpressure signaling using watch channel.
+/// Pause state for backpressure signaling.
 ///
-/// Uses `tokio::sync::watch` for race-condition-free state synchronization.
+/// Uses `tokio::sync::watch` for race-free state sync.
 pub struct PauseState {
     sender: watch::Sender<bool>,
     receiver: watch::Receiver<bool>,
@@ -192,10 +185,9 @@ impl PauseState {
     }
 
     /// Block until not paused. Returns immediately if not paused.
-    /// Uses wait_for for atomic check-and-wait to avoid race conditions.
+    /// `wait_for` performs an atomic check-and-wait.
     pub async fn wait_if_paused(&self) {
         let mut rx = self.receiver.clone();
-        // wait_for handles the initial check + waiting atomically
         let _ = rx.wait_for(|paused| !*paused).await;
     }
 
@@ -334,9 +326,8 @@ mod tests {
 
     #[tokio::test]
     async fn pause_state_wait_for_immediate_resume() {
-        // Test that wait_if_paused returns immediately when not paused
+        // wait_if_paused returns immediately when not paused
         let state = PauseState::new();
-        // Should complete instantly
         tokio::time::timeout(std::time::Duration::from_millis(10), state.wait_if_paused())
             .await
             .expect("should not timeout");
@@ -440,12 +431,12 @@ pub use dispatcher::{
 pub use error::CoreError;
 ```
 
-## Tables
+## Summary
 
 | Metric            | Value                                                    |
 | :---------------- | :------------------------------------------------------- |
 | **Dependencies**  | `reqwest`, `tokio`, `tokio-util`, `async-trait`, `bytes` |
-| **Pause State**   | `tokio::sync::watch` (race-condition-free)               |
+| **Pause State**   | `tokio::sync::watch` (race-free)                         |
 | **Thread Safety** | All types are `Send + Sync`                              |
 | **Tests**         | 5 unit tests                                             |
 

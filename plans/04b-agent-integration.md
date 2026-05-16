@@ -1,16 +1,10 @@
 # Agent Integration + E2E Tests (Chunk 04b)
 
-## Problem/Purpose
+Wraps the FFI layer in an undici-compatible `Agent` class: dispatches requests through
+the native addon, marshals callbacks, and emits `connect`/`disconnect`/`connectionError`
+events.
 
-Complete the library by integrating the FFI layer into a standard `Agent` class, enabling
-full undici compatibility with request/response lifecycle management.
-
-## Solution
-
-Implement `Agent` class extending `Dispatcher`, coordinating request dispatch with the
-native addon and managing concurrency/drain events.
-
-## Architecture
+## Flow
 
 ```text
 User
@@ -24,9 +18,10 @@ User
 
 ## Implementation
 
-### packages/node/export/agent-def.ts (Update)
+### packages/node/export/agent-def.ts (update)
 
-Remove unsupported fields (reqwest doesn't support direct connection/pipelining configuration):
+Drop fields reqwest doesn't support: `connections`, `pipelining`, `maxCachedSessions`,
+`keepAliveInitialDelay`.
 
 ```typescript
 // SPDX-License-Identifier: Apache-2.0 OR MIT
@@ -37,36 +32,30 @@ import type * as undici from "undici";
 /**
  * Network connection and TLS settings.
  *
- * Note: Some undici options are not supported by reqwest:
- * - 'connections' - reqwest manages pool size internally
- * - 'pipelining' - reqwest uses HTTP/2 multiplexing instead
- * - 'maxCachedSessions' - reqwest manages TLS sessions internally
- * - 'keepAliveInitialDelay' - not configurable in reqwest
+ * Unsupported undici options (managed internally by reqwest):
+ * - 'connections' (pool size)
+ * - 'pipelining' (uses HTTP/2 multiplexing instead)
+ * - 'maxCachedSessions' (TLS session cache)
+ * - 'keepAliveInitialDelay'
  */
 export type ConnectionOptions = Pick<
     undici.buildConnector.BuildOptions & undici.Client.Options & TlsConnectionOptions,
     "allowH2" | "ca" | "keepAliveTimeout" | "localAddress" | "rejectUnauthorized" | "timeout"
 > & {
     /**
-     * Whether to verify that the server's certificate identity matches the requested hostname.
-     * This is a specialized check that can be disabled independently of CA chain verification.
+     * Verify that the server's certificate identity matches the requested hostname.
+     * Can be disabled independently of CA chain verification.
      * @default true
      */
     rejectInvalidHostnames?: boolean;
 };
 
-/**
- * Configuration for an upstream proxy.
- */
+/** Upstream proxy configuration. */
 export type ProxyOptions = Pick<undici.ProxyAgent.Options, "headers" | "token" | "uri">;
 
-/**
- * Configuration options for the Agent.
- */
+/** Agent configuration. */
 export type AgentOptions = {
-    /**
-     * Network connection and TLS settings for direct or proxy tunnel connections.
-     */
+    /** Network connection and TLS settings for direct or proxy tunnel connections. */
     connection?: ConnectionOptions | null;
     /**
      * Proxy configuration.
@@ -75,13 +64,9 @@ export type AgentOptions = {
     proxy?: "no-proxy" | "system" | ProxyOptions | null;
 };
 
-/**
- * Factory for creating agents with specific configurations.
- */
+/** Factory for creating agents. */
 export interface Agent {
-    /**
-     * Creates an Agent fully compatible with the Node.js global fetch dispatcher.
-     */
+    /** Creates an Agent compatible with Node.js global fetch dispatcher. */
     new (options?: AgentOptions): undici.Dispatcher;
 }
 ```
@@ -681,7 +666,7 @@ describe("E2E Dispatch Integration", () => {
 });
 ```
 
-## Tables
+## Summary
 
 | Metric                | Value                                                   |
 | :-------------------- | :------------------------------------------------------ |

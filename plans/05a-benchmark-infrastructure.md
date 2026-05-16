@@ -1,17 +1,10 @@
 # Benchmark Infrastructure (Chunk 05a)
 
-## Problem/Purpose
+Local HTTP/1 (port 3000) and HTTP/2 (port 3001, TLS) test servers plus a `cronometro`
+harness with parallel-request and result-formatting utilities. Provides a reproducible
+environment for comparing `node_reqwest` against undici.
 
-Establish a controlled, reproducible environment for performance testing to verify
-`node_reqwest` meets latency and throughput goals compared to undici.
-
-## Solution
-
-Deploy local test servers for HTTP/1 and HTTP/2 protocols, implement a benchmarking
-harness using `cronometro`, and provide utilities for parallel requests and result
-formatting.
-
-## Architecture
+## Layout
 
 ```text
 Test Suite
@@ -44,9 +37,7 @@ export const config = {
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 /**
- * Execute a callback in parallel, returning a promise that resolves when all complete.
- * @param {function} cb - Callback receiving (resolve, reject)
- * @param {number} count - Number of parallel executions
+ * Run `cb(resolve, reject)` `count` times in parallel; resolves when all complete.
  */
 export function makeParallelRequests(cb, count = 100) {
     const promises = Array.from({ length: count }, () => new Promise(cb));
@@ -54,9 +45,7 @@ export function makeParallelRequests(cb, count = 100) {
 }
 
 /**
- * Print benchmark results in a formatted table.
- * @param {object} results - Cronometro results object
- * @param {number} parallelRequests - Number of parallel requests per iteration
+ * Print cronometro results as a table. `parallelRequests` is used to compute req/sec.
  */
 export function printResults(results, parallelRequests = 100) {
     let slowest;
@@ -89,10 +78,7 @@ export function printResults(results, parallelRequests = 100) {
     console.table(rows);
 }
 
-/**
- * Format bytes to human readable string.
- * @param {number} num - Number of bytes
- */
+/** Format bytes as B/KiB/MiB/GiB. */
 export function formatBytes(num) {
     const prefixes = ["B", "KiB", "MiB", "GiB"];
     const idx = Math.min(Math.floor(Math.log(num) / Math.log(1024)), prefixes.length - 1);
@@ -223,7 +209,7 @@ else
 fi
 ```
 
-### packages/node/package.json (Scripts section)
+### packages/node/package.json (scripts)
 
 ```json
 {
@@ -241,7 +227,7 @@ fi
 }
 ```
 
-## Tables
+## Summary
 
 | Resource        | Version  | Purpose                  |
 | :-------------- | :------- | :----------------------- |

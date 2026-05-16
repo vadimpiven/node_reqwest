@@ -1,13 +1,12 @@
 # Request Execution + Tests (Chunk 02b)
 
-## Problem/Purpose
+## Purpose
 
-Implement the core HTTP execution flow with backpressure integration and verify via tests.
+Implement `Agent::dispatch` with backpressure, cancellation, and per-request timeouts. Verify
+via integration tests against `wiremock`.
 
-## Solution
-
-Add `Agent::dispatch` to spawn request tasks with cancellation and pause support, using
-`tokio::select!` for abort handling and `PauseState::wait_if_paused` for backpressure.
+Key flow: spawn a task; use `tokio::select!` to race abort against send/receive;
+`PauseState::wait_if_paused` gates each chunk read.
 
 ## Architecture
 
@@ -122,8 +121,7 @@ impl Agent {
 
     /// Dispatch a request, returning a controller for abort/pause.
     ///
-    /// Returns `Err(CoreError::ClientClosed)` if the agent is closed.
-    /// Returns `Err(CoreError::ClientDestroyed)` if the agent is destroyed.
+    /// Errors: `ClientDestroyed` if destroyed, `ClientClosed` if closed.
     pub fn dispatch(
         &self,
         runtime: Handle,
@@ -195,7 +193,7 @@ impl Agent {
             request = request.body(body);
         }
 
-        // Per-request headers timeout (time until response headers received)
+        // Headers timeout: time until response headers received
         let headers_timeout = if options.headers_timeout_ms > 0 {
             Duration::from_millis(options.headers_timeout_ms)
         } else {
@@ -246,8 +244,7 @@ impl Agent {
             })
             .await;
 
-        // Per-request body timeout: IDLE timeout (time between chunk arrivals)
-        // Per undici docs: "Monitors time between receiving body data"
+        // Body timeout: IDLE time between chunk arrivals (per undici)
         let body_timeout_duration = if options.body_timeout_ms > 0 {
             Duration::from_millis(options.body_timeout_ms)
         } else {
@@ -261,26 +258,25 @@ impl Agent {
 
             select! {
                 () = token.cancelled() => {
-                    // Drop stream on abort - do NOT consume remaining bytes.
-                    // This avoids useless copying over the FFI boundary.
-                    // The underlying TCP connection may be closed rather than reused,
-                    // but this is acceptable for abort scenarios.
+                    // Drop stream on abort - skip remaining bytes to avoid FFI copies.
+                    // TCP connection may close instead of returning to the pool;
+                    // acceptable trade-off for aborts.
                     drop(stream);
                     handler.on_response_error(CoreError::RequestAborted).await;
                     return;
                 }
-                // Idle timeout: resets on each successful chunk read
+                // Idle timeout resets on each successful chunk
                 result = timeout(body_timeout_duration, stream.next()) => {
                     match result {
                         Ok(Some(Ok(data))) => handler.on_response_data(data).await,
                         Ok(Some(Err(e))) => {
-                            // Drop stream on error - avoids useless FFI copying
+                            // Drop stream on error - avoid FFI copies
                             drop(stream);
                             handler.on_response_error(CoreError::from_reqwest(e, true)).await;
                             return;
                         }
                         Ok(None) => {
-                            // Response complete - trailers not available in reqwest
+                            // Response complete; reqwest doesn't expose trailers
                             handler.on_response_end(HashMap::new()).await;
                             return;
                         }
@@ -299,17 +295,16 @@ impl Agent {
 #[async_trait]
 impl Lifecycle for Agent {
     async fn close(&self) {
-        // Mark as closed to reject new requests
+        // Reject new requests, then wait for active to drain
         self.state.closed.store(true, Ordering::Release);
 
-        // Wait for all active requests to complete
         while self.state.active_count.load(Ordering::Acquire) > 0 {
             self.state.idle_notify.notified().await;
         }
     }
 
     async fn destroy(&self, error: CoreError) {
-        // Mark as destroyed
+        // Mark destroyed and reject new requests
         self.state.destroyed.store(true, Ordering::Release);
         self.state.closed.store(true, Ordering::Release);
 
@@ -323,12 +318,12 @@ impl Lifecycle for Agent {
             token.cancel();
         }
 
-        // Wait for all to complete (they will error out quickly)
+        // Wait for cancelled tasks to finish reporting errors
         while self.state.active_count.load(Ordering::Acquire) > 0 {
             self.state.idle_notify.notified().await;
         }
 
-        // error parameter available for logging if needed
+        // error available for future logging
         let _ = error;
     }
 
@@ -679,7 +674,7 @@ async fn test_per_request_headers_timeout() {
         .mount(&server)
         .await;
 
-    // Agent has no timeout, but request has headers_timeout_ms
+    // Agent has no timeout; request sets headers_timeout_ms
     let agent = Agent::new(AgentConfig::default()).expect("agent");
     let (handler, events, done) = MockHandler::new();
     let opts = DispatchOptions {
@@ -752,24 +747,22 @@ async fn test_destroy_cancels_pending() {
     // Start a request
     agent.dispatch(tokio::runtime::Handle::current(), opts, Arc::new(handler)).expect("dispatch");
 
-    // Destroy while request is pending
+    // Destroy while pending
     tokio::time::sleep(Duration::from_millis(10)).await;
     agent.destroy(CoreError::ClientDestroyed).await;
 
-    // Request should have been aborted
+    // Request should be aborted
     done.notified().await;
     let events = events.lock().await;
     assert_eq!(events.errors.len(), 1);
 }
 
-// Note: Content-Length validation is handled internally by hyper/reqwest.
-// When the response declares Content-Length but provides fewer/more bytes,
-// reqwest returns an error with `is_body()` returning true.
-// This is mapped to CoreError::Socket in `from_reqwest(err, true)`.
-// Adding explicit test would require a misbehaving server which is complex to set up.
+// Content-Length mismatch is handled by hyper/reqwest: it returns an error with
+// `is_body()` true, mapped to `CoreError::Socket` via `from_reqwest(err, true)`.
+// No explicit test: would require a misbehaving server.
 ```
 
-## Tables
+## Summary
 
 | Metric                  | Value                                                |
 | :---------------------- | :--------------------------------------------------- |

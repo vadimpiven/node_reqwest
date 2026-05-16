@@ -1,14 +1,15 @@
 # Request Handle Bindings + Tests (Chunk 03c)
 
-## Problem/Purpose
+## Purpose
 
-Provide JavaScript with the ability to control in-flight requests via native bindings for
-abort and backpressure operations.
+Expose abort/pause/resume controls for in-flight requests to JS, and wire up
+`agentDispatch` with callback marshaling.
 
-## Solution
+## Approach
 
-Expose `RequestController` to JavaScript via boxed `RequestHandleInstance` and export
-`agentDispatch` with callback marshaling. Uses Neon's global runtime via `spawn`.
+- Box `RequestController` as `RequestHandleInstance` (JsBox + `Finalize`).
+- Drive async lifecycle calls (`close`/`destroy`) through `neon::macro_internal::spawn`
+  on Neon's global runtime.
 
 ## Architecture
 
@@ -43,15 +44,14 @@ use neon::prelude::*;
 use crate::dispatch::parse_dispatch_options;
 use crate::handler::JsDispatchHandler;
 
-/// Wrapper for core::Agent stored as JsBox.
-/// Uses Arc to allow cloning for async close/destroy operations.
+/// JsBox wrapper for core::Agent. Arc so async close/destroy can clone.
 pub struct AgentInstance {
     pub inner: Arc<Agent>,
 }
 
 impl Finalize for AgentInstance {}
 
-/// Wrapper for RequestController stored as JsBox.
+/// JsBox wrapper for RequestController.
 pub struct RequestHandleInstance {
     pub inner: RequestController,
 }
@@ -63,23 +63,23 @@ fn agent_create<'cx>(
     cx: &mut FunctionContext<'cx>,
     options: Handle<'cx, JsObject>,
 ) -> JsResult<'cx, JsBox<AgentInstance>> {
-    // timeout: Total request timeout (request start to response complete)
+    // timeout: total request timeout (start → response complete)
     let timeout: Handle<JsNumber> = options.get(cx, "timeout")?;
-    // keepAliveTimeout: How long to keep idle connections alive (maps to pool_idle_timeout)
+    // keepAliveTimeout maps to reqwest's pool_idle_timeout
     let keep_alive_timeout: Handle<JsNumber> = options.get(cx, "keepAliveTimeout")?;
 
     let timeout_ms = timeout.value(cx) as u64;
     let pool_idle_timeout_ms = keep_alive_timeout.value(cx) as u64;
 
-    // Note: reqwest doesn't expose direct connect_timeout separate from total timeout.
-    // We use the keepAliveTimeout as pool_idle_timeout since that's the most appropriate mapping.
+    // reqwest's connect_timeout is TCP-only and not separately exposed;
+    // pool_idle_timeout is the closest match for keepAliveTimeout.
     let config = AgentConfig {
         timeout: if timeout_ms > 0 {
             Some(Duration::from_millis(timeout_ms))
         } else {
             None
         },
-        connect_timeout: None, // Let reqwest use its default
+        connect_timeout: None, // reqwest default
         pool_idle_timeout: if pool_idle_timeout_ms > 0 {
             Some(Duration::from_millis(pool_idle_timeout_ms))
         } else {
@@ -110,7 +110,7 @@ fn agent_dispatch<'cx>(
         callbacks.get::<JsFunction, _, _>(cx, "onResponseError")?.root(cx),
     ));
 
-    // Use tokio's current runtime handle (Neon's global runtime)
+    // Neon's global runtime
     let runtime = tokio::runtime::Handle::current();
     let controller = agent.inner.dispatch(runtime, dispatch_options, handler)
         .map_err(|e| cx.throw_error::<_, ()>(e.to_string()).unwrap_err())?;
@@ -336,9 +336,9 @@ describe("Addon Smoke Tests", () => {
 });
 ```
 
-## Tables
+## Key Choices
 
-| Metric               | Value                               |
+| Item                 | Value                               |
 | :------------------- | :---------------------------------- |
 | **Control Types**    | Abort, Pause, Resume                |
 | **Handle Lifecycle** | JS garbage collected via `Finalize` |

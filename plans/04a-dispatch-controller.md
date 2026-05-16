@@ -1,23 +1,17 @@
 # DispatchController (Chunk 04a)
 
-## Problem/Purpose
+Implements `Dispatcher.DispatchController` with state buffering: abort/pause/resume
+calls made before the native handle exists are queued and applied via
+`setRequestHandle()`.
 
-Implement the `Dispatcher.DispatchController` interface to provide users with a standard
-way to control requests, including state buffering before native handle is established.
-
-## Solution
-
-Create `DispatchControllerImpl` that manages internal state (`#aborted`, `#paused`) and
-synchronizes with the native `RequestHandle` through late-binding via `setRequestHandle()`.
-
-## Architecture
+## Flow
 
 ```text
 User
   └─► DispatchController.abort()
-       └─► Buffer State (if no handle yet)
+       └─► Buffer state (no handle yet)
             └─► setRequestHandle(handle)
-                 └─► Apply Buffered State to Native Handle
+                 └─► Apply buffered state to native handle
 ```
 
 ## Implementation
@@ -32,9 +26,8 @@ import type { Dispatcher } from "undici";
 import type { Addon, RequestHandle } from "./addon-def.ts";
 
 /**
- * DispatchController implementation with state buffering.
- *
- * Allows abort/pause/resume before native handle is established.
+ * DispatchController with state buffering.
+ * Allows abort/pause/resume before the native handle is established.
  */
 export class DispatchControllerImpl implements Dispatcher.DispatchController {
     #aborted = false;
@@ -59,9 +52,7 @@ export class DispatchControllerImpl implements Dispatcher.DispatchController {
         return this.#reason;
     }
 
-    /**
-     * Set the native request handle. Applies any buffered state.
-     */
+    /** Set the native request handle; applies any buffered state. */
     setRequestHandle(handle: RequestHandle): void {
         this.#requestHandle = handle;
 
@@ -236,7 +227,7 @@ describe("DispatchController", () => {
 });
 ```
 
-## Tables
+## Summary
 
 | Metric           | Value                                       |
 | :--------------- | :------------------------------------------ |
