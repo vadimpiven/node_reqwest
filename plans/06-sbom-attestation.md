@@ -48,34 +48,18 @@ can be split into per-commit PRs as preferred.
 - Syft ≥ 1.15: `cargo-auditable-binary-cataloger` on by default.
 - Syft ≥ 1.8: CycloneDX 1.6 by default.
 
-### 2. Install cargo-auditable via mise + Dockerfile
+### 2. Install cargo-auditable via mise
 
 ```toml
 # mise.toml — add under [tools]
-[tools."github:rust-secure-code/cargo-auditable"]
-version = "0.7.4"
-[tools."github:rust-secure-code/cargo-auditable".platforms]
-linux-x64    = { asset_pattern = "*-x86_64-unknown-linux-musl.tar.xz" }
-macos-x64    = { asset_pattern = "*-x86_64-apple-darwin.tar.xz" }
-macos-arm64  = { asset_pattern = "*-aarch64-apple-darwin.tar.xz" }
-windows-x64  = { asset_pattern = "*-x86_64-pc-windows-msvc.zip" }
-windows-arm64 = { asset_pattern = "*-aarch64-pc-windows-msvc.zip" }
-# linux-arm64: no manylinux-compatible upstream binary (only gnu/glibc 2.39
-# exists; our manylinux_2_28 base has glibc 2.28). Installed via Dockerfile.
+"cargo:cargo-auditable" = "0.7.4"
 ```
 
-```dockerfile
-# Dockerfile — after mise install (Dockerfile:27-32)
-# Single compile per image rebuild, cached in a Docker layer.
-# Bump --version in lockstep with the mise.toml pin above.
-RUN --mount=type=cache,target=/root/.cargo/registry \
-    if [ "$(uname -m)" = "aarch64" ]; then \
-      eval "$(mise activate bash)" && \
-      cargo install cargo-auditable --version 0.7.4 --locked \
-        --root /usr/local && \
-      cargo-auditable --version; \
-    fi
-```
+`cargo:` backend tries `cargo binstall` first (already pinned at `mise.toml:53`) and succeeds on
+5 of 6 targets via upstream release binaries. Falls back to source build only on linux-arm64
+inside the manylinux_2_28 container, where no compatible upstream binary exists (only gnu/glibc
+2.39 is published; our base has glibc 2.28). The fallback is one small Rust compile cached by
+mise — no Dockerfile changes needed.
 
 ### 3. Compile all builds with cargo-auditable
 
