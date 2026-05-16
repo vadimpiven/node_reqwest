@@ -29,10 +29,6 @@ runScript("Generate JS SBOM", async () => {
     "node-reqwest",
     "--prod",
     "--legacy",
-    // Skip lifecycle scripts: node-reqwest's postinstall (`slsa wget`)
-    // would try to fetch the .node binary from registry.npmjs.org, which
-    // is unreachable from the restricted-network CI build container.
-    // SBOM generation only needs the resolved dep tree.
     "--ignore-scripts",
     deployDir.path,
   ]);
