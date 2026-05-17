@@ -145,7 +145,7 @@ describe("Origin scheme guard", () => {
     },
   );
 
-  it("rejects unparseable origin string", async () => {
+  it("rejects unparsable origin string", async () => {
     assert(agent);
     const r = await dispatchOnce(agent, { origin: "::::not a url", path: "/", method: "GET" });
     expect(r.error).toBeInstanceOf(InvalidArgumentError);
