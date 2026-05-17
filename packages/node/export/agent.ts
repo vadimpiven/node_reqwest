@@ -59,10 +59,13 @@ function normalizeHeaders(headers?: HeaderInput): Record<string, string> {
     if (value === undefined || value === null) return;
     const k = key.toLowerCase();
     validateHeaderName(k);
-    const v = Array.isArray(value) ? value.join(", ") : String(value);
+    // RFC 6265 §5.4: client-sent `Cookie` headers use a `; ` separator;
+    // every other multi-value header concatenates with `, ` per RFC 9110 §5.3.
+    const sep = k === "cookie" ? "; " : ", ";
+    const v = Array.isArray(value) ? value.join(sep) : String(value);
     validateHeaderValue(k, v);
     const existing = out[k];
-    out[k] = existing === undefined ? v : `${existing}, ${v}`;
+    out[k] = existing === undefined ? v : `${existing}${sep}${v}`;
   };
   if (Array.isArray(headers)) {
     for (let i = 0; i < headers.length; i += 2) {
@@ -216,7 +219,12 @@ function normalizeProxy(proxy: ProxyOptions | undefined): AgentProxyOption {
   const customHeaders: Record<string, string> = {};
   if (proxy.headers) {
     for (const [k, v] of Object.entries(proxy.headers)) {
-      customHeaders[k.toLowerCase()] = Array.isArray(v) ? v.join(", ") : String(v);
+      const key = k.toLowerCase();
+      validateHeaderName(key);
+      const sep = key === "cookie" ? "; " : ", ";
+      const value = Array.isArray(v) ? v.join(sep) : String(v);
+      validateHeaderValue(key, value);
+      customHeaders[key] = value;
     }
   }
   return {
@@ -330,12 +338,23 @@ export class Agent extends Dispatcher {
     }
   }
 
+  // `onResponseError` is the last-chance handler — a throw here has nowhere
+  // to escalate, and propagating it through the FFI callback corrupts the
+  // dispatcher state machine. Swallow silently.
+  #safeOnResponseError(state: RequestState, err: Error): void {
+    try {
+      state.handler.onResponseError?.(state.controller, err);
+    } catch {
+      // intentionally swallowed
+    }
+  }
+
   #dispatchOnResponseError(state: RequestState, errorInfo: CoreErrorInfo): void {
     if (state.handlerErrored) return;
 
     if (state.controller.aborted && errorInfo.code === "UND_ERR_ABORTED") {
-      state.handler.onResponseError?.(
-        state.controller,
+      this.#safeOnResponseError(
+        state,
         state.controller.reason ?? new RequestAbortedError(),
       );
       return;
@@ -355,7 +374,7 @@ export class Agent extends Dispatcher {
       }
     }
 
-    state.handler.onResponseError?.(state.controller, err);
+    this.#safeOnResponseError(state, err);
   }
 
   /** Dispatcher contract: a handler throw aborts and routes to `onResponseError`. */
@@ -363,7 +382,7 @@ export class Agent extends Dispatcher {
     if (state.handlerErrored) return;
     state.handlerErrored = true;
     const e = toError(err);
-    state.handler.onResponseError?.(state.controller, e);
+    this.#safeOnResponseError(state, e);
     state.controller.abort(e);
   }
 

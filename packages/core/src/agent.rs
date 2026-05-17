@@ -320,7 +320,12 @@ impl Agent {
                 guard.remove(&id);
             }
             if state.active_count.fetch_sub(1, Ordering::AcqRel) == 1 {
-                state.idle_notify.notify_waiters();
+                // `notify_one()` stores a permit if no waiter is registered
+                // yet — guards close()/destroy() against the lost-wake race
+                // where the final completion fires between their count
+                // check and `notified().await`. `notify_waiters()` would
+                // drop the notification on the floor in that window.
+                state.idle_notify.notify_one();
             }
         });
 

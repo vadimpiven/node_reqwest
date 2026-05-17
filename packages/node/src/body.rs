@@ -10,8 +10,6 @@ use neon::prelude::*;
 use neon::types::buffer::TypedArray;
 use tokio::sync::oneshot;
 
-const MAX_CHUNK: usize = 65536;
-
 type ChunkResult = Result<Option<Bytes>, std::io::Error>;
 type ReaderHandle = Arc<Mutex<Option<Root<JsObject>>>>;
 
@@ -66,13 +64,6 @@ impl JsBodyReader {
 
                     let view: Handle<'_, JsTypedArray<u8>> = obj.get(&mut cx, "value")?;
                     let slice = view.as_slice(&cx);
-                    if slice.len() > MAX_CHUNK {
-                        let _ = tx.send(Err(std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            format!("body chunk exceeds {MAX_CHUNK} bytes"),
-                        )));
-                        return Ok(());
-                    }
                     let chunk = Bytes::copy_from_slice(slice);
                     let _ = tx.send(Ok(Some(chunk)));
                     Ok(())

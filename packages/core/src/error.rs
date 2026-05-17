@@ -13,10 +13,15 @@ const MAX_MESSAGE_LEN: usize = 256;
 
 fn cap_len(raw: &str) -> String {
     if raw.len() <= MAX_MESSAGE_LEN {
-        raw.to_owned()
-    } else {
-        raw[..MAX_MESSAGE_LEN].to_owned()
+        return raw.to_owned();
     }
+    // Walk back to the nearest char boundary so we never slice a multi-byte
+    // UTF-8 codepoint in half (which would panic).
+    let mut end = MAX_MESSAGE_LEN;
+    while !raw.is_char_boundary(end) {
+        end -= 1;
+    }
+    raw[..end].to_owned()
 }
 
 /// Flatten an error chain into `"<top>: <source>: <source>..."`.
@@ -214,6 +219,16 @@ mod tests {
     fn cap_len_passes_short_messages_through() {
         let raw = "boom";
         assert_eq!(cap_len(raw), raw);
+    }
+
+    #[test]
+    fn cap_len_respects_utf8_boundaries() {
+        // "💀" is a 4-byte codepoint. A naive byte-slice at MAX_MESSAGE_LEN
+        // could land mid-codepoint and panic.
+        let raw: String = "💀".repeat(100);
+        let out = cap_len(&raw);
+        assert!(out.len() <= MAX_MESSAGE_LEN, "must respect the cap");
+        assert!(out.is_char_boundary(out.len()), "must end on boundary");
     }
 
     #[tokio::test]

@@ -9,6 +9,10 @@ export default async function globalSetup(): Promise<void> {
     process.env.MITM_PROXY_URI =
       process.env.MITM_PROXY_URI ?? process.env.HTTP_PROXY ?? process.env.http_proxy ?? "";
 
+    // Snapshot the mitmproxy CA bundle path so tests can re-supply it
+    // via tls.ca after the env wipe below.
+    process.env.MITM_CA_PATH = process.env.MITM_CA_PATH ?? process.env.NODE_EXTRA_CA_CERTS ?? "";
+
     // Standard proxy variables (both uppercase and lowercase)
     delete process.env.HTTP_PROXY;
     delete process.env.HTTPS_PROXY;
