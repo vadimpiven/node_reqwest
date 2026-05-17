@@ -330,7 +330,15 @@ export class Agent extends Dispatcher {
   }
 
   #dispatchOnResponseEnd(state: RequestState, trailers: Record<string, string | string[]>): void {
-    if (state.controller.aborted || state.handlerErrored) return;
+    if (state.handlerErrored) return;
+    // Abort can race with a fully-processed response: Rust queues
+    // onResponseStart→Data→End via channel.send before JS observes the
+    // abort. Without this branch the handler would never see a terminal
+    // event and would hang forever. Deliver the abort reason explicitly.
+    if (state.controller.aborted) {
+      this.#safeOnResponseError(state, state.controller.reason ?? new RequestAbortedError());
+      return;
+    }
     try {
       state.handler.onResponseEnd?.(state.controller, trailers);
     } catch (e) {
@@ -458,7 +466,10 @@ export class Agent extends Dispatcher {
       headersTimeout: options.headersTimeout ?? null,
       method: options.method,
       origin: origin.origin,
-      path: options.path,
+      // Rust concatenates origin+path verbatim; an empty or relative
+      // path would yield a malformed URL. Match undici/RFC 9112 by
+      // ensuring a leading slash for origin-form request targets.
+      path: options.path.startsWith("/") ? options.path : `/${options.path}`,
       query: encodeQuery(options.query as Record<string, unknown> | string | null | undefined),
     };
 
