@@ -1,0 +1,5 @@
+exclude:
+  - external/**
+  - .cache/**
+  - node_modules/**
+  - target/**

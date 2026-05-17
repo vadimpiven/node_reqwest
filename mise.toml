@@ -748,6 +748,12 @@ description = "Run all tests"
 alias = "t"
 depends = ["test:core", "test:meta", "test:node"]
 
+[tasks.bench]
+description = "Run vitest benchmarks (JS hot paths + e2e dispatch)"
+depends = ["build:node"]
+run = 'pnpm -F "{packages/node}" run bench'
+sources = ["packages/node/**/*", "Cargo.{toml,lock}"]
+
 # ============================================================================
 # SBOM TASKS - Generate and validate CycloneDX SBOMs
 # ============================================================================

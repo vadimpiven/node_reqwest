@@ -78,6 +78,14 @@
       "matchStrings": ["CARGO_AUDITABLE_VERSION\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
       "depNameTemplate": "cargo-auditable",
       "datasourceTemplate": "crate"
+    },
+    {
+      "customType": "regex",
+      "description": "Keep external/undici submodule branch (.gitmodules) in lockstep with the npm undici version",
+      "managerFilePatterns": ["/^\\.gitmodules$/"],
+      "matchStrings": ["branch\\s*=\\s*v(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "undici",
+      "datasourceTemplate": "npm"
     }
   ],
   "pinDigests": true,

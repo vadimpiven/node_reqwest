@@ -1,17 +1,10 @@
-const message = await window.electronAPI
-  .hello()
-  .then((text) => text.toString())
-  .catch((err) => `Error: ${err.message}`);
-document.getElementById("output").textContent = message;
+const report = await window.electronAPI
+  .runScenarios()
+  .catch((err) => ({ ok: false, results: [{ name: "ipc", pass: false, detail: err.message }] }));
 
-const undiciAgent = await window.electronAPI
-  .undici_agent()
-  .then((text) => text.toString())
-  .catch((err) => `Error: ${err.message}`);
-document.getElementById("undici_agent").textContent = undiciAgent;
+document.getElementById("status").textContent = report.ok ? "ALL PASS" : "FAIL";
 
-const reqwestAgent = await window.electronAPI
-  .reqwest_agent()
-  .then((text) => text.toString())
-  .catch((err) => `Error: ${err.message}`);
-document.getElementById("reqwest_agent").textContent = reqwestAgent;
+const detailEl = document.getElementById("detail");
+detailEl.textContent = report.results
+  .map((r) => `${r.pass ? "PASS" : "FAIL"} ${r.name}${r.detail ? ` — ${r.detail}` : ""}`)
+  .join("\n");

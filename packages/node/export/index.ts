@@ -1,4 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-export { Agent, hello } from "./agent.ts";
-export type { AgentOptions, ConnectionOptions, ProxyOptions } from "./agent-def.ts";
+export { Agent } from "./agent.ts";
+export type { AgentOptions, ProxyAuth, ProxyOptions, TlsOptions } from "./agent-def.ts";
+export {
+  BodyTimeoutError,
+  ClientClosedError,
+  ClientDestroyedError,
+  ConnectTimeoutError,
+  HeadersOverflowError,
+  HeadersTimeoutError,
+  InvalidArgumentError,
+  NotSupportedError,
+  RedirectError,
+  RequestAbortedError,
+  ResponseError,
+  SocketError,
+  UndiciError,
+} from "./errors.ts";

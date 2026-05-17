@@ -1,4 +1,5 @@
 {
+  "ignorePatterns": ["external/**"],
   "rules": {
     "typescript/no-deprecated": "error"
   }
