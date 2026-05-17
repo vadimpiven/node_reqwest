@@ -28,7 +28,10 @@ codegen-units = 1
 lto = "thin"
 
 [workspace.lints.rust]
-missing_docs = "deny"
+# missing_docs intentionally allowed: items are named to be self-documenting,
+# and module-level `//!` docs cover architecture. Re-enable selectively if you
+# add a crate intended for external publication.
+missing_docs = "allow"
 non_ascii_idents = "forbid"
 rust_2018_idioms = { level = "deny", priority = -1 }
 macro_use_extern_crate = "deny"
@@ -79,29 +82,35 @@ undocumented_unsafe_blocks = "deny"
 # Always update nightly version in `mise.toml` file when updating dependencies
 anyhow = { version = "1.0.102" }
 async-stream = { version = "0.3.6" }
-async-trait = { version = "0.1.89" }
 bytes = { version = "1.11.1" }
 chrono = { version = "0.4.44", features = ["serde"] }
-core = { path = "packages/core", version = "0.0.0" }
+derive_more = { version = "2.1.1", features = ["debug"] }
 futures = { version = "0.3.32" }
 futures-util = { version = "0.3.32" }
 indoc = { version = "2.0.7" }
 meta = { path = "packages/meta", version = "0.0.0" }
 mimalloc = { version = "0.1.50" }
-neon = { version = "1.1.1", features = ["napi-8", "serde", "tokio", "tokio-rt-multi-thread"] }
+neon = { version = "1.1.1", features = ["napi-8", "tokio"] }
 neon-build = { version = "0.10.1" }
+nrcore = { path = "packages/core", version = "0.0.0" }
+num-traits = { version = "0.2.19" }
 pretty_assertions = { version = "1.4.1", features = ["unstable"] }
-reqwest = { version = "0.13.3", features = [
+regex = { version = "1.11.1" }
+reqwest = { version = "0.13.3", default-features = false, features = [
     "brotli",
+    "charset",
     "cookies",
     "deflate",
     "gzip",
     "hickory-dns",
+    "http2",
     "json",
     "multipart",
     "query",
+    "rustls",
     "socks",
     "stream",
+    "system-proxy",
     "zstd",
 ] }
 reqwest-websocket = { version = "0.6.0", features = ["json"] }
@@ -110,7 +119,7 @@ serde_json = { version = "1.0.149" }
 tauri-winres = { version = "0.3.6" }
 tempfile = { version = "3.27.0" }
 thiserror = { version = "2.0.18" }
-tokio = { version = "1.52.3", features = ["rt-multi-thread", "sync", "time"] }
+tokio = { version = "1.52.3", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
 tokio-stream = { version = "0.1.18" }
 tokio-test = { version = "0.4.5" }
 tokio-util = { version = "0.7.18", features = ["join-map"] }

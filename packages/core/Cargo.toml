@@ -1,5 +1,5 @@
 [package]
-name = "core"
+name = "nrcore"
 edition.workspace = true
 license.workspace = true
 
@@ -7,17 +7,17 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-async-trait = { workspace = true }
 bytes = { workspace = true }
+derive_more = { workspace = true }
 futures = { workspace = true }
 reqwest = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tokio-util = { workspace = true }
 
 [dev-dependencies]
+anyhow = { workspace = true }
 pretty_assertions.workspace = true
 tempfile.workspace = true
 tokio-test = { workspace = true }

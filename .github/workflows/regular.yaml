@@ -79,6 +79,44 @@ jobs:
         with:
           test-coverage: "${{ needs.init.outputs.test-coverage }}"
           test-reports: "${{ needs.init.outputs.test-reports }}"
+  benchmark:
+    name: "Performance regression"
+    timeout-minutes: 60
+    permissions:
+      contents: "read" # to fetch code
+      id-token: "write" # required for OIDC auth with CodSpeed
+    needs:
+      - "init"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+        with:
+          ref: "${{ github.ref }}"
+          fetch-depth: 1
+          persist-credentials: false
+      # CodSpeed wraps the bench command with Valgrind for instruction-counted
+      # measurements; that supervisor must own the process, so this job runs
+      # natively on the runner (not inside the dev container).
+      - name: "Setup development environment"
+        uses: "./.github/actions/setup-native"
+        with:
+          cache-key: "${{ needs.init.outputs.cache-key }}"
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          mise-version: "${{ needs.init.outputs.mise-version }}"
+      - name: "Setup mise"
+        uses: "./.github/actions/shell-native"
+        with:
+          run: "mise setup"
+      - name: "Build node"
+        uses: "./.github/actions/shell-native"
+        with:
+          run: "mise run --force ci-build"
+      - name: "Run benchmarks"
+        uses: "CodSpeedHQ/action@3194d9a39c4d46684cb44bf7207fc56626aad8fd" # v4.15.1
+        with:
+          mode: "simulation"
+          run: "pnpm -C packages/node exec vitest bench --run"
   zizmor:
     name: "Check CI scripts"
     timeout-minutes: 15

@@ -22,7 +22,6 @@ test.beforeEach(async () => {
     args: [path.join(currentDirname, "main.ts"), "--no-sandbox", "--headless"],
   });
   window = await app.firstWindow();
-
   await window.coverage.startJSCoverage();
 });
 
@@ -32,31 +31,14 @@ test.afterEach(async ({}, testInfo) => {
     const coverageData = await window.coverage.stopJSCoverage();
     await addCoverageReport(coverageData, testInfo);
   }
-
-  if (app) {
-    await app.close();
-  }
+  if (app) await app.close();
 });
 
-test("should fail with undici agent and succeed with node_reqwest agent", async () => {
-  {
-    const output = window.locator("#output");
+test("integration scenarios all pass inside Electron", async () => {
+  const status = window.locator("#status");
+  await expect(status).not.toHaveText("Running...", { timeout: 30_000 });
 
-    await expect(output).not.toHaveText("Waiting...");
-    await expect(output).toHaveText("hello");
-  }
-
-  if (process.env.MITM_PROXY) {
-    const output = window.locator("#undici_agent");
-
-    await expect(output).not.toHaveText("Waiting...");
-    await expect(output).toHaveText("false");
-  }
-
-  {
-    const output = window.locator("#reqwest_agent");
-
-    await expect(output).not.toHaveText("Waiting...");
-    await expect(output).toHaveText("true");
-  }
+  const detail = await window.locator("#detail").textContent();
+  // Surface per-scenario results in the failure message for quick diagnosis.
+  expect(status, `details:\n${detail}`).toHaveText("ALL PASS");
 });

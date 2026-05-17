@@ -3,6 +3,16 @@ export default async function globalSetup(): Promise<void> {
   // unset all proxy/certificate-related environment variables
   // so they don't interfere with tests
   if (process.env.MITM_PROXY) {
+    // Snapshot the proxy URI for tests that explicitly want to route
+    // through mitmproxy. Saved under a non-standard env var so wiping
+    // HTTP_PROXY below does not also wipe this hint.
+    process.env.MITM_PROXY_URI =
+      process.env.MITM_PROXY_URI ?? process.env.HTTP_PROXY ?? process.env.http_proxy ?? "";
+
+    // Snapshot the mitmproxy CA bundle path so tests can re-supply it
+    // via tls.ca after the env wipe below.
+    process.env.MITM_CA_PATH = process.env.MITM_CA_PATH ?? process.env.NODE_EXTRA_CA_CERTS ?? "";
+
     // Standard proxy variables (both uppercase and lowercase)
     delete process.env.HTTP_PROXY;
     delete process.env.HTTPS_PROXY;

@@ -1,0 +1,10 @@
+# Benchmarks intentionally exercise the insecure-TLS path with a known
+# self-signed cert generated in-process — there's no MITM surface to
+# protect, only loopback to the bench server. `BENCH_VERIFY_TLS=1`
+# variant covers the verification path separately.
+packages/node/benchmarks/http2.ts
+packages/node/benchmarks/http2-post.ts
+
+# Pinned upstream sources (undici, transitively WPT and the cache-tests
+# corpus) — their content is governed by upstream's own audit policy.
+external/

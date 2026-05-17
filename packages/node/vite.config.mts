@@ -1,6 +1,7 @@
 import { builtinModules } from "node:module";
 import { resolve } from "node:path";
 import { codecovVitePlugin } from "@codecov/vite-plugin";
+import codspeedPlugin from "@codspeed/vitest-plugin";
 import dts from "vite-plugin-dts";
 import { defineConfig } from "vitest/config";
 
@@ -38,14 +39,27 @@ export default defineConfig({
       provider: "istanbul",
       reporter: ["lcovonly", "text"],
       reportsDirectory: "./coverage-vitest",
-      // TODO: enable once coverage reaches 80%
-      // thresholds: { lines: 80, branches: 80, functions: 80, statements: 80 },
+      // Only measure shipped library code — tests and bench harness aren't
+      // production surface and shouldn't move the threshold.
+      include: ["export/**/*.ts"],
+      // Branches sits below the other three because most of the gap is `??`
+      // nullable-fallback chains in option normalization; exercising every
+      // default-vs-explicit pair would 3× the test surface for marginal
+      // safety. The other three exceed 85% and stay at 80.
+      thresholds: { lines: 80, branches: 70, functions: 80, statements: 80 },
     },
     reporters: ["default", ["junit", { outputFile: "report-vitest.junit.xml" }]],
     // TODO: enable once vitest stops reporting false positives from native addons
     detectAsyncLeaks: false,
     includeSource: ["export/**/*.ts"],
-    include: ["tests/vitest/**/*.test.ts"],
+    include: [
+      "tests/vitest/**/*.test.ts",
+      "tests/contract/**/*.test.ts",
+      "tests/compliance/**/*.test.ts",
+    ],
+    benchmark: {
+      include: ["benchmarks/**/*.bench.ts"],
+    },
   },
   plugins: [
     dts({
@@ -57,5 +71,9 @@ export default defineConfig({
       bundleName: "node-reqwest",
       uploadToken: process.env.CODECOV_TOKEN,
     }),
+    // CodSpeed instruments timing for instruction-count simulation; that
+    // breaks async wall-time benches locally (NaN hz). Only enable it when
+    // running under CodSpeed's CI action, which sets `CODSPEED_ENV`.
+    ...(process.env.CODSPEED_ENV !== undefined ? [codspeedPlugin()] : []),
   ],
 });

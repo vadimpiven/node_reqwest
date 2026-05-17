@@ -1,2 +1,6 @@
 [files]
-extend-exclude = ["*.lock", "pnpm-lock.yaml"]
+# `external/` holds pinned git submodules (undici + transitively WPT and
+# the cache-tests corpus). Their contents intentionally include text in
+# dozens of natural languages, broken-by-design fixtures, and historical
+# spelling variants — none of which our own typo budget should police.
+extend-exclude = ["*.lock", "pnpm-lock.yaml", "external/"]

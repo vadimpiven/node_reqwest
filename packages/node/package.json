@@ -55,7 +55,8 @@
     "build": "pnpm run build:cargo && pnpm run build:ts",
     "test:vitest": "pnpm exec vitest run --coverage",
     "test:playwright": "node ../../scripts/test-playwright.ts --config playwright.config.ts",
-    "test:ts": "pnpm run type-check && pnpm run test:vitest && pnpm run test:playwright",
+    "pretest:ts": "pnpm run type-check",
+    "test:ts": "pnpm run test:vitest && pnpm run test:playwright",
     "test:nextest": "node ../../scripts/test-nextest.ts",
     "test:rustdoc": "cargo doc --no-deps --document-private-items",
     "test:rust": "pnpm run test:nextest && pnpm run test:rustdoc",
@@ -66,18 +67,23 @@
     "ci-test:rust": "pnpm run test:nextest -r --locked && pnpm run test:rustdoc -r --locked",
     "ci-test": "pnpm run test:ts && pnpm run ci-test:rust",
     "pack-addon": "slsa pack dist/node_reqwest-v{version}-{platform}-{arch}.node.gz",
-    "postinstall": "slsa wget"
+    "postinstall": "slsa wget",
+    "prebench": "pnpm run build",
+    "bench": "pnpm exec vitest bench --run"
   },
   "dependencies": {
     "node-addon-slsa": "1.0.0"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
+    "@codspeed/vitest-plugin": "catalog:",
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "electron": "catalog:",
     "monocart-reporter": "catalog:",
+    "selfsigned": "catalog:",
+    "tsx": "catalog:",
     "typedoc": "catalog:",
     "typedoc-theme-oxide": "catalog:",
     "typescript": "catalog:",
@@ -87,7 +93,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "undici": "^7.0.0 || ^8.0.0"
+    "undici": "^8.0.0"
   },
   "engines": {
     "node": ">=22.12.0"

@@ -47,6 +47,7 @@ services:
       --set web_open_browser=false
       --set block_global=false
       --set web_password=${MITMPROXY_WEB_PASSWORD:-}
+      --set connection_strategy=lazy
       --scripts /scripts/proxy_addon.py
     # Expose mitmweb UI for local debugging - access at http://localhost:8081
     ports:

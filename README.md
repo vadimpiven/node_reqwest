@@ -5,6 +5,7 @@
 [![CI status][status-badge]][status-dashboard]
 [![Test coverage][coverage-badge]][coverage-dashboard]
 [![Supply-chain score][socket-badge]][socket-dashboard]
+[![CodSpeed][codspeed-badge]][codspeed-dashboard]
 
 [github-badge]: https://img.shields.io/github/stars/vadimpiven/node_reqwest?style=flat&logo=github
 [github-repo]: https://github.com/vadimpiven/node_reqwest
@@ -20,6 +21,8 @@
 [coverage-dashboard]: https://app.codecov.io/gh/vadimpiven/node_reqwest/tree/main
 [socket-badge]: https://badge.socket.dev/npm/package/node-reqwest
 [socket-dashboard]: https://socket.dev/npm/package/node-reqwest
+[codspeed-badge]: https://img.shields.io/endpoint?url=https://codspeed.io/badge.json
+[codspeed-dashboard]: https://codspeed.io/vadimpiven/node_reqwest?utm_source=badge
 
 [![Open in GitHub Codespaces][codespace-badge]][codespace-action]
 

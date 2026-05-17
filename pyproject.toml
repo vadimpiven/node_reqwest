@@ -29,6 +29,7 @@ use-ignore-files = true
 [tool.ruff]
 cache-dir = ".cache/shared/ruff"
 line-length = 100
+extend-exclude = ["external"]
 
 [tool.ruff.format]
 docstring-code-format = true
