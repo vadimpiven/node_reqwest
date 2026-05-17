@@ -644,14 +644,16 @@ raw = true
 [tasks."ci-build:core"]
 description = "Build core package for CI"
 hide = true
-depends = ["setup:rust"]
+# `setup:pnpm` brings pnpm onto PATH; without it the run command exits 127
+# on native runners where pnpm isn't pre-installed (e.g. the CodSpeed job).
+depends = ["setup:rust", "setup:pnpm"]
 run = 'pnpm -F "{packages/core}" --if-present run ci-build'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build:meta"]
 description = "Build meta package for CI"
 hide = true
-depends = ["setup:rust"]
+depends = ["setup:rust", "setup:pnpm"]
 run = 'pnpm -F "{packages/meta}" --if-present run ci-build'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
@@ -698,14 +700,14 @@ depends = ["ci-test:core", "ci-test:meta", "ci-test:node"]
 [tasks."build:core"]
 description = "Build core package"
 hide = true
-depends = ["setup:rust"]
+depends = ["setup:rust", "setup:pnpm"]
 run = 'pnpm -F "{packages/core}" --if-present run build'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."build:meta"]
 description = "Build meta package"
 hide = true
-depends = ["setup:rust"]
+depends = ["setup:rust", "setup:pnpm"]
 run = 'pnpm -F "{packages/meta}" --if-present run build'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
