@@ -1,5 +1,9 @@
+# yamlfmt's exclude patterns are gitignore-style. The bare directory
+# name matches on every platform; `external/**` tripped a Windows-only
+# CreateFile error in 0.21.0 when the doublestar glob is passed to the
+# native walker as a literal path.
 exclude:
-  - external/**
-  - .cache/**
-  - node_modules/**
-  - target/**
+  - external
+  - .cache
+  - node_modules
+  - target

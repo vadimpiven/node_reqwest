@@ -201,9 +201,16 @@ impl Agent {
         }
 
         for pem in &config.ca {
-            let cert = reqwest::Certificate::from_pem(pem.as_bytes())
+            // `from_pem_bundle` accepts both single PEM certs and multi-cert
+            // bundles (e.g. `/etc/ssl/certs/ca-certificates.crt`); `from_pem`
+            // alone parses just the first block and silently drops the rest,
+            // which broke the mitmproxy CI test that hands us the full system
+            // bundle.
+            let certs = reqwest::Certificate::from_pem_bundle(pem.as_bytes())
                 .map_err(|_| CoreError::InvalidArgument("invalid CA certificate".into()))?;
-            builder = builder.add_root_certificate(cert);
+            for cert in certs {
+                builder = builder.add_root_certificate(cert);
+            }
         }
 
         match &config.proxy {

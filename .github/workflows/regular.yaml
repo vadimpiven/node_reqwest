@@ -80,7 +80,7 @@ jobs:
           test-coverage: "${{ needs.init.outputs.test-coverage }}"
           test-reports: "${{ needs.init.outputs.test-reports }}"
   benchmark:
-    name: "Performance regression (CodSpeed)"
+    name: "Performance regression"
     timeout-minutes: 60
     permissions:
       contents: "read" # to fetch code
