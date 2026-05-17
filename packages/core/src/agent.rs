@@ -327,12 +327,14 @@ impl Agent {
                 guard.remove(&id);
             }
             if state.active_count.fetch_sub(1, Ordering::AcqRel) == 1 {
-                // `notify_one()` stores a permit if no waiter is registered
-                // yet — guards close()/destroy() against the lost-wake race
-                // where the final completion fires between their count
-                // check and `notified().await`. `notify_waiters()` would
-                // drop the notification on the floor in that window.
-                state.idle_notify.notify_one();
+                // `notify_waiters()` wakes every parked waiter (close + a
+                // concurrent destroy both park here). The lost-wake race —
+                // where this fires between a waiter's count check and its
+                // `.await` — is handled on the consumer side via the
+                // `Notified::enable()` double-check pattern in
+                // `wait_for_idle()`. `notify_one()` would wake only one of
+                // the two and the other would hang forever.
+                state.idle_notify.notify_waiters();
             }
         });
 
@@ -512,13 +514,30 @@ impl Agent {
         }
     }
 
+    /// Park until `active_count` drains to zero. Uses the
+    /// [`tokio::sync::Notify::notified`] `enable()`-then-recheck pattern so a
+    /// `notify_waiters()` firing between our count load and the `.await`
+    /// can't be lost — and so multiple concurrent waiters (e.g. an in-flight
+    /// `close()` plus a concurrent `destroy()`) all wake.
+    async fn wait_for_idle(&self) {
+        loop {
+            if self.state.active_count.load(Ordering::Acquire) == 0 {
+                return;
+            }
+            let notified = self.state.idle_notify.notified();
+            tokio::pin!(notified);
+            notified.as_mut().enable();
+            if self.state.active_count.load(Ordering::Acquire) == 0 {
+                return;
+            }
+            notified.await;
+        }
+    }
+
     /// Close gracefully: reject new requests, drain active.
     pub async fn close(&self) {
         self.state.closed.store(true, Ordering::Release);
-
-        while self.state.active_count.load(Ordering::Acquire) > 0 {
-            self.state.idle_notify.notified().await;
-        }
+        self.wait_for_idle().await;
     }
 
     /// Destroy: cancel all pending requests and surface `error`.
@@ -543,9 +562,7 @@ impl Agent {
             token.cancel();
         }
 
-        while self.state.active_count.load(Ordering::Acquire) > 0 {
-            self.state.idle_notify.notified().await;
-        }
+        self.wait_for_idle().await;
     }
 
     /// Whether `close()` has been called.

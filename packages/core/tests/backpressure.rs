@@ -267,6 +267,43 @@ async fn test_destroy_cancels_pending() -> Result<()> {
 }
 
 #[tokio::test]
+async fn test_concurrent_close_and_destroy_both_resolve() -> Result<()> {
+    // Both `close()` and `destroy()` park on `wait_for_idle()`. A naive
+    // `notify_one()` wakes only one of them and the other hangs forever;
+    // verify both futures complete together.
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/slow"))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_mins(1)))
+        .mount(&server)
+        .await;
+
+    let agent = Arc::new(Agent::new(AgentConfig::default()).context("agent")?);
+    let (handler, _events, _done) = MockHandler::new();
+    let (_ctrl, fut) = agent
+        .dispatch(opts(server.uri(), "/slow"), handler)
+        .context("dispatch")?;
+    tokio::spawn(fut);
+    tokio::time::sleep(Duration::from_millis(10)).await;
+
+    let close_fut = tokio::spawn({
+        let agent = Arc::clone(&agent);
+        async move { agent.close().await }
+    });
+    let destroy_fut = tokio::spawn({
+        let agent = Arc::clone(&agent);
+        async move { agent.destroy(CoreError::ClientDestroyed).await }
+    });
+
+    let joined = tokio::time::timeout(Duration::from_secs(5), async {
+        let _ = tokio::join!(close_fut, destroy_fut);
+    })
+    .await;
+    ensure!(joined.is_ok(), "close() + destroy() must both resolve");
+    Ok(())
+}
+
+#[tokio::test]
 async fn test_body_timeout_between_chunks() -> Result<()> {
     use tokio::io::AsyncReadExt;
     use tokio::io::AsyncWriteExt;

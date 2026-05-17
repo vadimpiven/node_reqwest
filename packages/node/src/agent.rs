@@ -178,9 +178,9 @@ fn agent_create<'cx>(
     let agent = match Agent::new(config) {
         Ok(a) => a,
         Err(e) => {
-            let msg = e.to_string();
-            let safe = if msg.len() > 256 { &msg[..256] } else { &msg };
-            return cx.throw_error(safe);
+            // Share the core's UTF-8-safe capper so a multi-byte codepoint
+            // straddling byte 256 can't panic the Neon runtime.
+            return cx.throw_error(nrcore::error::cap_message_len(&e.to_string()));
         },
     };
 

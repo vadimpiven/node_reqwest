@@ -9,14 +9,16 @@ use thiserror::Error;
 /// Cap on reqwest-derived error message length. Uncapped error strings are
 /// a minor memory-blowup surface across the FFI; everything else passes
 /// through verbatim (undici doesn't redact URL userinfo either).
-const MAX_MESSAGE_LEN: usize = 256;
+pub const MAX_MESSAGE_LEN: usize = 256;
 
-fn cap_len(raw: &str) -> String {
+/// Truncate `raw` to at most [`MAX_MESSAGE_LEN`] bytes, ending on a UTF-8
+/// codepoint boundary. Re-used by the Neon FFI layer so error messages
+/// crossing the boundary share the same byte cap and panic-safety guarantee.
+#[must_use]
+pub fn cap_message_len(raw: &str) -> String {
     if raw.len() <= MAX_MESSAGE_LEN {
         return raw.to_owned();
     }
-    // Walk back to the nearest char boundary so we never slice a multi-byte
-    // UTF-8 codepoint in half (which would panic).
     let mut end = MAX_MESSAGE_LEN;
     while !raw.is_char_boundary(end) {
         end -= 1;
@@ -138,11 +140,11 @@ impl CoreError {
         }
 
         if err.is_redirect() {
-            return Self::Redirect(cap_len(&err.to_string()));
+            return Self::Redirect(cap_message_len(&err.to_string()));
         }
 
         if err.is_connect() {
-            return Self::Socket(cap_len(&format!(
+            return Self::Socket(cap_message_len(&format!(
                 "Connect error: {err}; source: {}",
                 error_chain(&err)
             )));
@@ -153,21 +155,21 @@ impl CoreError {
         {
             return Self::ResponseError {
                 status_code: status.as_u16(),
-                message: cap_len(&err.to_string()),
+                message: cap_message_len(&err.to_string()),
                 body: None,
                 headers: HashMap::new(),
             };
         }
 
         if err.is_body() || err.is_decode() {
-            return Self::Socket(cap_len(&err.to_string()));
+            return Self::Socket(cap_message_len(&err.to_string()));
         }
 
         if err.is_builder() {
-            return Self::InvalidArgument(cap_len(&err.to_string()));
+            return Self::InvalidArgument(cap_message_len(&err.to_string()));
         }
 
-        Self::Socket(cap_len(&err.to_string()))
+        Self::Socket(cap_message_len(&err.to_string()))
     }
 }
 
@@ -210,23 +212,23 @@ mod tests {
     }
 
     #[test]
-    fn cap_len_truncates_long_messages() {
+    fn cap_message_len_truncates_long_messages() {
         let raw = "x".repeat(1024);
-        assert_eq!(cap_len(&raw).len(), 256, "message must be capped");
+        assert_eq!(cap_message_len(&raw).len(), 256, "message must be capped");
     }
 
     #[test]
-    fn cap_len_passes_short_messages_through() {
+    fn cap_message_len_passes_short_messages_through() {
         let raw = "boom";
-        assert_eq!(cap_len(raw), raw);
+        assert_eq!(cap_message_len(raw), raw);
     }
 
     #[test]
-    fn cap_len_respects_utf8_boundaries() {
+    fn cap_message_len_respects_utf8_boundaries() {
         // "💀" is a 4-byte codepoint. A naive byte-slice at MAX_MESSAGE_LEN
         // could land mid-codepoint and panic.
         let raw: String = "💀".repeat(100);
-        let out = cap_len(&raw);
+        let out = cap_message_len(&raw);
         assert!(out.len() <= MAX_MESSAGE_LEN, "must respect the cap");
         assert!(out.is_char_boundary(out.len()), "must end on boundary");
     }
