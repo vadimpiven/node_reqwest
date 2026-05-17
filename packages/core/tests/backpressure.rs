@@ -267,6 +267,34 @@ async fn test_destroy_cancels_pending() -> Result<()> {
 }
 
 #[tokio::test]
+async fn test_dropping_dispatch_future_unblocks_close() -> Result<()> {
+    // Caller obtains the (controller, fut) pair from dispatch() but drops
+    // `fut` before polling it. Without an RAII guard on the active-request
+    // counter, `close()` would park forever in `wait_for_idle()` waiting
+    // for the decrement that no future will ever run.
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/slow"))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_mins(1)))
+        .mount(&server)
+        .await;
+
+    let agent = Agent::new(AgentConfig::default()).context("agent")?;
+    let (handler, _events, _done) = MockHandler::new();
+    let (_controller, fut) = agent
+        .dispatch(opts(server.uri(), "/slow"), handler)
+        .context("dispatch")?;
+    drop(fut);
+
+    let closed = tokio::time::timeout(Duration::from_secs(2), agent.close()).await;
+    ensure!(
+        closed.is_ok(),
+        "close() must resolve after fut dropped pre-poll"
+    );
+    Ok(())
+}
+
+#[tokio::test]
 async fn test_concurrent_close_and_destroy_both_resolve() -> Result<()> {
     // Both `close()` and `destroy()` park on `wait_for_idle()`. A naive
     // `notify_one()` wakes only one of them and the other hangs forever;

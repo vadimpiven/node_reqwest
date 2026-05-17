@@ -154,6 +154,40 @@ struct AgentState {
     defaults: AgentDefaults,
 }
 
+/// RAII handle for an in-flight dispatch. Holding one keeps `active_count`
+/// incremented and the request's `CancellationToken` registered; dropping
+/// it (whether the future ran to completion or was cancelled/abandoned
+/// pre-poll) does the matching decrement and wakes `wait_for_idle`. This
+/// is what closes the "drop future without polling → permanent count leak
+/// → `close()/destroy()` hang" hole.
+struct ActiveRequestGuard {
+    state: Arc<AgentState>,
+    id: u64,
+}
+
+impl ActiveRequestGuard {
+    fn new(state: Arc<AgentState>, id: u64) -> Self {
+        Self { state, id }
+    }
+}
+
+impl Drop for ActiveRequestGuard {
+    fn drop(&mut self) {
+        {
+            let mut guard = self
+                .state
+                .active_tokens
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            guard.remove(&self.id);
+        }
+        if self.state.active_count.fetch_sub(1, Ordering::AcqRel) == 1 {
+            // See `wait_for_idle` for the lost-wake rationale.
+            self.state.idle_notify.notify_waiters();
+        }
+    }
+}
+
 /// HTTP Agent managing connection pooling and request lifecycle.
 pub struct Agent {
     client: Client,
@@ -308,7 +342,15 @@ impl Agent {
             guard.insert(id, token.clone());
         }
 
+        // RAII guard: if the caller drops the returned future without ever
+        // polling it (test code that bails on `?`, a wrapper that holds only
+        // the controller, etc.), `Drop` still runs and decrements the count.
+        // Without this, `close()`/`destroy()` would park in `wait_for_idle()`
+        // forever waiting for a count that no future will ever decrement.
+        let active_guard = ActiveRequestGuard::new(Arc::clone(&state), id);
+
         let fut: DispatchFuture = Box::pin(async move {
+            let _active_guard = active_guard;
             Self::execute_request(
                 client,
                 options,
@@ -318,24 +360,6 @@ impl Agent {
                 Arc::clone(&state),
             )
             .await;
-
-            {
-                let mut guard = state
-                    .active_tokens
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                guard.remove(&id);
-            }
-            if state.active_count.fetch_sub(1, Ordering::AcqRel) == 1 {
-                // `notify_waiters()` wakes every parked waiter (close + a
-                // concurrent destroy both park here). The lost-wake race —
-                // where this fires between a waiter's count check and its
-                // `.await` — is handled on the consumer side via the
-                // `Notified::enable()` double-check pattern in
-                // `wait_for_idle()`. `notify_one()` would wake only one of
-                // the two and the other would hang forever.
-                state.idle_notify.notify_waiters();
-            }
         });
 
         Ok((controller, fut))
