@@ -501,11 +501,13 @@ sources = ["mise.toml"]
 [tasks."clean:pnpm"]
 description = "Clean pnpm store"
 hide = true
+depends = ["setup:pnpm"]
 run = "pnpm store prune"
 
 [tasks."clean:cargo"]
 description = "Clean cargo cache and build artifacts"
 hide = true
+depends = ["setup:rust"]
 run = """
 cargo -Z gc clean gc
 cargo clean
@@ -514,6 +516,7 @@ cargo clean
 [tasks."clean:rustup"]
 description = "Clean unused rustup toolchains"
 hide = true
+depends = ["setup:rust"]
 run = "node scripts/clean-rustup.ts"
 
 [tasks."clean:docker"]
@@ -535,16 +538,19 @@ depends = ["clean:pnpm", "clean:cargo", "clean:rustup", "clean:docker"]
 [tasks."update:pnpm"]
 description = "Check for pnpm updates"
 hide = true
+depends = ["setup:pnpm"]
 run = "pnpm outdated --recursive --sort-by name || exit 0"
 
 [tasks."update:cargo"]
 description = "Check for cargo updates"
 hide = true
+depends = ["setup:rust"]
 run = "cargo update --breaking -Z unstable-options --dry-run"
 
 [tasks."update:uv"]
 description = "Check for uv/Python updates"
 hide = true
+depends = ["setup:python"]
 run = "uv lock --upgrade --dry-run"
 
 [tasks.update]
@@ -559,6 +565,7 @@ depends = ["update:pnpm", "update:cargo", "update:uv"]
 [tasks."upgrade:pnpm"]
 description = "Update pnpm dependencies"
 hide = true
+depends = ["setup:pnpm"]
 run = """
 pnpm update --recursive --workspace
 pnpm audit --fix
@@ -568,6 +575,7 @@ pnpm install
 [tasks."upgrade:cargo"]
 description = "Update cargo dependencies"
 hide = true
+depends = ["setup:rust"]
 run = """
 cargo -Z gc clean gc
 cargo clean
@@ -577,6 +585,7 @@ cargo update
 [tasks."upgrade:uv"]
 description = "Update uv/Python dependencies"
 hide = true
+depends = ["setup:python"]
 run = "uv lock --upgrade"
 
 [tasks.upgrade]
@@ -660,7 +669,7 @@ sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 [tasks."ci-build:node"]
 description = "Build node package for CI"
 hide = true
-depends = ["setup:rust", "setup:pnpm", "setup:python"]
+depends = ["setup"]
 run = 'pnpm -F "{packages/node}" --if-present run ci-build'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
@@ -687,7 +696,7 @@ sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 [tasks."ci-test:node"]
 description = "Run CI tests for node package"
 hide = true
-depends = ["check", "setup:pnpm"]
+depends = ["check"]
 run = 'pnpm -F "{packages/node}" --if-present run ci-test'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
@@ -714,7 +723,7 @@ sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 [tasks."build:node"]
 description = "Build node package"
 hide = true
-depends = ["setup:rust", "setup:pnpm", "setup:python"]
+depends = ["setup"]
 run = 'pnpm -F "{packages/node}" --if-present run build'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
@@ -741,7 +750,7 @@ sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 [tasks."test:node"]
 description = "Run tests for node package"
 hide = true
-depends = ["fix", "setup:pnpm"]
+depends = ["fix"]
 run = 'pnpm -F "{packages/node}" --if-present run test'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 

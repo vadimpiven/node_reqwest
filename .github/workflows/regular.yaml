@@ -98,17 +98,21 @@ jobs:
       # CodSpeed wraps the bench command with Valgrind for instruction-counted
       # measurements; that supervisor must own the process, so this job runs
       # natively on the runner (not inside the dev container).
-      - name: "Setup development environment (native)"
+      - name: "Setup development environment"
         uses: "./.github/actions/setup-native"
         with:
           cache-key: "${{ needs.init.outputs.cache-key }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           mise-version: "${{ needs.init.outputs.mise-version }}"
+      - name: "Setup mise"
+        uses: "./.github/actions/shell-native"
+        with:
+          run: "mise setup"
       - name: "Build node"
         uses: "./.github/actions/shell-native"
         with:
           run: "mise run --force ci-build"
-      - name: "Run JS benchmarks under CodSpeed"
+      - name: "Run benchmarks"
         uses: "CodSpeedHQ/action@3194d9a39c4d46684cb44bf7207fc56626aad8fd" # v4.15.1
         with:
           mode: "simulation"
