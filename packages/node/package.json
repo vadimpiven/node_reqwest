@@ -66,13 +66,15 @@
     "ci-test:rust": "pnpm run test:nextest -r --locked && pnpm run test:rustdoc -r --locked",
     "ci-test": "pnpm run test:ts && pnpm run ci-test:rust",
     "pack-addon": "slsa pack dist/node_reqwest-v{version}-{platform}-{arch}.node.gz",
-    "postinstall": "slsa wget"
+    "postinstall": "slsa wget",
+    "bench": "vitest bench --config vitest.bench.config.mts"
   },
   "dependencies": {
     "node-addon-slsa": "1.0.0"
   },
   "devDependencies": {
     "@codecov/vite-plugin": "catalog:",
+    "@codspeed/vitest-plugin": "^5.4.0",
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",

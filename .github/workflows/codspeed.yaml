@@ -1,0 +1,43 @@
+name: "Benchmarks"
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    types: ["opened", "reopened", "synchronize"]
+    branches:
+      - "main"
+  workflow_dispatch: {}
+permissions: {}
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+jobs:
+  benchmarks:
+    name: "Run benchmarks"
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 30
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+        with:
+          ref: "${{ github.ref }}"
+          fetch-depth: 1
+          persist-credentials: false
+      - name: "Setup Node.js"
+        uses: "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020" # v4.4.0
+        with:
+          node-version: "22"
+      - name: "Install pnpm"
+        run: "corepack enable && corepack prepare"
+      - name: "Install dependencies"
+        run: "pnpm install --frozen-lockfile --ignore-scripts"
+      - name: "Run benchmarks"
+        uses: "CodSpeedHQ/action@3194d9a39c4d46684cb44bf7207fc56626aad8fd" # v4.15.1
+        with:
+          mode: "simulation"
+          run: "pnpm exec vitest bench --config vitest.bench.config.mts --run"
+          working-directory: "packages/node"
