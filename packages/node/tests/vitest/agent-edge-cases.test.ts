@@ -144,6 +144,20 @@ describe("Origin scheme guard", () => {
       expect(r.error).toBeInstanceOf(InvalidArgumentError);
     },
   );
+
+  it("rejects unparseable origin string", async () => {
+    assert(agent);
+    const r = await dispatchOnce(agent, { origin: "::::not a url", path: "/", method: "GET" });
+    expect(r.error).toBeInstanceOf(InvalidArgumentError);
+    expect(r.error?.message).toContain("valid URL");
+  });
+
+  it("rejects empty origin", async () => {
+    assert(agent);
+    const r = await dispatchOnce(agent, { origin: "", path: "/", method: "GET" });
+    expect(r.error).toBeInstanceOf(InvalidArgumentError);
+    expect(r.error?.message).toContain("required");
+  });
 });
 
 describe("Request header cap", () => {

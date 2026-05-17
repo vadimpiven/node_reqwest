@@ -6,13 +6,19 @@ import { describe, expect, it } from "vitest";
 
 import {
   BodyTimeoutError,
+  ClientClosedError,
+  ClientDestroyedError,
   ConnectTimeoutError,
   type CoreErrorInfo,
   createUndiciError,
+  HeadersOverflowError,
   HeadersTimeoutError,
+  InvalidArgumentError,
+  NotSupportedError,
   RedirectError,
   RequestAbortedError,
   ResponseError,
+  SocketError,
   UndiciError,
 } from "../../export/errors.ts";
 
@@ -38,13 +44,22 @@ describe("Undici Error Classes", () => {
     expect(body instanceof RequestAbortedError).toBe(false);
   });
 
-  it("creates errors from CoreErrorInfo", () => {
-    const info: CoreErrorInfo = {
-      code: "UND_ERR_ABORTED",
-      message: "Request was aborted",
-    };
-    const err = createUndiciError(info);
-    expect(err instanceof RequestAbortedError).toBe(true);
+  it.each([
+    ["UND_ERR_ABORTED", RequestAbortedError],
+    ["UND_ERR_CONNECT_TIMEOUT", ConnectTimeoutError],
+    ["UND_ERR_HEADERS_TIMEOUT", HeadersTimeoutError],
+    ["UND_ERR_BODY_TIMEOUT", BodyTimeoutError],
+    ["UND_ERR_SOCKET", SocketError],
+    ["UND_ERR_HEADERS_OVERFLOW", HeadersOverflowError],
+    ["UND_ERR_DESTROYED", ClientDestroyedError],
+    ["UND_ERR_CLOSED", ClientClosedError],
+    ["UND_ERR_INVALID_ARG", InvalidArgumentError],
+    ["UND_ERR_NOT_SUPPORTED", NotSupportedError],
+    ["UND_ERR_REDIRECT", RedirectError],
+  ] as const)("maps %s → matching class", (code, Klass) => {
+    const err = createUndiciError({ code, message: `case ${code}` });
+    expect(err).toBeInstanceOf(Klass);
+    expect(err.message).toBe(`case ${code}`);
   });
 
   it("handles ResponseError with body and headers", () => {
