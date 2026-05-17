@@ -353,10 +353,7 @@ export class Agent extends Dispatcher {
     if (state.handlerErrored) return;
 
     if (state.controller.aborted && errorInfo.code === "UND_ERR_ABORTED") {
-      this.#safeOnResponseError(
-        state,
-        state.controller.reason ?? new RequestAbortedError(),
-      );
+      this.#safeOnResponseError(state, state.controller.reason ?? new RequestAbortedError());
       return;
     }
 
