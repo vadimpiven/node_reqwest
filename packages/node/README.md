@@ -149,11 +149,6 @@ Installation aborts with a `SECURITY` error if any check fails.
 [sigstore]: https://www.sigstore.dev/
 [gh-attestations]: https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations
 
-## Requirements
-
-- Node.js `>=22.12.0`
-- Undici `^8.0.0`
-
 ## License
 
 [Apache-2.0](../../LICENSE-APACHE.txt) OR

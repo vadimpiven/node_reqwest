@@ -260,4 +260,21 @@ describe("Dispatcher.compose() lifecycle methods", () => {
     const composed = a.compose((dispatch) => dispatch);
     await expect(composed.destroy()).resolves.toBeUndefined();
   });
+
+  it("dispatch() through the compose proxy completes a request", async () => {
+    agent = new Agent();
+    server = await startServer((_req, res) => {
+      res.writeHead(200);
+      res.end("composed");
+    });
+    const composed = agent.compose((dispatch) => dispatch);
+    const r = await dispatchOnce(composed, {
+      origin: `http://127.0.0.1:${server.port}`,
+      path: "/",
+      method: "GET",
+    });
+    expect(r.error).toBeNull();
+    expect(r.status).toBe(200);
+    expect(r.bytes.toString()).toBe("composed");
+  });
 });
