@@ -36,7 +36,7 @@ services:
         condition: service_healthy
   mitmweb:
     # <https://hub.docker.com/layers/mitmproxy/mitmproxy/latest/images/>
-    image: mitmproxy/mitmproxy@sha256:743b6cdc817211d64bc269f5defacca8d14e76e647fc474e5c7244dbcb645141
+    image: mitmproxy/mitmproxy@sha256:00b77b5d8804c8ad18cb6caefbf9d5849e895e8986c5ce011f4ae30f4385962f
     # http://127.0.0.1:8081/?token=mitmproxy
     command: >
       mitmweb
