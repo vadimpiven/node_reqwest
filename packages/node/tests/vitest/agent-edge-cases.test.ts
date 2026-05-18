@@ -246,3 +246,18 @@ describe("Request id counter survives repeated dispatches", () => {
     }
   });
 });
+
+describe("Dispatcher.compose() lifecycle methods", () => {
+  it("close() and destroy() survive being invoked on the compose proxy", async () => {
+    const a = new Agent();
+    const composed = a.compose((dispatch) => dispatch);
+    await expect(composed.close()).resolves.toBeUndefined();
+    await expect(composed.destroy()).resolves.toBeUndefined();
+  });
+
+  it("destroy() works when only destroy() is called on the proxy", async () => {
+    const a = new Agent();
+    const composed = a.compose((dispatch) => dispatch);
+    await expect(composed.destroy()).resolves.toBeUndefined();
+  });
+});

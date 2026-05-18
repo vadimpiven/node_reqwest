@@ -151,7 +151,8 @@ Installation aborts with a `SECURITY` error if any check fails.
 
 ## Requirements
 
-- Node.js `^20.19.0 || >=22.12.0`
+- Node.js `>=22.12.0`
+- Undici `^8.0.0`
 
 ## License
 

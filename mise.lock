@@ -560,43 +560,36 @@ backend = "github:EmbarkStudios/cargo-deny"
 checksum = "sha256:d27bdcc361099068db61652761633e338372d4fa318d38944f09af3b1639d52a"
 url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-aarch64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366889"
-github_attestations = "unavailable"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.linux-arm64-musl"]
 checksum = "sha256:d27bdcc361099068db61652761633e338372d4fa318d38944f09af3b1639d52a"
 url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-aarch64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366889"
-github_attestations = "unavailable"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.linux-x64"]
 checksum = "sha256:0021d321c781f0159a150ca308859ad93ccce64a887b22ad2e129f096a8a2c07"
 url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366601"
-github_attestations = "unavailable"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.linux-x64-musl"]
 checksum = "sha256:0021d321c781f0159a150ca308859ad93ccce64a887b22ad2e129f096a8a2c07"
 url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366601"
-github_attestations = "unavailable"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.macos-arm64"]
 checksum = "sha256:1eca0934ec7bf12d8b9a8303335e1fff8bcc0767476947a50d3357858eded222"
 url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-aarch64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366515"
-github_attestations = "unavailable"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.macos-x64"]
 checksum = "sha256:2526753e4f10ce8a0c9c45ba634e59d7c07e4aace9a21304a0fa86fb089b7039"
 url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-x86_64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366243"
-github_attestations = "unavailable"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.windows-x64"]
 checksum = "sha256:e334e1f7d6f8b9ed47a9ff9fa9f3c3190138b4e5e2cc4cdbc23ceea943cd253b"
 url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-x86_64-pc-windows-msvc.tar.gz"
 url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417367250"
-github_attestations = "unavailable"
 
 [[tools."github:mikefarah/yq"]]
 version = "4.53.2"
@@ -658,49 +651,41 @@ backend = "github:mozilla/sccache"
 checksum = "sha256:111ddd28fb108cb3e17edb69ab62cefe1dcc97b02e5006ff9c1330f4f2e78368"
 url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-aarch64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639973"
-github_attestations = "unavailable"
 
 [tools."github:mozilla/sccache"."platforms.linux-arm64-musl"]
 checksum = "sha256:111ddd28fb108cb3e17edb69ab62cefe1dcc97b02e5006ff9c1330f4f2e78368"
 url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-aarch64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639973"
-github_attestations = "unavailable"
 
 [tools."github:mozilla/sccache"."platforms.linux-x64"]
 checksum = "sha256:b0e89ead6899224a4ba2b90e9073bf1ce036d95bab30f3dc33c1e1468bc4ad44"
 url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639997"
-github_attestations = "unavailable"
 
 [tools."github:mozilla/sccache"."platforms.linux-x64-musl"]
 checksum = "sha256:b0e89ead6899224a4ba2b90e9073bf1ce036d95bab30f3dc33c1e1468bc4ad44"
 url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639997"
-github_attestations = "unavailable"
 
 [tools."github:mozilla/sccache"."platforms.macos-arm64"]
 checksum = "sha256:4d5281f8760963347b29b9ca4ab1dbde99712c17329619fc9cecba1577ccc8d2"
 url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-aarch64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639966"
-github_attestations = "unavailable"
 
 [tools."github:mozilla/sccache"."platforms.macos-x64"]
 checksum = "sha256:398438425a0e25a40157984189fdaf2d2d0d1f3788cf06d49da2702a41e80c4b"
 url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-x86_64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639987"
-github_attestations = "unavailable"
 
 [tools."github:mozilla/sccache"."platforms.windows-arm64"]
 checksum = "sha256:5d99dfc3552907596de7e912432e49fd627eef0fb63b27b777c21db135bb1795"
 url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-aarch64-pc-windows-msvc.tar.gz"
 url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639969"
-github_attestations = "unavailable"
 
 [tools."github:mozilla/sccache"."platforms.windows-x64"]
 checksum = "sha256:f430e63e3f47dd76d488fc6d14a97b4bb58e4fabb18aab69c43198a68e750b91"
 url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-x86_64-pc-windows-msvc.tar.gz"
 url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639993"
-github_attestations = "unavailable"
 
 [[tools."github:mstange/samply"]]
 version = "0.13.1"
@@ -713,49 +698,41 @@ version_prefix = "samply-v"
 checksum = "sha256:aa465162b62830168775b7ff4804bc35049436dcbc29bb3d1ea9f580380ea06a"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-aarch64-unknown-linux-gnu.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379066"
-github_attestations = "unavailable"
 
 [tools."github:mstange/samply"."platforms.linux-arm64-musl"]
 checksum = "sha256:aa465162b62830168775b7ff4804bc35049436dcbc29bb3d1ea9f580380ea06a"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-aarch64-unknown-linux-gnu.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379066"
-github_attestations = "unavailable"
 
 [tools."github:mstange/samply"."platforms.linux-x64"]
 checksum = "sha256:61875daad67888798690dea3cb2748279df6ac299c5c6a857d67eed7642473d9"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-unknown-linux-gnu.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379074"
-github_attestations = "unavailable"
 
 [tools."github:mstange/samply"."platforms.linux-x64-musl"]
 checksum = "sha256:691f48f3b3ece38d6fc0d93ce2143fd8ca5621fe627ebc4c13f1f0081fcb6480"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-unknown-linux-musl.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379076"
-github_attestations = "unavailable"
 
 [tools."github:mstange/samply"."platforms.macos-arm64"]
 checksum = "sha256:7597239aa3769e75058be5ed359dbfe067f5e7714a5f052c45dd81d509aec17f"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-aarch64-apple-darwin.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379067"
-github_attestations = "unavailable"
 
 [tools."github:mstange/samply"."platforms.macos-x64"]
 checksum = "sha256:a57f05f9162d06c36df6d51425d976ac774a8cd6dbd84050e6303fa8bf813998"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-apple-darwin.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379070"
-github_attestations = "unavailable"
 
 [tools."github:mstange/samply"."platforms.windows-arm64"]
 checksum = "sha256:0236cda0bf5f8f7022b16be4cc1133217090430e3e4db704292b13bbc0cd60c9"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/source.tar.gz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379079"
-github_attestations = "unavailable"
 
 [tools."github:mstange/samply"."platforms.windows-x64"]
 checksum = "sha256:8fed74dac18197bbb2520125b0199255e09709bed7903a7672a06225a5d7e976"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379071"
-github_attestations = "unavailable"
 
 [[tools."github:nextest-rs/nextest"]]
 version = "0.9.135"
