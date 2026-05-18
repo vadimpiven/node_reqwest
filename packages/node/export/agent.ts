@@ -257,8 +257,14 @@ export class Agent extends Dispatcher {
 
   constructor(options?: AgentOptions) {
     super();
+
+    this.dispatch = this.dispatch.bind(this);
+    this.close = this.close.bind(this);
+    this.destroy = this.destroy.bind(this);
+
     this.#maxBufferedRequestBodyBytes =
       options?.maxBufferedRequestBodyBytes ?? DEFAULT_MAX_BUFFERED_REQUEST_BODY_BYTES;
+
     this.#agent = Addon.agentCreate(buildCreationOptions(options), {
       onResponseStart: (id, statusCode, headers, statusMessage) => {
         const state = this.#pending.get(id);

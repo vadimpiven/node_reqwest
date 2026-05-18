@@ -246,3 +246,35 @@ describe("Request id counter survives repeated dispatches", () => {
     }
   });
 });
+
+describe("Dispatcher.compose() lifecycle methods", () => {
+  it("close() and destroy() survive being invoked on the compose proxy", async () => {
+    const a = new Agent();
+    const composed = a.compose((dispatch) => dispatch);
+    await expect(composed.close()).resolves.toBeUndefined();
+    await expect(composed.destroy()).resolves.toBeUndefined();
+  });
+
+  it("destroy() works when only destroy() is called on the proxy", async () => {
+    const a = new Agent();
+    const composed = a.compose((dispatch) => dispatch);
+    await expect(composed.destroy()).resolves.toBeUndefined();
+  });
+
+  it("dispatch() through the compose proxy completes a request", async () => {
+    agent = new Agent();
+    server = await startServer((_req, res) => {
+      res.writeHead(200);
+      res.end("composed");
+    });
+    const composed = agent.compose((dispatch) => dispatch);
+    const r = await dispatchOnce(composed, {
+      origin: `http://127.0.0.1:${server.port}`,
+      path: "/",
+      method: "GET",
+    });
+    expect(r.error).toBeNull();
+    expect(r.status).toBe(200);
+    expect(r.bytes.toString()).toBe("composed");
+  });
+});
