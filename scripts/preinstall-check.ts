@@ -22,7 +22,8 @@ const looksLikePnpm = /pnpm/i.test(path.basename(execpath)) || userAgent.startsW
 if (!looksLikePnpm) {
   console.error(
     '\n  Use "pnpm install" for installation in this project.\n' +
-      '  If you don\'t have pnpm, enable it via "corepack enable pnpm".\n',
+      '  If you don\'t have pnpm, install it via "mise install" (recommended)\n' +
+      '  or "corepack enable pnpm".\n',
   );
   process.exit(1);
 }

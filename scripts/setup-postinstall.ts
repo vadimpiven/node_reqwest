@@ -22,10 +22,18 @@ runScript("Workspace postinstall", async () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const electronPkg = path.join(here, "..", "packages", "node", "package.json");
   const electronInstall = createRequire(electronPkg).resolve("electron/install.js");
-  const electronPathTxt = path.join(path.dirname(electronInstall), "path.txt");
+  const electronDir = path.dirname(electronInstall);
+  const electronPathTxt = path.join(electronDir, "path.txt");
+  const electronDist = path.join(electronDir, "dist");
+  console.log(
+    `[electron-install] before: path.txt=${existsSync(electronPathTxt)} dist=${existsSync(electronDist)}`,
+  );
   if (!existsSync(electronPathTxt)) {
     await runCommand(process.execPath, [electronInstall]);
   }
+  console.log(
+    `[electron-install] after: path.txt=${existsSync(electronPathTxt)} dist=${existsSync(electronDist)}`,
+  );
 
   const args = ["install", "cargo-auditable", "--locked"];
   const version = process.env["CARGO_AUDITABLE_VERSION"];

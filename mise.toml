@@ -7,7 +7,11 @@ redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 
 [settings]
 env_file = ".env"
-npm.package_manager = "pnpm"
+# pnpm is provided directly via `[tools] pnpm` below, not via corepack:
+# corepack downloads from registry.npmjs.org, which the manylinux build
+# container can't reach for tarball requests (DNS works for crates.io,
+# PyPI, GitHub releases — just not npmjs). mise's own pnpm plugin pulls
+# from a registry the container is allowed to talk to.
 idiomatic_version_file_enable_tools = ["rust"]
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
@@ -41,6 +45,7 @@ CARGO_AUDITABLE_VERSION = "0.7.4"
 
 [tools]
 node = "24.16.0"
+pnpm = "11.2.2"
 rust.version = "nightly-2026-05-20"
 
 "aqua:jqlang/jq" = "1.8.1"
@@ -112,7 +117,7 @@ description = "Install pnpm dependencies"
 hide = true
 depends = ["setup:rust"]
 env = { CI = "true", HUSKY = "1" }
-run = ["corepack enable pnpm", "pnpm install --frozen-lockfile --prefer-offline"]
+run = "pnpm install --frozen-lockfile --prefer-offline"
 sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
 
 [tasks."setup:python"]
