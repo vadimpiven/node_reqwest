@@ -39,6 +39,11 @@ catalog:
 
 minimumReleaseAge: 1440
 
+# pnpm 11 stopped honoring the legacy `npm_config_store_dir` env var.
+# Pin the store inside `.cache/native/pnpm` so it stays under the
+# directory that's gitignored and excluded from trivy / coverage scans.
+storeDir: .cache/native/pnpm
+
 minimumReleaseAgeExclude:
   - node-addon-slsa
 
