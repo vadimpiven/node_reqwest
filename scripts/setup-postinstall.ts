@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import process from "node:process";
@@ -10,14 +11,19 @@ import { runScript } from "./helpers/run-script.ts";
 runScript("Workspace postinstall", async () => {
   if (process.env.MISE_ENV !== "docker") {
     await runCommand("playwright", ["install-deps"]);
-  } else {
-    // electron >=42 no longer ships a postinstall hook, so trigger the
-    // binary download here while pnpm install still has network access.
-    // electron is a dep of packages/node, so resolve from that workspace.
-    const here = path.dirname(fileURLToPath(import.meta.url));
-    const electronInstall = createRequire(
-      path.join(here, "..", "packages", "node", "package.json"),
-    ).resolve("electron/install.js");
+  }
+
+  // electron >=42 no longer ships a postinstall script in its tarball, and
+  // pnpm 11 dropped the implicit "run install.js when name-prefixed bin
+  // exists" behavior — so we trigger the binary download ourselves. Resolve
+  // `electron/install.js` from packages/node (where electron is a dep) and
+  // skip when `path.txt` already exists, since the script is idempotent but
+  // re-fetches the archive every time.
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const electronPkg = path.join(here, "..", "packages", "node", "package.json");
+  const electronInstall = createRequire(electronPkg).resolve("electron/install.js");
+  const electronPathTxt = path.join(path.dirname(electronInstall), "path.txt");
+  if (!existsSync(electronPathTxt)) {
     await runCommand(process.execPath, [electronInstall]);
   }
 
