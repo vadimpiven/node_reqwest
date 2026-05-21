@@ -671,21 +671,21 @@ hide = true
 # `setup:pnpm` brings pnpm onto PATH; without it the run command exits 127
 # on native runners where pnpm isn't pre-installed (e.g. the CodSpeed job).
 depends = ["setup:rust", "setup:pnpm"]
-run = 'pnpm -F "{packages/core}" --if-present run ci-build'
+run = 'pnpm -F "core" --if-present run ci-build'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build:meta"]
 description = "Build meta package for CI"
 hide = true
 depends = ["setup:rust", "setup:pnpm"]
-run = 'pnpm -F "{packages/meta}" --if-present run ci-build'
+run = 'pnpm -F "meta" --if-present run ci-build'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build:node"]
 description = "Build node package for CI"
 hide = true
 depends = ["setup"]
-run = 'pnpm -F "{packages/node}" --if-present run ci-build'
+run = 'pnpm -F "node-reqwest" --if-present run ci-build'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build"]
@@ -698,21 +698,21 @@ depends = ["ci-build:core", "ci-build:meta", "ci-build:node"]
 description = "Run CI tests for core package"
 hide = true
 depends = ["check"]
-run = 'pnpm -F "{packages/core}" --if-present run ci-test'
+run = 'pnpm -F "core" --if-present run ci-test'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test:meta"]
 description = "Run CI tests for meta package"
 hide = true
 depends = ["check"]
-run = 'pnpm -F "{packages/meta}" --if-present run ci-test'
+run = 'pnpm -F "meta" --if-present run ci-test'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test:node"]
 description = "Run CI tests for node package"
 hide = true
 depends = ["check"]
-run = 'pnpm -F "{packages/node}" --if-present run ci-test'
+run = 'pnpm -F "node-reqwest" --if-present run ci-test'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test"]
@@ -725,21 +725,21 @@ depends = ["ci-test:core", "ci-test:meta", "ci-test:node"]
 description = "Build core package"
 hide = true
 depends = ["setup:rust", "setup:pnpm"]
-run = 'pnpm -F "{packages/core}" --if-present run build'
+run = 'pnpm -F "core" --if-present run build'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."build:meta"]
 description = "Build meta package"
 hide = true
 depends = ["setup:rust", "setup:pnpm"]
-run = 'pnpm -F "{packages/meta}" --if-present run build'
+run = 'pnpm -F "meta" --if-present run build'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."build:node"]
 description = "Build node package"
 hide = true
 depends = ["setup"]
-run = 'pnpm -F "{packages/node}" --if-present run build'
+run = 'pnpm -F "node-reqwest" --if-present run build'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.build]
@@ -752,21 +752,21 @@ depends = ["build:core", "build:meta", "build:node"]
 description = "Run tests for core package"
 hide = true
 depends = ["fix"]
-run = 'pnpm -F "{packages/core}" --if-present run test'
+run = 'pnpm -F "core" --if-present run test'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."test:meta"]
 description = "Run tests for meta package"
 hide = true
 depends = ["fix"]
-run = 'pnpm -F "{packages/meta}" --if-present run test'
+run = 'pnpm -F "meta" --if-present run test'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."test:node"]
 description = "Run tests for node package"
 hide = true
 depends = ["fix"]
-run = 'pnpm -F "{packages/node}" --if-present run test'
+run = 'pnpm -F "node-reqwest" --if-present run test'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.test]
@@ -777,7 +777,7 @@ depends = ["test:core", "test:meta", "test:node"]
 [tasks.bench]
 description = "Run vitest benchmarks (JS hot paths + e2e dispatch)"
 depends = ["build:node"]
-run = 'pnpm -F "{packages/node}" run bench'
+run = 'pnpm -F "node-reqwest" run bench'
 sources = ["packages/node/**/*", "Cargo.{toml,lock}"]
 
 # ============================================================================
