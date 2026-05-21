@@ -25,6 +25,11 @@ PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"
 RUSTC_WRAPPER = "sccache"
 MISE_ACTIVE = "1"
+# Force Node's resolver to try IPv4 records first. The manylinux_2_28
+# build container reaches static IPv4 endpoints (crates.io, PyPI, GitHub
+# releases) fine but trips on AAAA-first lookups for `registry.npmjs.org`
+# during corepack/npm install of pnpm — `ipv4first` sidesteps that.
+NODE_OPTIONS = "--dns-result-order=ipv4first"
 
 # Cache directories
 CARGO_HOME = "{{ config_root }}/.cache/native/cargo"
@@ -45,7 +50,12 @@ CARGO_AUDITABLE_VERSION = "0.7.4"
 
 [tools]
 node = "24.16.0"
-pnpm = "11.2.2"
+# pnpm 11 dropped pre-built `darwin-x64` binaries from its GitHub
+# releases (only `darwin-arm64` ships now), so the default aqua backend
+# can't satisfy the macos-15-intel CI runner. The `npm:` backend uses
+# pnpm's npm package (pure JS) instead, which runs on any platform with
+# Node — at the cost of going through npmjs.org for the install.
+"npm:pnpm" = "11.2.2"
 rust.version = "nightly-2026-05-20"
 
 "aqua:jqlang/jq" = "1.8.1"
