@@ -7,13 +7,18 @@
 //! `npm_execpath` env var, which pnpm 11 still sets to the pnpm script path
 //! during lifecycle hooks.
 
+import path from "node:path";
 import process from "node:process";
 
 import { runCommand } from "./helpers/run-command.ts";
 
 const execpath = process.env.npm_execpath ?? "";
 const userAgent = process.env.npm_config_user_agent ?? "";
-const looksLikePnpm = /pnpm/i.test(execpath) || userAgent.startsWith("pnpm/");
+// Match the basename rather than the full path: an unrelated tool living
+// under a directory whose name happens to contain "pnpm" (e.g.
+// `/home/alice/pnpm-env/bin/npm`) must not satisfy the guard.
+const looksLikePnpm =
+  /pnpm/i.test(path.basename(execpath)) || userAgent.startsWith("pnpm/");
 
 if (!looksLikePnpm) {
   console.error(
