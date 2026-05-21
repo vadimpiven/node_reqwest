@@ -17,8 +17,7 @@ const userAgent = process.env.npm_config_user_agent ?? "";
 // Match the basename rather than the full path: an unrelated tool living
 // under a directory whose name happens to contain "pnpm" (e.g.
 // `/home/alice/pnpm-env/bin/npm`) must not satisfy the guard.
-const looksLikePnpm =
-  /pnpm/i.test(path.basename(execpath)) || userAgent.startsWith("pnpm/");
+const looksLikePnpm = /pnpm/i.test(path.basename(execpath)) || userAgent.startsWith("pnpm/");
 
 if (!looksLikePnpm) {
   console.error(
