@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "preinstall": "node ./scripts/preinstall-check.ts",
+    "preinstall": "npx only-allow pnpm && rustup show",
     "postinstall": "node ./scripts/setup-postinstall.ts",
     "prepare": "husky",
     "test": "pnpm --recursive --if-present run test",
