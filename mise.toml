@@ -7,7 +7,11 @@ redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 
 [settings]
 env_file = ".env"
-npm.package_manager = "pnpm"
+# pnpm is provided directly via `[tools] pnpm` below, not via corepack:
+# corepack downloads from registry.npmjs.org, which the manylinux build
+# container can't reach for tarball requests (DNS works for crates.io,
+# PyPI, GitHub releases — just not npmjs). mise's own pnpm plugin pulls
+# from a registry the container is allowed to talk to.
 idiomatic_version_file_enable_tools = ["rust"]
 rust.cargo_home = ".cache/native/cargo"
 rust.rustup_home = ".cache/native/rustup"
@@ -21,6 +25,11 @@ PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"
 RUSTC_WRAPPER = "sccache"
 MISE_ACTIVE = "1"
+# Force Node's resolver to try IPv4 records first. The manylinux_2_28
+# build container reaches static IPv4 endpoints (crates.io, PyPI, GitHub
+# releases) fine but trips on AAAA-first lookups for `registry.npmjs.org`
+# during corepack/npm install of pnpm — `ipv4first` sidesteps that.
+NODE_OPTIONS = "--dns-result-order=ipv4first"
 
 # Cache directories
 CARGO_HOME = "{{ config_root }}/.cache/native/cargo"
@@ -40,8 +49,18 @@ _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 CARGO_AUDITABLE_VERSION = "0.7.4"
 
 [tools]
+# Pinned to 24.15.x: extract-zip@2.0.1 (electron 42's bundled unzipper)
+# fails to extract zips on Node 24.16.0+ and 26.1.0+ due to an unsettled
+# async handler. See electron/electron#51619 and max-mapper/extract-zip#154.
+# Bump again once the upstream fix lands and electron picks it up.
 node = "24.15.0"
-rust.version = "nightly-2026-05-13"
+# pnpm 11 dropped pre-built `darwin-x64` binaries from its GitHub
+# releases (only `darwin-arm64` ships now), so the default aqua backend
+# can't satisfy the macos-15-intel CI runner. The `npm:` backend uses
+# pnpm's npm package (pure JS) instead, which runs on any platform with
+# Node — at the cost of going through npmjs.org for the install.
+"npm:pnpm" = "11.2.2"
+rust.version = "nightly-2026-05-20"
 
 "aqua:jqlang/jq" = "1.8.1"
 "github:mikefarah/yq" = "4.53.2"
@@ -51,7 +70,7 @@ rust.version = "nightly-2026-05-13"
 "aqua:koalaman/shellcheck" = "0.11.0"
 "aqua:gitleaks/gitleaks" = "8.30.1"
 "aqua:rhysd/actionlint" = "1.7.12"
-"aqua:astral-sh/uv" = "0.11.14"
+"aqua:astral-sh/uv" = "0.11.15"
 "aqua:cli/cli" = "2.92.0"
 "aqua:cargo-bins/cargo-binstall" = "1.19.1"
 "aqua:anchore/syft" = "1.44.0"
@@ -75,7 +94,7 @@ version = "0.19.6"
 os = ["linux", "macos"]
 
 [tools."aqua:crate-ci/typos"]
-version = "1.46.1"
+version = "1.46.2"
 os = ["linux", "macos"]
 
 [tools."github:taiki-e/cargo-llvm-cov"]
@@ -112,7 +131,7 @@ description = "Install pnpm dependencies"
 hide = true
 depends = ["setup:rust"]
 env = { CI = "true", HUSKY = "1" }
-run = ["corepack enable pnpm", "pnpm install --frozen-lockfile --prefer-offline"]
+run = "pnpm install --frozen-lockfile --prefer-offline"
 sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
 
 [tasks."setup:python"]
@@ -656,21 +675,21 @@ hide = true
 # `setup:pnpm` brings pnpm onto PATH; without it the run command exits 127
 # on native runners where pnpm isn't pre-installed (e.g. the CodSpeed job).
 depends = ["setup:rust", "setup:pnpm"]
-run = 'pnpm -F "{packages/core}" --if-present run ci-build'
+run = 'pnpm -C packages/core --if-present run ci-build'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build:meta"]
 description = "Build meta package for CI"
 hide = true
 depends = ["setup:rust", "setup:pnpm"]
-run = 'pnpm -F "{packages/meta}" --if-present run ci-build'
+run = 'pnpm -C packages/meta --if-present run ci-build'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build:node"]
 description = "Build node package for CI"
 hide = true
 depends = ["setup"]
-run = 'pnpm -F "{packages/node}" --if-present run ci-build'
+run = 'pnpm -C packages/node --if-present run ci-build'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-build"]
@@ -683,21 +702,21 @@ depends = ["ci-build:core", "ci-build:meta", "ci-build:node"]
 description = "Run CI tests for core package"
 hide = true
 depends = ["check"]
-run = 'pnpm -F "{packages/core}" --if-present run ci-test'
+run = 'pnpm -C packages/core --if-present run ci-test'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test:meta"]
 description = "Run CI tests for meta package"
 hide = true
 depends = ["check"]
-run = 'pnpm -F "{packages/meta}" --if-present run ci-test'
+run = 'pnpm -C packages/meta --if-present run ci-test'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test:node"]
 description = "Run CI tests for node package"
 hide = true
 depends = ["check"]
-run = 'pnpm -F "{packages/node}" --if-present run ci-test'
+run = 'pnpm -C packages/node --if-present run ci-test'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks."ci-test"]
@@ -710,21 +729,21 @@ depends = ["ci-test:core", "ci-test:meta", "ci-test:node"]
 description = "Build core package"
 hide = true
 depends = ["setup:rust", "setup:pnpm"]
-run = 'pnpm -F "{packages/core}" --if-present run build'
+run = 'pnpm -C packages/core --if-present run build'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."build:meta"]
 description = "Build meta package"
 hide = true
 depends = ["setup:rust", "setup:pnpm"]
-run = 'pnpm -F "{packages/meta}" --if-present run build'
+run = 'pnpm -C packages/meta --if-present run build'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."build:node"]
 description = "Build node package"
 hide = true
 depends = ["setup"]
-run = 'pnpm -F "{packages/node}" --if-present run build'
+run = 'pnpm -C packages/node --if-present run build'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.build]
@@ -737,21 +756,21 @@ depends = ["build:core", "build:meta", "build:node"]
 description = "Run tests for core package"
 hide = true
 depends = ["fix"]
-run = 'pnpm -F "{packages/core}" --if-present run test'
+run = 'pnpm -C packages/core --if-present run test'
 sources = ["packages/core/**/*", "Cargo.{toml,lock}"]
 
 [tasks."test:meta"]
 description = "Run tests for meta package"
 hide = true
 depends = ["fix"]
-run = 'pnpm -F "{packages/meta}" --if-present run test'
+run = 'pnpm -C packages/meta --if-present run test'
 sources = ["packages/meta/**/*", "Cargo.{toml,lock}"]
 
 [tasks."test:node"]
 description = "Run tests for node package"
 hide = true
 depends = ["fix"]
-run = 'pnpm -F "{packages/node}" --if-present run test'
+run = 'pnpm -C packages/node --if-present run test'
 sources = ["packages/{core,meta,node}/**/*", "Cargo.{toml,lock}"]
 
 [tasks.test]
@@ -762,7 +781,7 @@ depends = ["test:core", "test:meta", "test:node"]
 [tasks.bench]
 description = "Run vitest benchmarks (JS hot paths + e2e dispatch)"
 depends = ["build:node"]
-run = 'pnpm -F "{packages/node}" run bench'
+run = 'pnpm -C packages/node run bench'
 sources = ["packages/node/**/*", "Cargo.{toml,lock}"]
 
 # ============================================================================

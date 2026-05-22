@@ -89,13 +89,13 @@ futures = { version = "0.3.32" }
 futures-util = { version = "0.3.32" }
 indoc = { version = "2.0.7" }
 meta = { path = "packages/meta", version = "0.0.0" }
-mimalloc = { version = "0.1.50" }
+mimalloc = { version = "0.1.51" }
 neon = { version = "1.1.1", features = ["napi-8", "tokio"] }
 neon-build = { version = "0.10.1" }
 nrcore = { path = "packages/core", version = "0.0.0" }
 num-traits = { version = "0.2.19" }
 pretty_assertions = { version = "1.4.1", features = ["unstable"] }
-regex = { version = "1.11.1" }
+regex = { version = "1.12.3" }
 reqwest = { version = "0.13.3", default-features = false, features = [
     "brotli",
     "charset",

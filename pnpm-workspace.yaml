@@ -3,6 +3,14 @@ packages:
   - packages/meta
   - packages/node
 
+# pnpm 11 supersedes the legacy `onlyBuiltDependencies` list with a map of
+# explicit per-package toggles. Anything not listed here is silently skipped
+# (with `strictDepBuilds: true`, blocked outright).
+allowBuilds:
+  electron: true
+  esbuild: true
+  node-addon-slsa: true
+
 blockExoticSubdeps: true
 
 catalog:
@@ -10,33 +18,33 @@ catalog:
   "@codspeed/vitest-plugin": 5.4.0
   "@playwright/test": 1.60.0
   "@taplo/cli": 0.7.0
-  "@types/node": 25.7.0
-  "@vitest/coverage-istanbul": 4.1.6
-  electron: 42.0.1
+  "@types/node": 25.9.1
+  "@vitest/coverage-istanbul": 4.1.7
+  electron: 42.2.0
   fd-lock: 2.1.1
   husky: 9.1.7
   markdownlint-cli2: 0.22.1
   monocart-reporter: 2.11.2
-  oxfmt: 0.49.0
-  oxlint: 1.64.0
+  oxfmt: 0.51.0
+  oxlint: 1.66.0
   selfsigned: 5.5.0
-  tsx: 4.21.1
+  tsx: 4.22.3
   typedoc: 0.28.19
   typedoc-theme-oxide: 0.3.0
   typescript: 6.0.3
   undici: 8.3.0
   vite: 8.0.13
-  vite-plugin-dts: 5.0.0
-  vitest: 4.1.6
+  vite-plugin-dts: 5.0.1
+  vitest: 4.1.7
 
 minimumReleaseAge: 1440
 
-minimumReleaseAgeExclude:
-  - node-addon-slsa
+# pnpm 11 stopped honoring the legacy `npm_config_store_dir` env var.
+# Pin the store inside `.cache/native/pnpm` so it stays under the
+# directory that's gitignored and excluded from trivy / coverage scans.
+storeDir: .cache/native/pnpm
 
-onlyBuiltDependencies:
-  - electron
-  - esbuild
+minimumReleaseAgeExclude:
   - node-addon-slsa
 
 overrides:
@@ -44,5 +52,7 @@ overrides:
   # cheerio, @electron/get pull 6.x/7.x indirectly and we leave those at the
   # versions they were tested against). 6.23.0 patched a series of CVEs.
   undici@<6.23.0: ">=6.23.0"
+  # CVE floor — older @isaacs/brace-expansion has a ReDoS.
+  "@isaacs/brace-expansion": ">=5.0.1"
 
 strictDepBuilds: true
