@@ -26,16 +26,43 @@
 
 # node-reqwest
 
-Node.js bindings for [reqwest][reqwest] — a Rust HTTP client library.
-A drop-in replacement for `undici` with HTTP/2 multiplexing that
-decisively outperforms it, system proxy, trusted system CA certificates,
-and Electron compatibility out of the box.
-
-Implements the full `undici.Dispatcher` interface — including its
-error classes — and is verified against the same web-platform tests
-that undici uses for standards compliance.
+Node.js bindings for [reqwest][reqwest] — a Rust HTTP client.
+Implements the full `undici.Dispatcher` interface (including its
+error classes), passes the same web-platform tests undici does, and
+outperforms it on HTTP/2. Ships with system proxy, system CA
+certificates, and Electron compatibility built in.
 
 [reqwest]: https://crates.io/crates/reqwest
+
+## Install
+
+```sh
+npm install node-reqwest
+```
+
+Prebuilt binaries are shipped for macOS, Linux, and Windows on
+`x64` and `arm64`. Requires Node.js ≥ 22.12 and `undici` ≥ 8 as a
+peer dependency.
+
+## Usage
+
+`Agent` implements the `undici.Dispatcher` interface. Use it as a
+global dispatcher for `fetch`, or with any `undici`-compatible API.
+
+```typescript
+import { Agent } from "node-reqwest";
+import { setGlobalDispatcher } from "undici";
+
+const agent = new Agent({
+    allowH2: true,
+    proxy: "system", // also accepts "none" or { type: "custom", uri, auth? }
+});
+
+setGlobalDispatcher(agent);
+
+// All fetch calls now use reqwest under the hood
+const response = await fetch("https://example.com");
+```
 
 ## Why node-reqwest?
 
@@ -60,10 +87,10 @@ between two timed runs (with a warm-up run discarded):
 | HTTP/2 GET                | +50%                    |
 | HTTP/2 POST (stream body) | +55%                    |
 
-HTTP/2's multiplexing advantage is decisive — and every real-world
-server supports it. HTTP/1 GET, the tightest hot path, lands within
-run-to-run noise of undici (mean throughput; p50 favors node-reqwest by
-3–7% but tail latency is GC-jittery on both sides).
+HTTP/1 GET, the tightest hot path, lands within run-to-run noise of
+undici (mean throughput; p50 favors node-reqwest by 3–7% but tail
+latency is GC-jittery on both sides). The HTTP/2 numbers are where
+the multiplexing wins show up.
 
 <details>
 <summary>Reproduce the benchmarks</summary>
@@ -107,28 +134,38 @@ ratio between the two dispatchers is what's stable across hardware.
 [hyper]: https://github.com/hyperium/hyper
 [rustls]: https://github.com/rustls/rustls
 
-## Usage
+## Supported platforms
 
-This library provides an `Agent` that implements the
-`undici.Dispatcher` interface. Use it as a global dispatcher for
-`fetch` or with any `undici`-compatible API.
+| OS      | Architectures  |
+| ------- | -------------- |
+| macOS   | `x64`, `arm64` |
+| Linux   | `x64`, `arm64` |
+| Windows | `x64`, `arm64` |
 
-```typescript
-import { Agent } from "node-reqwest";
-import { setGlobalDispatcher } from "undici";
+- Node.js ≥ 22.12
+- Peer dependency: `undici` ^8
 
-const agent = new Agent({
-    allowH2: true,
-    proxy: "system", // also accepts "none" or { type: "custom", uri, auth? }
-});
+Prebuilt binaries are published as part of every release; there is
+no source build step on `npm install`. Linux prebuilds target
+manylinux_2_28 (glibc ≥ 2.28).
 
-setGlobalDispatcher(agent);
+## Limitations
 
-// All fetch calls now use reqwest under the hood
-const response = await fetch("https://example.com");
-```
+`Agent` covers the `undici.Dispatcher` request/stream/pipeline
+surface, but a few features are deliberately out of scope. See
+[`COMPATIBILITY.md`][compat] for the full matrix and error mapping.
 
-## Installation safety
+- **No CONNECT / Upgrade**, so no WebSockets and no HTTP tunneling.
+  Use undici's `WebSocket` / `ProxyAgent` for those.
+- **No HTTP trailers, no `drain` event, no pipelining knobs.**
+  reqwest manages the connection pool internally, so the
+  corresponding Dispatcher options are no-ops.
+- **No request retries.** Bodies are streams; retry at the
+  application layer.
+
+[compat]: https://github.com/vadimpiven/node_reqwest/blob/main/packages/node/COMPATIBILITY.md
+
+## Supply chain
 
 This package downloads a precompiled binary during `npm install`.
 GitHub releases for this project are
@@ -151,5 +188,7 @@ Installation aborts with a `SECURITY` error if any check fails.
 
 ## License
 
-[Apache-2.0](../../LICENSE-APACHE.txt) OR
-[MIT](../../LICENSE-MIT.txt)
+[Apache-2.0][license-apache] OR [MIT][license-mit]
+
+[license-apache]: https://github.com/vadimpiven/node_reqwest/blob/main/LICENSE-APACHE.txt
+[license-mit]: https://github.com/vadimpiven/node_reqwest/blob/main/LICENSE-MIT.txt

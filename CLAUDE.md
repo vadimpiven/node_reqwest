@@ -3,9 +3,11 @@
 ## Project
 
 Rust-based Node.js native addon using neon bindings for HTTP
-client functionality (wrapping reqwest). Three Rust packages
-(`core`, `meta`, `node`), one TypeScript package (`slsa` for
-supply-chain verification), and TypeScript exports.
+client functionality (wrapping reqwest). Three packages
+(`core`, `meta`, `node`), each combining a Rust crate with
+TypeScript glue. Supply-chain verification on install uses the
+external [`node-addon-slsa`](https://www.npmjs.com/package/node-addon-slsa)
+dependency.
 
 ## Commands
 
@@ -13,7 +15,6 @@ supply-chain verification), and TypeScript exports.
 - `mise run fix` — auto-fix lint and format issues
 - `mise run test` — run all tests
 - `mise run build` — build all packages
-- `/reflect` — review conversation, propose instruction updates
 
 ## Guiding Principles
 
@@ -24,11 +25,10 @@ supply-chain verification), and TypeScript exports.
    require judgment; mechanical checks belong in config files.
 3. **Config consistency** — CLAUDE.md and agent prompts
    (`.claude/agents/`) must stay in sync.
-4. **Reflect periodically** — run `/reflect` after completing
-   tasks to capture undocumented patterns.
-5. **Hooks for guardrails** — `mise run check` must pass before
-   stopping after any coding task. Enforced by the Stop hook
-   in `.claude/settings.json`.
+4. **Hooks for guardrails** — the Stop hook in
+   `.claude/settings.json` runs `mise run fix` after every
+   coding task, which both auto-formats and runs the same
+   linters as `mise run check`.
 
 ## Dependency Management
 
@@ -57,6 +57,6 @@ supply-chain verification), and TypeScript exports.
 - Scripts in `scripts/` must use the helper patterns from
   `scripts/helpers/` (`runCommand`, `runScript`).
 - Follow existing script patterns
-  (see `setup-playwright.ts` as reference).
+  (see `setup-postinstall.ts` as reference).
 - Markdown lines must not exceed 100 characters
   (enforced by markdownlint `MD013`).
