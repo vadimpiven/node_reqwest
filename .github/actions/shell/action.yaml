@@ -7,6 +7,9 @@ inputs:
   docker-service:
     description: "Docker service name"
     required: true
+  gh-token:
+    description: "GitHub token to forward into the container (for zizmor, mise)"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -17,6 +20,7 @@ runs:
         # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
         run: "${{ inputs.run }}"
         docker-service: "${{ inputs.docker-service }}"
+        gh-token: "${{ inputs.gh-token }}"
     - name: "Run (Native)"
       if: "runner.os != 'Linux'"
       uses: "./.github/actions/shell-native"

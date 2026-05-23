@@ -68,4 +68,5 @@ runs:
       uses: "./.github/actions/shell"
       with:
         docker-service: "${{ inputs.docker-service }}"
+        gh-token: "${{ inputs.github-token }}"
         run: "mise setup"
