@@ -15,7 +15,6 @@ dependency.
 - `mise run fix` — auto-fix lint and format issues
 - `mise run test` — run all tests
 - `mise run build` — build all packages
-- `/reflect` — review conversation, propose instruction updates
 
 ## Guiding Principles
 
@@ -26,11 +25,10 @@ dependency.
    require judgment; mechanical checks belong in config files.
 3. **Config consistency** — CLAUDE.md and agent prompts
    (`.claude/agents/`) must stay in sync.
-4. **Reflect periodically** — run `/reflect` after completing
-   tasks to capture undocumented patterns.
-5. **Hooks for guardrails** — `mise run check` must pass before
-   stopping after any coding task. Enforced by the Stop hook
-   in `.claude/settings.json`.
+4. **Hooks for guardrails** — the Stop hook in
+   `.claude/settings.json` runs `mise run fix` after every
+   coding task, which both auto-formats and runs the same
+   linters as `mise run check`.
 
 ## Dependency Management
 
