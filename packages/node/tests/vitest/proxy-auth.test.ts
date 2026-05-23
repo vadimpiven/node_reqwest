@@ -85,8 +85,10 @@ async function startAuthProxy(): Promise<AuthProxy> {
       return;
     }
     authed += 1;
-    const [host, portStr] = (req.url ?? "").split(":");
-    const upstream = netConnect(Number(portStr), host, () => {
+    // Parse the authority form (`host:port`) via the URL ctor so bracketed
+    // IPv6 literals like `[::1]:8080` survive the split.
+    const { hostname, port: portStr } = new URL(`http://${req.url ?? ""}`);
+    const upstream = netConnect(Number(portStr), hostname, () => {
       clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
       if (head.length > 0) upstream.write(head);
       upstream.pipe(clientSocket);
@@ -134,7 +136,10 @@ function forward(req: IncomingMessage, res: import("node:http").ServerResponse):
       ur.pipe(res);
     },
   );
-  upstream.on("error", () => res.writeHead(502).end());
+  upstream.on("error", () => {
+    if (!res.headersSent) res.writeHead(502).end();
+    else res.end();
+  });
   req.pipe(upstream);
 }
 
