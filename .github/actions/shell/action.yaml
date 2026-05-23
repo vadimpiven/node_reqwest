@@ -9,8 +9,7 @@ inputs:
     required: true
   gh-token:
     description: "GitHub token to forward into the container (for zizmor, mise)"
-    required: false
-    default: ""
+    required: true
 runs:
   using: "composite"
   steps:
