@@ -21,6 +21,77 @@ mise run test    # auto-fix, build, type-check, run all tests
 mise run --force test
 ```
 
+## Build requirements
+
+### Required
+
+- [mise](https://mise.jdx.dev/getting-started.html) for tool
+  version management
+- C++ development toolchain (required by Rust)
+  - Windows: [Build Tools for Visual Studio][vs-build-tools]
+  - macOS: `xcode-select --install`
+  - Linux: preinstalled `g++`
+
+[vs-build-tools]: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2026
+
+### Optional
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+  for dev container (or [OrbStack](https://orbstack.dev/download)
+  for macOS)
+
+## Environment setup
+
+```bash
+# GitHub token avoids rate limits during mise tool installation
+# https://github.com/settings/personal-access-tokens/new
+[ -f .env ] || cp .env.example .env
+# Edit .env and set GITHUB_TOKEN
+```
+
+## Docker build and test
+
+To verify glibc compatibility or test in a clean environment, use
+VS Code [Dev Containers][devcontainers] extension to open the
+project directly in the container.
+
+[devcontainers]: https://code.visualstudio.com/docs/devcontainers/containers
+
+For manual Docker usage:
+
+```bash
+[ -f .env ] || cp .env.example .env
+grep -q "^USER_UID=" .env || echo "USER_UID=$(id -u)" >> .env
+grep -q "^USER_GID=" .env || echo "USER_GID=$(id -g)" >> .env
+
+mise run docker   # build, run and attach
+mise install      # inside the container
+mise run test     # inside the container
+exit              # stop the container
+```
+
+## Mitmproxy
+
+The Docker environment includes [mitmproxy](https://mitmproxy.org/)
+for inspecting HTTP/HTTPS traffic. The
+`docker-compose.proxied.yaml` is merged automatically by
+`mise run docker`.
+
+```bash
+MITMPROXY_WEB_PASSWORD=example_password
+echo "MITMPROXY_WEB_PASSWORD=${MITMPROXY_WEB_PASSWORD}" >> .env
+mise run docker
+open "http://127.0.0.1:8081/?token=${MITMPROXY_WEB_PASSWORD}"
+```
+
+## Troubleshooting
+
+Reset the environment and free up disk space:
+
+```bash
+mise run clean
+```
+
 ## Dependency Management
 
 Keep all dependencies in the workspace root.

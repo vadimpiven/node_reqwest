@@ -151,5 +151,7 @@ Installation aborts with a `SECURITY` error if any check fails.
 
 ## License
 
-[Apache-2.0](../../LICENSE-APACHE.txt) OR
-[MIT](../../LICENSE-MIT.txt)
+[Apache-2.0][license-apache] OR [MIT][license-mit]
+
+[license-apache]: https://github.com/vadimpiven/node_reqwest/blob/main/LICENSE-APACHE.txt
+[license-mit]: https://github.com/vadimpiven/node_reqwest/blob/main/LICENSE-MIT.txt
