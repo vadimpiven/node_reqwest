@@ -3,16 +3,16 @@
 ## Quick Start
 
 The only prerequisite is
-[mise](https://mise.jdx.dev/getting-started.html).
-It manages Node.js, Rust, Python, pnpm, and all other tooling
-automatically.
+[mise](https://mise.jdx.dev/getting-started.html). It manages
+Node.js, Rust, Python, pnpm, and all other tooling automatically.
 
 ```bash
 git clone https://github.com/vadimpiven/node_reqwest.git
 cd node_reqwest
-mise trust       # approve the mise.toml config
-mise install     # install all tools defined in mise.toml
-mise run test    # auto-fix, build, type-check, run all tests
+cp .env.example .env   # then set GITHUB_TOKEN to avoid mise rate limits
+mise trust             # approve the mise.toml config
+mise install           # install all tools defined in mise.toml
+mise run test          # auto-fix, build, type-check, run all tests
 ```
 
 `--force` bypasses mise task caching to ensure a clean run:
@@ -20,6 +20,9 @@ mise run test    # auto-fix, build, type-check, run all tests
 ```bash
 mise run --force test
 ```
+
+A GitHub token is optional but recommended; create one at
+<https://github.com/settings/personal-access-tokens/new>.
 
 ## Build requirements
 
@@ -39,15 +42,6 @@ mise run --force test
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
   for dev container (or [OrbStack](https://orbstack.dev/download)
   for macOS)
-
-## Environment setup
-
-```bash
-# GitHub token avoids rate limits during mise tool installation
-# https://github.com/settings/personal-access-tokens/new
-[ -f .env ] || cp .env.example .env
-# Edit .env and set GITHUB_TOKEN
-```
 
 ## Docker build and test
 
@@ -105,20 +99,15 @@ Keep all dependencies in the workspace root.
 
 ## Coding Standards
 
-- **License Headers**: Every new source file must start with:
-  `SPDX-License-Identifier: Apache-2.0 OR MIT`
-- **Imports**: Keep `use` or `import` statements at the top of
-  the module (not inside functions). Use the `node:` prefix for
-  Node.js built-in imports
-  (`import { readFile } from "node:fs/promises"`).
-- **Assertions**: Always place the expected value first:
-  `assert_eq!(expected, actual)`.
-- **Type Declarations (TypeScript)**: Extract complex inline
-  types into named `type` aliases. Prefer
-  `type Foo = (x: string) => void` over inline
-  `const fn: (x: string) => void = ...`.
-- **Formatting**: Run `mise run fix` to auto-format all files.
-- **Dependencies**: Pin exact versions in `pnpm-workspace.yaml`
+Run `mise run fix` to auto-format. See [`CLAUDE.md`](CLAUDE.md)
+for project-wide conventions (license headers, `node:` imports,
+markdown line length). A few additional rules:
+
+- **Assertions**: place the expected value first
+  (`assert_eq!(expected, actual)`).
+- **TypeScript types**: extract complex inline types into named
+  `type` aliases.
+- **Dependencies**: pin exact versions in `pnpm-workspace.yaml`
   (no `^` or `~`) and reference them as `catalog:` in
   `package.json`.
 
