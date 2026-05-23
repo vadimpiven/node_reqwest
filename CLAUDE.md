@@ -3,9 +3,11 @@
 ## Project
 
 Rust-based Node.js native addon using neon bindings for HTTP
-client functionality (wrapping reqwest). Three Rust packages
-(`core`, `meta`, `node`), one TypeScript package (`slsa` for
-supply-chain verification), and TypeScript exports.
+client functionality (wrapping reqwest). Three packages
+(`core`, `meta`, `node`), each combining a Rust crate with
+TypeScript glue. Supply-chain verification on install uses the
+external [`node-addon-slsa`](https://www.npmjs.com/package/node-addon-slsa)
+dependency.
 
 ## Commands
 
@@ -57,6 +59,6 @@ supply-chain verification), and TypeScript exports.
 - Scripts in `scripts/` must use the helper patterns from
   `scripts/helpers/` (`runCommand`, `runScript`).
 - Follow existing script patterns
-  (see `setup-playwright.ts` as reference).
+  (see `setup-postinstall.ts` as reference).
 - Markdown lines must not exceed 100 characters
   (enforced by markdownlint `MD013`).
