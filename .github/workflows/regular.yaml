@@ -71,6 +71,11 @@ jobs:
           mise-version: "${{ needs.init.outputs.mise-version }}"
       - name: "Build and test"
         uses: "./.github/actions/shell"
+        env:
+          # zizmor's `impostor-commit` audit hits github.com via anonymous
+          # git, which sporadically 401s under rate pressure (especially
+          # on shared ARM runner IPs). Authenticating lifts that limit.
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
           docker-service: "${{ needs.init.outputs.docker-service }}"
           run: "mise run --force ci-test"
