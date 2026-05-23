@@ -58,6 +58,11 @@ async function startOrigin(): Promise<RunningServer> {
 async function startAuthProxy(): Promise<AuthProxy> {
   let authed = 0;
   let rejected = 0;
+  // Track tunnel sockets so `stop()` can hard-close them. `server.close()`
+  // only stops accepting new connections; already-piped CONNECT tunnels
+  // would otherwise linger and on Windows leak fds into the next test's
+  // worker process, occasionally crashing it.
+  const openSockets = new Set<import("node:net").Socket>();
 
   const server = createServer((req, res) => {
     if (req.headers["proxy-authorization"] !== EXPECTED_TOKEN) {
@@ -94,6 +99,10 @@ async function startAuthProxy(): Promise<AuthProxy> {
       upstream.pipe(clientSocket);
       clientSocket.pipe(upstream);
     });
+    openSockets.add(clientSocket).add(upstream);
+    const drop = (s: import("node:net").Socket) => openSockets.delete(s);
+    clientSocket.on("close", () => drop(clientSocket));
+    upstream.on("close", () => drop(upstream));
     upstream.on("error", () => clientSocket.destroy());
     clientSocket.on("error", () => upstream.destroy());
   });
@@ -106,10 +115,13 @@ async function startAuthProxy(): Promise<AuthProxy> {
     port,
     authedCount: () => authed,
     rejectedCount: () => rejected,
-    stop: () =>
-      new Promise<void>((resolve, reject) =>
+    stop: () => {
+      for (const s of openSockets) s.destroy();
+      openSockets.clear();
+      return new Promise<void>((resolve, reject) =>
         server.close((err) => (err ? reject(err) : resolve())),
-      ),
+      );
+    },
   };
 }
 

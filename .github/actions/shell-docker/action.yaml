@@ -7,6 +7,10 @@ inputs:
   docker-service:
     description: "Docker service name"
     required: true
+  gh-token:
+    description: "GitHub token to forward into the container (for zizmor, mise)"
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -16,9 +20,12 @@ runs:
         INPUT_RUN: "${{ inputs.run }}"
         DOCKER_SERVICE: "${{ inputs.docker-service }}"
         COMPOSE_FILE: "docker-compose.yml:docker-compose.proxied.yaml"
+        INPUT_GH_TOKEN: "${{ inputs.gh-token }}"
       run: |
-        # Forward GH_TOKEN so tools that hit github.com (zizmor's
-        # impostor-commit audit, mise artifact attestations) authenticate
-        # instead of falling back to anonymous and tripping 401s.
+        # Explicit value-form `-e VAR=...` so we don't depend on the bare
+        # `-e VAR` host-env inheritance, which has been flaky in this
+        # composite-action chain. Forwarded so tools that hit github.com
+        # (zizmor's impostor-commit audit, mise attestations) authenticate
+        # and avoid sporadic anonymous 401s.
         printf "%s" "$INPUT_RUN" | \
-          docker compose exec -T -e GH_TOKEN "$DOCKER_SERVICE" bash
+          docker compose exec -T -e "GH_TOKEN=$INPUT_GH_TOKEN" "$DOCKER_SERVICE" bash
