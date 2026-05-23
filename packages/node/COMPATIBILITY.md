@@ -8,6 +8,7 @@ and error mapping.
 | Feature              | Reason                                         | Workaround            |
 | :------------------- | :--------------------------------------------- | :-------------------- |
 | **CONNECT method**   | Rejected at FFI parse with `NotSupportedError` | Use undici ProxyAgent |
+| **TRACE method**     | Rejected at FFI parse with `NotSupportedError` | Not commonly needed   |
 | **Upgrade requests** | Rejected at FFI parse with `NotSupportedError` | Use undici WebSocket  |
 | **HTTP trailers**    | reqwest doesn't expose                         | Headers only          |
 | **Request retries**  | All bodies are streams                         | User-level retry      |
@@ -31,7 +32,7 @@ and error mapping.
 | **Trailers in onResponseEnd** | Contains HTTP trailers                           | Always `{}`                                                                                                   |
 | **1xx informational**         | Multiple `onResponseStart` calls for 1xx headers | Single `onResponseStart` (reqwest doesn't expose 1xx)                                                         |
 | **Status reason phrase**      | Server-supplied phrase preserved                 | `canonical_reason` (IANA name); empty if non-standard. Discards server bytes to block reason-phrase smuggling |
-| **maxRedirections default**   | `0` (manual follow)                              | `0` (matches undici). Configurable per-agent (`maxRedirections`) and per-dispatch                             |
+| **maxRedirections default**   | `0` (manual follow)                              | `0` (matches undici). Configurable per-Agent only; undici 8 dropped `maxRedirections` from `DispatchOptions`  |
 
 ## Error Mapping
 
