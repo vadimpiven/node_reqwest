@@ -16,6 +16,14 @@ inputs:
   docker-service:
     description: "Docker service name"
     required: true
+  dockerhub-username:
+    description: "Docker Hub username (optional; enables Docker Hub login when set together with dockerhub-token)"
+    required: false
+    default: ""
+  dockerhub-token:
+    description: "Docker Hub access token (optional; enables Docker Hub login when set together with dockerhub-username)"
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -32,6 +40,15 @@ runs:
         registry: "ghcr.io"
         username: "${{ github.actor }}"
         password: "${{ inputs.github-token }}"
+    - name: "Login to Docker Hub"
+      # Skipped when credentials are absent (e.g. PRs from forks, or repos
+      # without the `ci` environment). Authenticated pulls raise the rate
+      # limit ceiling for docker.io base images.
+      if: "${{ inputs.dockerhub-username != '' && inputs.dockerhub-token != '' }}"
+      uses: "docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121" # v4.1.0
+      with:
+        username: "${{ inputs.dockerhub-username }}"
+        password: "${{ inputs.dockerhub-token }}"
     - name: "Setup Buildx"
       uses: "docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd" # v4.0.0
     - name: "Get current UID/GID"
