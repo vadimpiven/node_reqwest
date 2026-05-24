@@ -117,47 +117,47 @@ url = "https://github.com/aquasecurity/trivy/releases/download/v0.70.0/trivy_0.7
 provenance = "cosign"
 
 [[tools."aqua:astral-sh/uv"]]
-version = "0.11.15"
+version = "0.11.16"
 backend = "aqua:astral-sh/uv"
 
 [tools."aqua:astral-sh/uv"."platforms.linux-arm64"]
-checksum = "sha256:6505075cec3f551fad4fe9026922967ff9c895c9f513c97682b24e7a1c9becd3"
-url = "https://github.com/astral-sh/uv/releases/download/0.11.15/uv-aarch64-unknown-linux-musl.tar.gz"
+checksum = "sha256:ac022d96411143b9a2dd75ea711fa8dd4cd14538bf248f2e5df3c10a80f7f6a4"
+url = "https://github.com/astral-sh/uv/releases/download/0.11.16/uv-aarch64-unknown-linux-musl.tar.gz"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.linux-arm64-musl"]
-checksum = "sha256:6505075cec3f551fad4fe9026922967ff9c895c9f513c97682b24e7a1c9becd3"
-url = "https://github.com/astral-sh/uv/releases/download/0.11.15/uv-aarch64-unknown-linux-musl.tar.gz"
+checksum = "sha256:ac022d96411143b9a2dd75ea711fa8dd4cd14538bf248f2e5df3c10a80f7f6a4"
+url = "https://github.com/astral-sh/uv/releases/download/0.11.16/uv-aarch64-unknown-linux-musl.tar.gz"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.linux-x64"]
-checksum = "sha256:200ccf2f351849c5d6698714e7e7eb9ead1e8c097dbdbb43730e1a4e059ceb87"
-url = "https://github.com/astral-sh/uv/releases/download/0.11.15/uv-x86_64-unknown-linux-musl.tar.gz"
+checksum = "sha256:1bc4be1be0a000f893b0d1db97906cf392b63fa22fda9a0ecf33d0d4bbb4bc9a"
+url = "https://github.com/astral-sh/uv/releases/download/0.11.16/uv-x86_64-unknown-linux-musl.tar.gz"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.linux-x64-musl"]
-checksum = "sha256:200ccf2f351849c5d6698714e7e7eb9ead1e8c097dbdbb43730e1a4e059ceb87"
-url = "https://github.com/astral-sh/uv/releases/download/0.11.15/uv-x86_64-unknown-linux-musl.tar.gz"
+checksum = "sha256:1bc4be1be0a000f893b0d1db97906cf392b63fa22fda9a0ecf33d0d4bbb4bc9a"
+url = "https://github.com/astral-sh/uv/releases/download/0.11.16/uv-x86_64-unknown-linux-musl.tar.gz"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.macos-arm64"]
-checksum = "sha256:7e5b336108f8576eda1939920ca0a805b4a9a3c3d3eb2f6140e38b7092fbe4f3"
-url = "https://github.com/astral-sh/uv/releases/download/0.11.15/uv-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:2b25be1af546be330b340b0a76b99f989daa6d92678fdffb87438e661e9d88fb"
+url = "https://github.com/astral-sh/uv/releases/download/0.11.16/uv-aarch64-apple-darwin.tar.gz"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.macos-x64"]
-checksum = "sha256:42bca7cc879d117ed7139a0e26de8cab0b6f033ad439a32144f324d1f8580d8c"
-url = "https://github.com/astral-sh/uv/releases/download/0.11.15/uv-x86_64-apple-darwin.tar.gz"
+checksum = "sha256:6b91ae3de155f51bd1f5b74814821c79f016a176561f252cd9ddfb976939af2e"
+url = "https://github.com/astral-sh/uv/releases/download/0.11.16/uv-x86_64-apple-darwin.tar.gz"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.windows-arm64"]
-checksum = "sha256:04b98d414a9000e25e5e0e7c9f53749e66b790cdaffc582829e6f58c544ee11c"
-url = "https://github.com/astral-sh/uv/releases/download/0.11.15/uv-x86_64-pc-windows-msvc.zip"
+checksum = "sha256:dd9d6d6554bfab265bfa98aa8e8a406c5c3a7b97582f93de1f4d48d9154a0395"
+url = "https://github.com/astral-sh/uv/releases/download/0.11.16/uv-x86_64-pc-windows-msvc.zip"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.windows-x64"]
-checksum = "sha256:04b98d414a9000e25e5e0e7c9f53749e66b790cdaffc582829e6f58c544ee11c"
-url = "https://github.com/astral-sh/uv/releases/download/0.11.15/uv-x86_64-pc-windows-msvc.zip"
+checksum = "sha256:dd9d6d6554bfab265bfa98aa8e8a406c5c3a7b97582f93de1f4d48d9154a0395"
+url = "https://github.com/astral-sh/uv/releases/download/0.11.16/uv-x86_64-pc-windows-msvc.zip"
 provenance = "github-attestations"
 
 [[tools."aqua:cargo-bins/cargo-binstall"]]
@@ -249,40 +249,40 @@ url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_windows_am
 provenance = "github-attestations"
 
 [[tools."aqua:crate-ci/typos"]]
-version = "1.46.2"
+version = "1.46.3"
 backend = "aqua:crate-ci/typos"
 
 [tools."aqua:crate-ci/typos"."platforms.linux-arm64"]
-checksum = "sha256:311f2a15e8433c895cd9ee3198530bbff552f59609eba739f5bd9ceb2a2c0887"
-url = "https://github.com/crate-ci/typos/releases/download/v1.46.2/typos-v1.46.2-aarch64-unknown-linux-musl.tar.gz"
+checksum = "sha256:3cbc11f8f476e07d8cef3dbd5c898d4e800b6c8a03c292ca4e0e571265958491"
+url = "https://github.com/crate-ci/typos/releases/download/v1.46.3/typos-v1.46.3-aarch64-unknown-linux-musl.tar.gz"
 
 [tools."aqua:crate-ci/typos"."platforms.linux-arm64-musl"]
-checksum = "sha256:311f2a15e8433c895cd9ee3198530bbff552f59609eba739f5bd9ceb2a2c0887"
-url = "https://github.com/crate-ci/typos/releases/download/v1.46.2/typos-v1.46.2-aarch64-unknown-linux-musl.tar.gz"
+checksum = "sha256:3cbc11f8f476e07d8cef3dbd5c898d4e800b6c8a03c292ca4e0e571265958491"
+url = "https://github.com/crate-ci/typos/releases/download/v1.46.3/typos-v1.46.3-aarch64-unknown-linux-musl.tar.gz"
 
 [tools."aqua:crate-ci/typos"."platforms.linux-x64"]
-checksum = "sha256:d68c1a9c5abd8de11f7749edfa414087c8bc828e89064714487d23c89f36b06e"
-url = "https://github.com/crate-ci/typos/releases/download/v1.46.2/typos-v1.46.2-x86_64-unknown-linux-musl.tar.gz"
+checksum = "sha256:a8b422b8ed79de732a31a705a9899e0a29124f8dc2f0a0f54dc127154ceb3b93"
+url = "https://github.com/crate-ci/typos/releases/download/v1.46.3/typos-v1.46.3-x86_64-unknown-linux-musl.tar.gz"
 
 [tools."aqua:crate-ci/typos"."platforms.linux-x64-musl"]
-checksum = "sha256:d68c1a9c5abd8de11f7749edfa414087c8bc828e89064714487d23c89f36b06e"
-url = "https://github.com/crate-ci/typos/releases/download/v1.46.2/typos-v1.46.2-x86_64-unknown-linux-musl.tar.gz"
+checksum = "sha256:a8b422b8ed79de732a31a705a9899e0a29124f8dc2f0a0f54dc127154ceb3b93"
+url = "https://github.com/crate-ci/typos/releases/download/v1.46.3/typos-v1.46.3-x86_64-unknown-linux-musl.tar.gz"
 
 [tools."aqua:crate-ci/typos"."platforms.macos-arm64"]
-checksum = "sha256:4b15ee9548cd68cf22d6e67af8a12ceb608ea4dbc34e0346792d09994222d694"
-url = "https://github.com/crate-ci/typos/releases/download/v1.46.2/typos-v1.46.2-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:503d4b0b2035d96fb286b5dc8594bda6a587cc76c1ad1022aa36a2634d42ae4b"
+url = "https://github.com/crate-ci/typos/releases/download/v1.46.3/typos-v1.46.3-aarch64-apple-darwin.tar.gz"
 
 [tools."aqua:crate-ci/typos"."platforms.macos-x64"]
-checksum = "sha256:3652f90d82d38f64e40c1791d2d82209979048ef3abd715b0eb1488cf483ce1d"
-url = "https://github.com/crate-ci/typos/releases/download/v1.46.2/typos-v1.46.2-x86_64-apple-darwin.tar.gz"
+checksum = "sha256:70da5d5753674df9411e9df417380bb085acb6dc5e140b4c4799443db4dee407"
+url = "https://github.com/crate-ci/typos/releases/download/v1.46.3/typos-v1.46.3-x86_64-apple-darwin.tar.gz"
 
 [tools."aqua:crate-ci/typos"."platforms.windows-arm64"]
-checksum = "sha256:ddc4ae26822e806ce84bc410643d02a3dac53aac9ab2a5f389624418c5654a17"
-url = "https://github.com/crate-ci/typos/releases/download/v1.46.2/typos-v1.46.2-x86_64-pc-windows-msvc.zip"
+checksum = "sha256:612c427950ad2d1939e8284f4d6af42d9ea5d185e98d535977d1ba94b0f14fdc"
+url = "https://github.com/crate-ci/typos/releases/download/v1.46.3/typos-v1.46.3-x86_64-pc-windows-msvc.zip"
 
 [tools."aqua:crate-ci/typos"."platforms.windows-x64"]
-checksum = "sha256:ddc4ae26822e806ce84bc410643d02a3dac53aac9ab2a5f389624418c5654a17"
-url = "https://github.com/crate-ci/typos/releases/download/v1.46.2/typos-v1.46.2-x86_64-pc-windows-msvc.zip"
+checksum = "sha256:612c427950ad2d1939e8284f4d6af42d9ea5d185e98d535977d1ba94b0f14fdc"
+url = "https://github.com/crate-ci/typos/releases/download/v1.46.3/typos-v1.46.3-x86_64-pc-windows-msvc.zip"
 
 [[tools."aqua:gitleaks/gitleaks"]]
 version = "8.30.1"
@@ -553,48 +553,43 @@ url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_
 provenance = "github-attestations"
 
 [[tools."github:EmbarkStudios/cargo-deny"]]
-version = "0.19.6"
+version = "0.19.7"
 backend = "github:EmbarkStudios/cargo-deny"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.linux-arm64"]
-checksum = "sha256:d27bdcc361099068db61652761633e338372d4fa318d38944f09af3b1639d52a"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366889"
+checksum = "sha256:9f3a651814e5db861088e610571e4a0bbc8c5da89f07c5267a1cbd8381087095"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.7/cargo-deny-0.19.7-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/426881935"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.linux-arm64-musl"]
-checksum = "sha256:d27bdcc361099068db61652761633e338372d4fa318d38944f09af3b1639d52a"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366889"
+checksum = "sha256:9f3a651814e5db861088e610571e4a0bbc8c5da89f07c5267a1cbd8381087095"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.7/cargo-deny-0.19.7-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/426881935"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.linux-x64"]
-checksum = "sha256:0021d321c781f0159a150ca308859ad93ccce64a887b22ad2e129f096a8a2c07"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366601"
+checksum = "sha256:c59ad86eb8b545c4b7b9833c074094fce4a99886f741e4286adec15870c0a726"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.7/cargo-deny-0.19.7-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/426881808"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.linux-x64-musl"]
-checksum = "sha256:0021d321c781f0159a150ca308859ad93ccce64a887b22ad2e129f096a8a2c07"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366601"
+checksum = "sha256:c59ad86eb8b545c4b7b9833c074094fce4a99886f741e4286adec15870c0a726"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.7/cargo-deny-0.19.7-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/426881808"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.macos-arm64"]
-checksum = "sha256:1eca0934ec7bf12d8b9a8303335e1fff8bcc0767476947a50d3357858eded222"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366515"
+checksum = "sha256:04d193272b5369f967b9d5202688c2dcd3e6b07da90948c96b6c49e63433d3df"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.7/cargo-deny-0.19.7-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/426881803"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.macos-x64"]
-checksum = "sha256:2526753e4f10ce8a0c9c45ba634e59d7c07e4aace9a21304a0fa86fb089b7039"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417366243"
-
-[tools."github:EmbarkStudios/cargo-deny"."platforms.windows-arm64"]
-checksum = "sha256:e334e1f7d6f8b9ed47a9ff9fa9f3c3190138b4e5e2cc4cdbc23ceea943cd253b"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-x86_64-pc-windows-msvc.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417367250"
+checksum = "sha256:9b9da6e8168cb26d719c0bd4adab57c73fa6741dc5be38dde615e4c2b347d248"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.7/cargo-deny-0.19.7-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/426881552"
 
 [tools."github:EmbarkStudios/cargo-deny"."platforms.windows-x64"]
-checksum = "sha256:e334e1f7d6f8b9ed47a9ff9fa9f3c3190138b4e5e2cc4cdbc23ceea943cd253b"
-url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.6/cargo-deny-0.19.6-x86_64-pc-windows-msvc.tar.gz"
-url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/417367250"
+checksum = "sha256:1540d9e8d98229733a43ae041ec3b71bd700d7e139183118095284b3fe62ca8b"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.19.7/cargo-deny-0.19.7-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/426883382"
 
 [[tools."github:mikefarah/yq"]]
 version = "4.53.2"
@@ -740,58 +735,58 @@ url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379071"
 
 [[tools."github:nextest-rs/nextest"]]
-version = "0.9.135"
+version = "0.9.136"
 backend = "github:nextest-rs/nextest"
 
 [tools."github:nextest-rs/nextest".options]
 version_prefix = "cargo-nextest-"
 
 [tools."github:nextest-rs/nextest"."platforms.linux-arm64"]
-checksum = "sha256:3cbe45dcea1a11e4134a50b5d32827db942bc070c96d6eb8b97b84a88dccba62"
-url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.135/cargo-nextest-0.9.135-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/420428139"
+checksum = "sha256:2a6d9e1dd07b56b4bbe03b73778615dbff2f623e54c8dd4fa9642901e11494ee"
+url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.136/cargo-nextest-0.9.136-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/422173963"
 provenance = "github-attestations"
 
 [tools."github:nextest-rs/nextest"."platforms.linux-arm64-musl"]
-checksum = "sha256:1bd819f4a3d4bef2479d128b161718c1097818e42353dec656d176bd0b0f971d"
-url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.135/cargo-nextest-0.9.135-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/420428276"
+checksum = "sha256:36f72249f7583909598e239dbb6d3092ac300b02d067c994e9b10c9c6e8076cf"
+url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.136/cargo-nextest-0.9.136-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/422173803"
 provenance = "github-attestations"
 
 [tools."github:nextest-rs/nextest"."platforms.linux-x64"]
-checksum = "sha256:547090eba95177d474ce7ec9d73d5d7d54363fd2bb180b7168aac1d72b2776de"
-url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.135/cargo-nextest-0.9.135-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/420430544"
+checksum = "sha256:a098eed56f2dd88c7fdca1e554a6b99fa1ffbd2a7a1c41b865700112981f6f52"
+url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.136/cargo-nextest-0.9.136-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/422173551"
 provenance = "github-attestations"
 
 [tools."github:nextest-rs/nextest"."platforms.linux-x64-musl"]
-checksum = "sha256:c485608adb7ed4a81abdbe432b7fe47d053fca45d645d1786f4e97aa8344cdc1"
-url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.135/cargo-nextest-0.9.135-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/420428983"
+checksum = "sha256:91fa94ff0b41fb31f28a7aa6ed95e5ee8bc6b034708f652e78851ff276710b10"
+url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.136/cargo-nextest-0.9.136-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/422174599"
 provenance = "github-attestations"
 
 [tools."github:nextest-rs/nextest"."platforms.macos-arm64"]
-checksum = "sha256:63d5ff2cffabe7fc9b4ee5ab7e7569cf52203a95060eeca987bdadf844e20a6e"
-url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.135/cargo-nextest-0.9.135-universal-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/420428297"
+checksum = "sha256:905fa8b5150caa012b182f6e1b9234c62aed8290883f848e7416f974faada4ce"
+url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.136/cargo-nextest-0.9.136-universal-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/422173493"
 provenance = "github-attestations"
 
 [tools."github:nextest-rs/nextest"."platforms.macos-x64"]
-checksum = "sha256:63d5ff2cffabe7fc9b4ee5ab7e7569cf52203a95060eeca987bdadf844e20a6e"
-url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.135/cargo-nextest-0.9.135-universal-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/420428297"
+checksum = "sha256:905fa8b5150caa012b182f6e1b9234c62aed8290883f848e7416f974faada4ce"
+url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.136/cargo-nextest-0.9.136-universal-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/422173493"
 provenance = "github-attestations"
 
 [tools."github:nextest-rs/nextest"."platforms.windows-arm64"]
-checksum = "sha256:e504675c531f8e58b41a5388daf492393d667a32ccc98cdceacee5051e476a5c"
-url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.135/cargo-nextest-0.9.135-aarch64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/420431887"
+checksum = "sha256:4867528c0a341e5217bc2d6d6c6239706f67237540ca954fcf514d9f7b8dfe99"
+url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.136/cargo-nextest-0.9.136-aarch64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/422177926"
 provenance = "github-attestations"
 
 [tools."github:nextest-rs/nextest"."platforms.windows-x64"]
-checksum = "sha256:422f9a0343d99d1f122e8a725f89f0811f8c18be247a691e5b3b11151f7f74c2"
-url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.135/cargo-nextest-0.9.135-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/420431049"
+checksum = "sha256:fb865364e50c15e7be084f84f18e15dde96c6b0d8022cc7d6445f2a3761cda6e"
+url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.136/cargo-nextest-0.9.136-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/422178744"
 provenance = "github-attestations"
 
 [[tools."github:taiki-e/cargo-llvm-cov"]]
@@ -887,5 +882,5 @@ version = "11.2.2"
 backend = "npm:pnpm"
 
 [[tools.rust]]
-version = "nightly-2026-05-20"
+version = "nightly-2026-05-24"
 backend = "core:rust"
