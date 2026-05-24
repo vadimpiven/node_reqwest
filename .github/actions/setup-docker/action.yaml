@@ -41,9 +41,6 @@ runs:
         username: "${{ github.actor }}"
         password: "${{ inputs.github-token }}"
     - name: "Login to Docker Hub"
-      # Skipped when credentials are absent (e.g. PRs from forks, or repos
-      # without the `ci` environment). Authenticated pulls raise the rate
-      # limit ceiling for docker.io base images.
       if: "${{ inputs.dockerhub-username != '' && inputs.dockerhub-token != '' }}"
       uses: "docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121" # v4.1.0
       with:
