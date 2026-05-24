@@ -42,7 +42,10 @@ jobs:
   build-and-test:
     name: "Build and test"
     timeout-minutes: 45
-    environment: "ci"
+    # Empty string disables environment binding on forks (where `ci` and its
+    # vars/secrets don't exist); the conditional step in setup-docker then
+    # skips Docker Hub login since the inputs resolve to empty.
+    environment: "${{ github.repository == 'vadimpiven/node_reqwest' && 'ci' || '' }}"
     permissions:
       contents: "read" # to fetch code
       packages: "write" # to push Docker images
