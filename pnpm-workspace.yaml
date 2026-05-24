@@ -3,15 +3,15 @@ packages:
   - packages/meta
   - packages/node
 
-# pnpm 11 supersedes the legacy `onlyBuiltDependencies` list with a map of
-# explicit per-package toggles. Anything not listed here is silently skipped
-# (with `strictDepBuilds: true`, blocked outright).
 allowBuilds:
   electron: true
   esbuild: true
   node-addon-slsa: true
 
 blockExoticSubdeps: true
+
+# required for `bump-version` script to not trigger packages reinstall
+verifyDepsBeforeRun: false
 
 catalog:
   "@codecov/vite-plugin": 2.0.1
@@ -39,9 +39,6 @@ catalog:
 
 minimumReleaseAge: 1440
 
-# pnpm 11 stopped honoring the legacy `npm_config_store_dir` env var.
-# Pin the store inside `.cache/native/pnpm` so it stays under the
-# directory that's gitignored and excluded from trivy / coverage scans.
 storeDir: .cache/native/pnpm
 
 minimumReleaseAgeExclude:
