@@ -69,6 +69,13 @@ runs:
         build-args: |
           USER_UID=${{ steps.ids.outputs.uid }}
           USER_GID=${{ steps.ids.outputs.gid }}
+    - name: "Pre-pull compose images"
+      shell: "bash"
+      run: |
+        docker compose \
+          -f docker-compose.yml \
+          -f docker-compose.proxied.yaml \
+          pull --quiet --ignore-buildable
     - name: "Start persistent container"
       uses: "hoverkraft-tech/compose-action@d2bee4f07e8ca410d6b196d00f90c12e7d48c33a" # v2.6.0
       env:
