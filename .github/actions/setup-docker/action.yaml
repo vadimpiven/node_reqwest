@@ -75,7 +75,7 @@ runs:
         docker compose \
           -f docker-compose.yml \
           -f docker-compose.proxied.yaml \
-          pull --quiet --ignore-buildable
+          pull --ignore-buildable
     - name: "Start persistent container"
       uses: "hoverkraft-tech/compose-action@d2bee4f07e8ca410d6b196d00f90c12e7d48c33a" # v2.6.0
       env:
