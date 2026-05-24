@@ -22,6 +22,14 @@ inputs:
   mise-version:
     description: "Mise version to use"
     required: true
+  dockerhub-username:
+    description: "Docker Hub username (optional; forwarded to setup-docker)"
+    required: false
+    default: ""
+  dockerhub-token:
+    description: "Docker Hub access token (optional; forwarded to setup-docker)"
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -57,6 +65,8 @@ runs:
         docker-cache: "${{ inputs.docker-cache }}"
         github-token: "${{ inputs.github-token }}"
         docker-service: "${{ inputs.docker-service }}"
+        dockerhub-username: "${{ inputs.dockerhub-username }}"
+        dockerhub-token: "${{ inputs.dockerhub-token }}"
     - name: "Setup (Native)"
       if: "runner.os != 'Linux'"
       uses: "./.github/actions/setup-native"

@@ -49,6 +49,7 @@ jobs:
   build-addon:
     name: "Build addon"
     timeout-minutes: 45
+    environment: "ci"
     permissions:
       contents: "write" # to upload release assets
       packages: "write" # to push Docker images
@@ -77,6 +78,8 @@ jobs:
           cache-key: "${{ needs.init.outputs.cache-key }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           mise-version: "${{ needs.init.outputs.mise-version }}"
+          dockerhub-username: "${{ vars.DOCKERHUB_USERNAME }}"
+          dockerhub-token: "${{ secrets.DOCKERHUB_TOKEN }}"
       - name: "Build node addon"
         uses: "./.github/actions/shell"
         with:
@@ -118,6 +121,7 @@ jobs:
   build-packages:
     name: "Build packages"
     timeout-minutes: 30
+    environment: "ci"
     permissions:
       contents: "write" # to upload release assets
       packages: "write" # to push Docker images (if Linux runner)
@@ -145,6 +149,8 @@ jobs:
           cache-key: "${{ needs.init.outputs.cache-key }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           mise-version: "${{ needs.init.outputs.mise-version }}"
+          dockerhub-username: "${{ vars.DOCKERHUB_USERNAME }}"
+          dockerhub-token: "${{ secrets.DOCKERHUB_TOKEN }}"
       - name: "Build and pack node package"
         uses: "./.github/actions/shell"
         with:
