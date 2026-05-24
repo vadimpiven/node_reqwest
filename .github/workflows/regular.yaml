@@ -42,7 +42,7 @@ jobs:
   build-and-test:
     name: "Build and test"
     timeout-minutes: 45
-    environment: "${{ github.repository == 'vadimpiven/node_reqwest' && 'ci' || '' }}"
+    environment: "ci"
     permissions:
       contents: "read" # to fetch code
       packages: "write" # to push Docker images

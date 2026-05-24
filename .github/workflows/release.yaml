@@ -49,7 +49,7 @@ jobs:
   build-addon:
     name: "Build addon"
     timeout-minutes: 45
-    environment: "${{ github.repository == 'vadimpiven/node_reqwest' && 'ci' || '' }}"
+    environment: "ci"
     permissions:
       contents: "write" # to upload release assets
       packages: "write" # to push Docker images
@@ -121,7 +121,7 @@ jobs:
   build-packages:
     name: "Build packages"
     timeout-minutes: 30
-    environment: "${{ github.repository == 'vadimpiven/node_reqwest' && 'ci' || '' }}"
+    environment: "ci"
     permissions:
       contents: "write" # to upload release assets
       packages: "write" # to push Docker images (if Linux runner)
