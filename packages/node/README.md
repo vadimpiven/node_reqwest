@@ -26,7 +26,7 @@
 
 # node-reqwest
 
-Node.js bindings for [reqwest][reqwest] — a Rust HTTP client.
+Node.js bindings for [reqwest][reqwest] - Rust HTTP client library.
 Implements the full `undici.Dispatcher` interface (including its
 error classes), passes the same web-platform tests undici does, and
 outperforms it on HTTP/2. Ships with system proxy, system CA
@@ -68,7 +68,7 @@ const response = await fetch("https://example.com");
 
 | Feature                | node-reqwest                             | Node.js / undici                                                          |
 | ---------------------- | ---------------------------------------- | ------------------------------------------------------------------------- |
-| DNS resolver           | Async pure-Rust ([hickory-dns][hickory]) | C ([c-ares][cares]) — crashes Electron on Windows for nonexistent domains |
+| DNS resolver           | Async pure-Rust ([hickory-dns][hickory]) | C ([c-ares][cares]) - crashes Electron on Windows for nonexistent domains |
 | System CA certificates | Built-in                                 | Requires [win-ca][win-ca], [mac-ca][mac-ca]                               |
 | System proxy           | Built-in                                 | Not available (complex Electron [workaround][electron-proxy])             |
 | SOCKS proxy            | Built-in                                 | Not available                                                             |
@@ -169,7 +169,7 @@ surface, but a few features are deliberately out of scope. See
 
 This package downloads a precompiled binary during `npm install`.
 GitHub releases for this project are
-[immutable][gh-immutable-releases] — once published, release
+[immutable][gh-immutable-releases] - once published, release
 assets cannot be modified or replaced, ensuring that the binary
 you download is the same one that was originally published.
 
