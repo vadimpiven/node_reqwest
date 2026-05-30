@@ -90,9 +90,6 @@ runs:
             printf "=== Log output === \n$(cat /tmp/notarization_log.json)\n"
             exit 1
         fi
-
-        # Staple
-        xcrun stapler staple "$BINARY_PATH"
     - name: Sign (Windows)
       if: runner.os == 'Windows' && inputs.windows-pfx-base64 != ''
       shell: pwsh
