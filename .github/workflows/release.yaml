@@ -92,6 +92,12 @@ jobs:
         uses: "./.github/actions/sign-notarize"
         with:
           binary-path: "${{ github.workspace }}/packages/node/dist/node_reqwest.node"
+          mac-cert-id: "${{ secrets.MAC_CERT_ID }}"
+          mac-cert-base64: "${{ secrets.MAC_CERT_BASE64 }}"
+          mac-cert-passwd: "${{ secrets.MAC_CERT_PASSWD }}"
+          mac-api-key-base64: "${{ secrets.MAC_API_KEY_BASE64 }}"
+          mac-api-key-id: "${{ secrets.MAC_API_KEY_ID }}"
+          mac-api-key-issuer-id: "${{ secrets.MAC_API_KEY_ISSUER_ID }}"
       - name: "Pack node addon"
         uses: "./.github/actions/shell"
         with:
