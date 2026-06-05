@@ -86,6 +86,8 @@ type BodyInput =
   | Uint8Array
   | Readable
   | ReadableStream<Uint8Array>
+  | Iterable<Uint8Array>
+  | AsyncIterable<Uint8Array>
   | null
   | undefined;
 
@@ -127,6 +129,16 @@ function normalizeBody(body: BodyInput, maxBufferedBytes: number): NormalizedBod
   }
   if (body instanceof Readable) return normalizeBodyBuffered(body, maxBufferedBytes);
   if (body instanceof ReadableStream) return normalizeBodyStreaming(body);
+  // Each symbol lives on only one half of the `Iterable | AsyncIterable`
+  // union, so a cast is needed to probe both. Matches undici's own
+  // `typeof obj[Symbol.asyncIterator] === "function"` test (lib/core/util.js).
+  const iterable = body as Partial<AsyncIterable<Uint8Array> & Iterable<Uint8Array>>;
+  if (
+    typeof iterable[Symbol.asyncIterator] === "function" ||
+    typeof iterable[Symbol.iterator] === "function"
+  ) {
+    return normalizeBodyBuffered(Readable.from(body), maxBufferedBytes);
+  }
   return EMPTY_BODY;
 }
 
