@@ -96,7 +96,7 @@ nrcore = { path = "packages/core", version = "0.0.0" }
 num-traits = { version = "0.2.19" }
 pretty_assertions = { version = "1.4.1", features = ["unstable"] }
 regex = { version = "1.12.3" }
-reqwest = { version = "0.13.3", default-features = false, features = [
+reqwest = { version = "0.13.4", default-features = false, features = [
     "brotli",
     "charset",
     "cookies",
