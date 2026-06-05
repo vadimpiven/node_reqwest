@@ -69,15 +69,7 @@ feature-depth = 1
 #db-urls = ["https://github.com/rustsec/advisory-db"]
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
-ignore = [
-    # hickory-proto 0.25.2 is pulled transitively via reqwest 0.13.3 →
-    # hickory-resolver 0.25. Both advisories are fixed only in the 0.26
-    # branch, which is semver-incompatible with reqwest's pin. Tracking
-    # https://github.com/seanmonstar/reqwest/pull/3014 — remove these on
-    # the next reqwest release that bumps to hickory 0.26.
-    { id = "RUSTSEC-2026-0118", reason = "DnssecDnsHandle NSEC3 unbounded loop. Reqwest does not enable hickory-resolver's `dnssec-ring`/`dnssec-aws-lc-rs` features (verified via `cargo tree -p reqwest -e features`), so the vulnerable code path is not compiled." },
-    { id = "RUSTSEC-2026-0119", reason = "BinEncoder O(n^2) name-compression DoS. Only reachable on outbound DNS resolution and bounded by request timeouts; impact is local CPU spike, not remote exploit." },
-]
+ignore = []
 # If this is true, then cargo deny will use the git executable to fetch advisory database.
 # If this is false, then it uses a built-in git library.
 # Setting this to true can be helpful if you have special authentication requirements that cargo-deny does not support.

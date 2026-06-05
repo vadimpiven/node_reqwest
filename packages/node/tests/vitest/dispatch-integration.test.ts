@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { type Dispatcher, fetch } from "undici";
 
 import { Agent } from "../../export/agent.ts";
 import { InvalidArgumentError } from "../../export/errors.ts";
@@ -130,6 +131,84 @@ describe("E2E Dispatch Integration", () => {
       body: "A".repeat(10 * 1024),
     });
     expect(r.bytes.toString()).toContain("10240 bytes");
+  });
+
+  it("uploads an async-iterable request body", async () => {
+    server = await startServer((req, res) => {
+      let len = 0;
+      req.on("data", (c: Buffer) => {
+        len += c.length;
+      });
+      req.on("end", () => {
+        res.writeHead(200);
+        res.end(`Received ${len} bytes`);
+      });
+    });
+    assert(agent);
+    async function* chunks(): AsyncGenerator<Uint8Array> {
+      yield new Uint8Array(512).fill(120);
+      yield new Uint8Array(512).fill(121);
+    }
+    const r = await dispatchOnce(agent, {
+      origin: `http://127.0.0.1:${server.port}`,
+      path: "/upload",
+      method: "POST",
+      // undici's Dispatcher accepts iterable bodies; its TS type omits them.
+      body: chunks() as unknown as Dispatcher.DispatchOptions["body"],
+    });
+    expect(r.error).toBeNull();
+    expect(r.bytes.toString()).toContain("1024 bytes");
+  });
+
+  it("uploads a sync-iterable request body", async () => {
+    server = await startServer((req, res) => {
+      let len = 0;
+      req.on("data", (c: Buffer) => {
+        len += c.length;
+      });
+      req.on("end", () => {
+        res.writeHead(200);
+        res.end(`Received ${len} bytes`);
+      });
+    });
+    assert(agent);
+    // A plain array of chunks is a sync iterable (the `Symbol.iterator` leg).
+    const body: Iterable<Uint8Array> = [
+      new Uint8Array(256).fill(120),
+      new Uint8Array(768).fill(121),
+    ];
+    const r = await dispatchOnce(agent, {
+      origin: `http://127.0.0.1:${server.port}`,
+      path: "/upload",
+      method: "POST",
+      body: body as unknown as Dispatcher.DispatchOptions["body"],
+    });
+    expect(r.error).toBeNull();
+    expect(r.bytes.toString()).toContain("1024 bytes");
+  });
+
+  it("uploads a body submitted through undici fetch", async () => {
+    // undici's `fetch` hands the body to the dispatcher as an async iterable
+    // (even a `Uint8Array` becomes a generator) while advertising a
+    // `content-length`. Dropping it would hang the request — guard against it.
+    server = await startServer((req, res) => {
+      let len = 0;
+      req.on("data", (c: Buffer) => {
+        len += c.length;
+      });
+      req.on("end", () => {
+        res.writeHead(200);
+        res.end(`Received ${len} bytes`);
+      });
+    });
+    assert(agent);
+    const res = await fetch(`http://127.0.0.1:${server.port}/upload`, {
+      method: "POST",
+      body: new Uint8Array(1024).fill(120),
+      dispatcher: agent,
+    });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("1024 bytes");
   });
 });
 
