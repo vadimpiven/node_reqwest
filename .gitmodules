@@ -3,4 +3,4 @@
 	url = https://github.com/nodejs/undici.git
 	# Pinned to undici v8.3.0; bump in lockstep with the version in
 	# pnpm-workspace.yaml `catalog:`.
-	branch = v8.3.0
+	branch = v8.4.0

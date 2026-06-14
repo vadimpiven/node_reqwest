@@ -31,7 +31,7 @@ jobs:
       mise-version: "${{ steps.init-workflow.outputs.mise-version }}"
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" # v6.0.3
         with:
           ref: "${{ github.ref }}"
           fetch-depth: 1
@@ -55,7 +55,7 @@ jobs:
     runs-on: "${{ matrix.os }}"
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" # v6.0.3
         with:
           ref: "${{ github.ref }}"
           fetch-depth: 1
@@ -97,7 +97,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout"
-        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" # v6.0.3
         with:
           ref: "${{ github.ref }}"
           fetch-depth: 1
@@ -120,7 +120,7 @@ jobs:
         with:
           run: "mise run --force ci-build"
       - name: "Run benchmarks"
-        uses: "CodSpeedHQ/action@3194d9a39c4d46684cb44bf7207fc56626aad8fd" # v4.15.1
+        uses: "CodSpeedHQ/action@9d332c4d90b43981c3e55ae8e38e68709996240f" # v4.17.0
         with:
           mode: "simulation"
           run: "pnpm -C packages/node exec vitest bench --run"
@@ -133,7 +133,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout repository"
-        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" # v6.0.3
         with:
           ref: "${{ github.ref }}"
           fetch-depth: 1
@@ -153,7 +153,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout repository"
-        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+        uses: "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" # v6.0.3
         with:
           ref: "${{ github.ref }}"
           fetch-depth: 1
@@ -168,6 +168,6 @@ jobs:
           output: "trivy-results.sarif"
           ignore-unfixed: true
       - name: "Upload Trivy scan results to GitHub Security tab"
-        uses: "github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa" # v4.36.0
+        uses: "github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e" # v4.36.2
         with:
           sarif_file: "trivy-results.sarif"
