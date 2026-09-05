@@ -59,7 +59,7 @@ node = "24.15.0"
 # can't satisfy the macos-15-intel CI runner. The `npm:` backend uses
 # pnpm's npm package (pure JS) instead, which runs on any platform with
 # Node — at the cost of going through npmjs.org for the install.
-"npm:pnpm" = "11.2.2"
+"npm:pnpm" = "12.1.0"
 rust.version = "nightly-2026-05-24"
 
 "aqua:jqlang/jq" = "1.8.1"
