@@ -19,8 +19,8 @@ catalog:
   "@playwright/test": 1.60.0
   "@taplo/cli": 0.7.0
   "@types/node": 25.9.1
-  "@vitest/coverage-istanbul": 4.1.7
-  electron: 42.2.0
+  "@vitest/coverage-istanbul": 5.0.0
+  electron: 44.2.0
   fd-lock: 2.1.1
   husky: 9.1.7
   markdownlint-cli2: 0.22.1
@@ -31,11 +31,11 @@ catalog:
   tsx: 4.22.3
   typedoc: 0.28.19
   typedoc-theme-oxide: 0.3.0
-  typescript: 6.0.3
+  typescript: 7.0.2
   undici: 8.3.0
   vite: 8.0.14
   vite-plugin-dts: 5.0.1
-  vitest: 4.1.7
+  vitest: 5.0.0
 
 minimumReleaseAge: 1440
 
