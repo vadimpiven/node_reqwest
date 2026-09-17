@@ -28,7 +28,7 @@ runs:
   using: "composite"
   steps:
     - name: "Restore docker caches"
-      uses: "actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae" # v5.0.5
+      uses: "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9" # v6.1.0
       with:
         path: ".cache/docker"
         key: "${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock', 'Cargo.lock', 'pyproject.toml', 'pnpm-lock.yaml', 'uv.lock') }}"
@@ -74,7 +74,7 @@ runs:
           -f docker-compose.proxied.yaml \
           pull --ignore-buildable
     - name: "Start persistent container"
-      uses: "hoverkraft-tech/compose-action@d2bee4f07e8ca410d6b196d00f90c12e7d48c33a" # v2.6.0
+      uses: "hoverkraft-tech/compose-action@ee6af68587292d72db67743171809c19787df4c9" # v3.1.0
       env:
         COMPOSE_IMAGE: "${{ inputs.docker-image }}"
       with:
