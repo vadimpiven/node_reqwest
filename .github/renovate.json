@@ -16,7 +16,7 @@
     {
       "description": "Do not update sccache",
       "minimumReleaseAge": "7 days",
-      "matchPackageNames": ["mozilla/sccache", "sccache", "github:mozilla/sccache"],
+      "matchPackageNames": ["mozilla/sccache", "sccache", "aqua:mozilla/sccache"],
       "enabled": false
     },
     {

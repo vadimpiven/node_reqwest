@@ -102,15 +102,8 @@ version = "3.14.1"
 os = ["linux", "macos"]
 
 # Stick to 0.12.0 as 0.13.0 dropped support for macOS x86_64
-[tools."github:mozilla/sccache"]
+[tools."aqua:mozilla/sccache"]
 version = "0.12.0"
-[tools."github:mozilla/sccache".platforms]
-windows-x64 = { asset_pattern = "sccache-v*-x86_64-pc-windows-msvc.tar.gz", bin = "sccache.exe" }
-windows-arm64 = { asset_pattern = "sccache-v*-aarch64-pc-windows-msvc.tar.gz", bin = "sccache.exe" }
-linux-x64 = { asset_pattern = "sccache-v*-x86_64-unknown-linux-musl.tar.gz", bin = "sccache" }
-linux-arm64 = { asset_pattern = "sccache-v*-aarch64-unknown-linux-musl.tar.gz", bin = "sccache" }
-macos-x64 = { asset_pattern = "sccache-v*-x86_64-apple-darwin.tar.gz", bin = "sccache" }
-macos-arm64 = { asset_pattern = "sccache-v*-aarch64-apple-darwin.tar.gz", bin = "sccache" }
 
 # ============================================================================
 # SETUP TASKS - Initialize environment and tools

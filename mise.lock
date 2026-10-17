@@ -584,6 +584,50 @@ checksum = "sha256:8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e7
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip"
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056944"
 
+[[tools."aqua:mozilla/sccache"]]
+version = "0.12.0"
+backend = "aqua:mozilla/sccache"
+
+[tools."aqua:mozilla/sccache"."platforms.linux-arm64"]
+checksum = "sha256:111ddd28fb108cb3e17edb69ab62cefe1dcc97b02e5006ff9c1330f4f2e78368"
+url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639973"
+
+[tools."aqua:mozilla/sccache"."platforms.linux-arm64-musl"]
+checksum = "sha256:111ddd28fb108cb3e17edb69ab62cefe1dcc97b02e5006ff9c1330f4f2e78368"
+url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639973"
+
+[tools."aqua:mozilla/sccache"."platforms.linux-x64"]
+checksum = "sha256:b0e89ead6899224a4ba2b90e9073bf1ce036d95bab30f3dc33c1e1468bc4ad44"
+url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639997"
+
+[tools."aqua:mozilla/sccache"."platforms.linux-x64-musl"]
+checksum = "sha256:b0e89ead6899224a4ba2b90e9073bf1ce036d95bab30f3dc33c1e1468bc4ad44"
+url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639997"
+
+[tools."aqua:mozilla/sccache"."platforms.macos-arm64"]
+checksum = "sha256:4d5281f8760963347b29b9ca4ab1dbde99712c17329619fc9cecba1577ccc8d2"
+url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639966"
+
+[tools."aqua:mozilla/sccache"."platforms.macos-x64"]
+checksum = "sha256:398438425a0e25a40157984189fdaf2d2d0d1f3788cf06d49da2702a41e80c4b"
+url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639987"
+
+[tools."aqua:mozilla/sccache"."platforms.windows-arm64"]
+checksum = "sha256:5d99dfc3552907596de7e912432e49fd627eef0fb63b27b777c21db135bb1795"
+url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-aarch64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639969"
+
+[tools."aqua:mozilla/sccache"."platforms.windows-x64"]
+checksum = "sha256:f430e63e3f47dd76d488fc6d14a97b4bb58e4fabb18aab69c43198a68e750b91"
+url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639993"
+
 [[tools."aqua:mvdan/sh"]]
 version = "3.14.1"
 backend = "aqua:mvdan/sh"
@@ -770,18 +814,6 @@ checksum = "sha256:c2fb1234e58a3b80e358a0a8baeaf7ec51bfa698bbe40e2fcab0ed37d590c
 url = "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_windows_amd64.zip"
 url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/597222582"
 provenance = "github-attestations"
-
-[[tools."github:mozilla/sccache"]]
-version = "0.12.0"
-backend = "github:mozilla/sccache"
-
-[tools."github:mozilla/sccache".options]
-asset_pattern = "sccache-v*-aarch64-apple-darwin.tar.gz"
-
-[tools."github:mozilla/sccache"."platforms.macos-arm64"]
-checksum = "sha256:4d5281f8760963347b29b9ca4ab1dbde99712c17329619fc9cecba1577ccc8d2"
-url = "https://github.com/mozilla/sccache/releases/download/v0.12.0/sccache-v0.12.0-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/mozilla/sccache/releases/assets/306639966"
 
 [[tools."github:mstange/samply"]]
 version = "0.13.1"
