@@ -1,0 +1,10 @@
+rules:
+  adhoc-packages:
+    ignore:
+      # Release smoke test intentionally resolves the exact published package
+      # and its dependencies as a fresh npm consumer, without a lockfile.
+      - "release.yaml:282"
+  # Keep workspace-relative actions until stable actionlint supports $/ syntax.
+  # Remove this exception after https://github.com/rhysd/actionlint/issues/711.
+  self-repository:
+    disable: true

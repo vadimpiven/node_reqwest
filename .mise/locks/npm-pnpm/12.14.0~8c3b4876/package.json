@@ -1,0 +1,12 @@
+{
+  "name": "mise-npm-install",
+  "private": true,
+  "dependencies": {
+    "pnpm": "12.14.0"
+  },
+  "aube": {
+    "allowBuilds": {
+      "pnpm": true
+    }
+  }
+}

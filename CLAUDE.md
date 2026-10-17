@@ -36,9 +36,11 @@ dependency.
   dependency has a vulnerability, update the parent dependency
   first. Only add overrides as a last resort.
 - **Respect cooldown periods** — Python uses
-  `exclude-newer = "1 day"` (pyproject.toml) and pnpm uses
-  `minimumReleaseAge: 1440` minutes (pnpm-workspace.yaml).
-  Never pin to a version published less than 1 day ago.
+  `exclude-newer = "7 days"` (pyproject.toml) and pnpm uses
+  `minimumReleaseAge: 10080` minutes (pnpm-workspace.yaml),
+  matching npm's `min-release-age = 7` (.npmrc) and Renovate's
+  `minimumReleaseAge: "7 days"` (.github/renovate.json).
+  Never pin to a version published less than 7 days ago.
 - **Exact pins in pnpm catalog** — all entries in
   `pnpm-workspace.yaml`'s `catalog:` section use exact
   versions (no `^`). This prevents version drift from

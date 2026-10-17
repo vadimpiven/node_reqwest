@@ -16,7 +16,7 @@ Launch ALL of the following sub-agents IN PARALLEL using the Task tool with `run
     - Crates to check: anyhow, async-stream, async-trait, bytes, chrono, futures, futures-util, indoc, mimalloc, neon, neon-build, pretty_assertions, reqwest, reqwest-websocket, serde, serde_json, tauri-winres, tempfile, thiserror, tokio, tokio-stream, tokio-test, tokio-util, wiremock, with_dir
 
 2. **pnpm deps** - Update JavaScript/TypeScript dependencies
-    - Note: The project uses `minimumReleaseAge: 1440` (24 hours) in pnpm-workspace.yaml, meaning pnpm will reject packages published less than 1 day ago. The `pnpm update` and `pnpm install` commands will respect this automatically.
+    - Note: The project uses `minimumReleaseAge: 10080` (7 days) in pnpm-workspace.yaml, matching npm, uv, and Renovate. pnpm will reject packages published less than 7 days ago. The `pnpm update` and `pnpm install` commands will respect this automatically.
     - Run `pnpm update --recursive` to update within existing ranges
     - Use `pnpm outdated --recursive` to find packages outside current ranges
     - Update catalog entries in pnpm-workspace.yaml where newer versions exist
@@ -34,9 +34,9 @@ Launch ALL of the following sub-agents IN PARALLEL using the Task tool with `run
         - `CARGO_AUDITABLE_VERSION` (cargo-auditable, consumed by scripts/setup-postinstall.ts) — look up latest via `curl -s "https://crates.io/api/v1/crates/cargo-auditable" | jq -r '.crate.max_stable_version'`
 
 4. **Python deps** - Update Python dependencies
-    - IMPORTANT: The project uses `exclude-newer = "1 day"` in pyproject.toml, which means uv will reject any package version published less than 1 day ago. You MUST respect this cooldown period.
-    - To find the latest eligible version for each package, use: `curl -s "https://pypi.org/pypi/<package>/json" | python3 -c "import sys,json,datetime; data=json.load(sys.stdin); cutoff=datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=1); releases=[(v,f) for v,f in data['releases'].items() if f and datetime.datetime.fromisoformat(f[0]['upload_time_iso_8601'])<cutoff]; releases.sort(key=lambda x:x[1][0]['upload_time_iso_8601'],reverse=True); print(releases[0][0] if releases else 'N/A')"`
-    - Do NOT use the absolute latest version from PyPI — only use versions published more than 1 day ago.
+    - IMPORTANT: The project uses `exclude-newer = "7 days"` in pyproject.toml, matching Renovate's `minimumReleaseAge`. uv rejects package versions published less than 7 days ago. You MUST respect this cooldown period.
+    - To find the latest eligible version for each package, use: `curl -s "https://pypi.org/pypi/<package>/json" | python3 -c "import sys,json,datetime; data=json.load(sys.stdin); cutoff=datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=7); releases=[(v,f) for v,f in data['releases'].items() if f and datetime.datetime.fromisoformat(f[0]['upload_time_iso_8601'])<cutoff]; releases.sort(key=lambda x:x[1][0]['upload_time_iso_8601'],reverse=True); print(releases[0][0] if releases else 'N/A')"`
+    - Do NOT use the absolute latest version from PyPI — only use versions published more than 7 days ago.
     - Update version specifiers in pyproject.toml with the latest eligible versions.
     - Run `uv lock --upgrade` to update uv.lock and verify it succeeds without errors.
     - Packages to check: mitmproxy, pyrefly, ruff, semgrep, zizmor

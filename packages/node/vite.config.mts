@@ -1,5 +1,5 @@
 import { builtinModules } from "node:module";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import { codecovVitePlugin } from "@codecov/vite-plugin";
 import codspeedPlugin from "@codspeed/vitest-plugin";
 import dts from "vite-plugin-dts";
@@ -23,8 +23,7 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       external: (id: string) =>
-        nodeBuiltins.has(id) ||
-        (!id.startsWith(".") && !id.startsWith("/") && !id.startsWith("\0")),
+        nodeBuiltins.has(id) || (!id.startsWith(".") && !isAbsolute(id) && !id.startsWith("\0")),
     },
   },
   test: {
@@ -36,7 +35,7 @@ export default defineConfig({
     isolate: false,
     passWithNoTests: true,
     coverage: {
-      provider: "istanbul",
+      provider: "v8",
       reporter: ["lcovonly", "text"],
       reportsDirectory: "./coverage-vitest",
       // Only measure shipped library code — tests and bench harness aren't
