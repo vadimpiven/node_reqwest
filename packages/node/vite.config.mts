@@ -36,7 +36,7 @@ export default defineConfig({
     isolate: false,
     passWithNoTests: true,
     coverage: {
-      provider: "istanbul",
+      provider: "v8",
       reporter: ["lcovonly", "text"],
       reportsDirectory: "./coverage-vitest",
       // Only measure shipped library code — tests and bench harness aren't

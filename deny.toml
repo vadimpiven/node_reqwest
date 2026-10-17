@@ -90,6 +90,7 @@ allow = [
     "Unicode-3.0",
     "BSD-3-Clause",
     "CDLA-Permissive-2.0",
+    "Zlib",
 ]
 # The confidence threshold for detecting a license from license text.
 # The higher the value, the more closely the license text must be to the
@@ -195,10 +196,10 @@ deny = [
 #exact = true
 
 # Certain crates/versions that will be skipped when doing duplicate detection.
-# These are all Windows-specific transitive dependencies where upstream crates
-# (reqwest, tokio, neon, hickory-resolver, tauri-winres) use different versions.
+# Upstream crates require incompatible versions of these transitive dependencies.
 # Cannot be resolved until upstream crates align their dependencies.
 skip = [
+    { crate = "syn", reason = "serde_derive uses syn 3 while other proc macros still require syn 2" },
     { crate = "windows-sys", reason = "multiple versions across socket2, jni, ipconfig ecosystem" },
     { crate = "core-foundation", reason = "Apple platform crate version fragmentation" },
     { crate = "getrandom", reason = "different versions for different rand ecosystem crates" },
@@ -211,6 +212,7 @@ skip = [
 # dependencies starting at the specified crate, up to a certain depth, which is
 # by default infinite.
 skip-tree = [
+    { crate = "windows-targets", reason = "follows the already-allowed windows-sys version fragmentation" },
     #"ansi_term@0.11.0", # will be skipped along with _all_ of its direct and transitive dependencies
     #{ crate = "ansi_term@0.11.0", depth = 20 },
 ]

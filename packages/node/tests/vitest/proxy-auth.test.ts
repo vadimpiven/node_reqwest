@@ -4,7 +4,8 @@
 //! `Basic dXNlcjpwYXNz` on both forward HTTP and CONNECT.
 //!
 //! Divergence on `http://` origins is by design:
-//!   - undici `ProxyAgent` always tunnels via CONNECT. A 407 to CONNECT
+//!   - undici `ProxyAgent` with `proxyTunnel: true` tunnels via CONNECT.
+//!     Plain HTTP requests use forwarding by default. A 407 to CONNECT
 //!     becomes `UND_ERR_ABORTED` with message
 //!     `Proxy response (407) !== 200 when HTTP Tunneling`.
 //!   - reqwest uses direct HTTP forwarding. The proxy's 407 reaches the
@@ -160,7 +161,7 @@ describe("proxy basic-auth (HTTP origin)", () => {
     it("undici ProxyAgent: CONNECT 407 surfaces as RequestAbortedError", async () => {
       origin = await startOrigin();
       proxy = await startAuthProxy();
-      undici = new ProxyAgent({ uri: `http://127.0.0.1:${proxy.port}` });
+      undici = new ProxyAgent({ uri: `http://127.0.0.1:${proxy.port}`, proxyTunnel: true });
 
       const r = await dispatchOnce(undici, {
         origin: `http://127.0.0.1:${origin.port}`,

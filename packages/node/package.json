@@ -79,7 +79,7 @@
     "@codspeed/vitest-plugin": "catalog:",
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "electron": "catalog:",
     "monocart-reporter": "catalog:",
     "selfsigned": "catalog:",

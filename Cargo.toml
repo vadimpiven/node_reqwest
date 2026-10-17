@@ -80,23 +80,23 @@ undocumented_unsafe_blocks = "deny"
 
 [workspace.dependencies]
 # Always update nightly version in `mise.toml` file when updating dependencies
-anyhow = { version = "1.0.102" }
+anyhow = { version = "1.0.104" }
 async-stream = { version = "0.3.6" }
-bytes = { version = "1.11.1" }
-chrono = { version = "0.4.44", features = ["serde"] }
+bytes = { version = "1.12.1" }
+chrono = { version = "0.4.45", features = ["serde"] }
 derive_more = { version = "2.1.1", features = ["debug"] }
-futures = { version = "0.3.32" }
-futures-util = { version = "0.3.32" }
-indoc = { version = "2.0.7" }
+futures = { version = "0.3.34" }
+futures-util = { version = "0.3.34" }
+indoc = { version = "2.0.8" }
 meta = { path = "packages/meta", version = "0.0.0" }
 mimalloc = { version = "0.1.52" }
-neon = { version = "1.1.1", features = ["napi-8", "tokio"] }
+neon = { version = "1.1.2", features = ["napi-8", "tokio"] }
 neon-build = { version = "0.10.1" }
 nrcore = { path = "packages/core", version = "0.0.0" }
 num-traits = { version = "0.2.19" }
 pretty_assertions = { version = "1.4.1", features = ["unstable"] }
-regex = { version = "1.12.3" }
-reqwest = { version = "0.13.4", default-features = false, features = [
+regex = { version = "1.13.1" }
+reqwest = { version = "0.13.5", default-features = false, features = [
     "brotli",
     "charset",
     "cookies",
@@ -114,14 +114,14 @@ reqwest = { version = "0.13.4", default-features = false, features = [
     "zstd",
 ] }
 reqwest-websocket = { version = "0.6.0", features = ["json"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = { version = "1.0.150" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154" }
 tauri-winres = { version = "0.3.6" }
 tempfile = { version = "3.27.0" }
-thiserror = { version = "2.0.18" }
-tokio = { version = "1.52.3", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
-tokio-stream = { version = "0.1.18" }
-tokio-test = { version = "0.4.5" }
-tokio-util = { version = "0.7.18", features = ["join-map"] }
+thiserror = { version = "2.0.21" }
+tokio = { version = "1.53.3", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
+tokio-stream = { version = "0.1.19" }
+tokio-test = { version = "0.4.6" }
+tokio-util = { version = "0.7.20", features = ["join-map"] }
 wiremock = { version = "0.6.5" }
 with_dir = { version = "0.1.4" }

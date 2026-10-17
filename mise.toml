@@ -7,6 +7,8 @@ redactions = ["*_TOKEN", "*_SECRET", "*_KEY", "*_PASSWORD"]
 
 [settings]
 env_file = ".env"
+# Keep pinned tools ahead of inherited shell paths in tasks and child processes.
+activate_aggressive = true
 # pnpm is provided directly via `[tools] pnpm` below, not via corepack:
 # corepack downloads from registry.npmjs.org, which the manylinux build
 # container can't reach for tarball requests (DNS works for crates.io,
@@ -46,39 +48,33 @@ _.path = ["{{ config_root }}/.cache/native/cargo/bin", "{{ config_root }}/node_m
 _.python.venv.path = "{{ config_root }}/.cache/native/venv"
 
 # Consumed by scripts/setup-postinstall.ts to pin cargo-auditable.
-CARGO_AUDITABLE_VERSION = "0.7.4"
+CARGO_AUDITABLE_VERSION = "0.7.7"
 
 [tools]
-# Pinned to 24.15.x: extract-zip@2.0.1 (electron 42's bundled unzipper)
-# fails to extract zips on Node 24.16.0+ and 26.1.0+ due to an unsettled
-# async handler. See electron/electron#51619 and max-mapper/extract-zip#154.
-# Bump again once the upstream fix lands and electron picks it up.
-node = "24.15.0"
-# pnpm 11 dropped pre-built `darwin-x64` binaries from its GitHub
-# releases (only `darwin-arm64` ships now), so the default aqua backend
-# can't satisfy the macos-15-intel CI runner. The `npm:` backend uses
-# pnpm's npm package (pure JS) instead, which runs on any platform with
-# Node — at the cost of going through npmjs.org for the install.
-"npm:pnpm" = "11.2.2"
-rust.version = "nightly-2026-05-24"
+# Match the Node.js major embedded in stable Electron (see pnpm-workspace.yaml).
+node = "24.22.0"
+# The npm distribution includes binaries for every CI platform, including Intel macOS.
+# pnpm's preinstall selects its native executable; approve only that package's scripts.
+"npm:pnpm" = { version = "12.14.0", allow_builds = ["pnpm"] }
+rust.version = "nightly-2026-10-17"
 
-"aqua:jqlang/jq" = "1.8.1"
-"github:mikefarah/yq" = "4.53.2"
-"aqua:BurntSushi/ripgrep" = "15.1.0"
-"aqua:aquasecurity/trivy" = "0.70.0"
+"aqua:jqlang/jq" = "1.8.2"
+"github:mikefarah/yq" = "4.54.1"
+"aqua:BurntSushi/ripgrep" = "15.2.0"
+"aqua:aquasecurity/trivy" = "0.76.0"
 "aqua:google/yamlfmt" = "0.21.0"
 "aqua:koalaman/shellcheck" = "0.11.0"
 "aqua:gitleaks/gitleaks" = "8.30.1"
 "aqua:rhysd/actionlint" = "1.7.12"
-"aqua:astral-sh/uv" = "0.11.16"
-"aqua:cli/cli" = "2.92.0"
-"aqua:cargo-bins/cargo-binstall" = "1.19.1"
-"aqua:anchore/syft" = "1.44.0"
+"aqua:astral-sh/uv" = "0.13.1"
+"aqua:cli/cli" = "2.102.0"
+"aqua:cargo-bins/cargo-binstall" = "1.25.3"
+"aqua:anchore/syft" = "1.54.1"
 
 # Tools with non-standard version prefix
 [tools."github:nextest-rs/nextest"]
 version_prefix = "cargo-nextest-"
-version = "0.9.136"
+version = "0.9.148"
 
 [tools."github:mstange/samply"]
 version_prefix = "samply-v"
@@ -86,23 +82,23 @@ version = "0.13.1"
 
 # Tools with no Windows ARM64 binary available
 [tools."aqua:hadolint/hadolint"]
-version = "2.14.0"
+version = "2.15.1"
 os = ["linux", "macos"]
 
 [tools."github:EmbarkStudios/cargo-deny"]
-version = "0.19.7"
+version = "0.20.2"
 os = ["linux", "macos"]
 
 [tools."aqua:crate-ci/typos"]
-version = "1.46.3"
+version = "1.51.1"
 os = ["linux", "macos"]
 
 [tools."github:taiki-e/cargo-llvm-cov"]
-version = "0.8.7"
+version = "0.9.1"
 os = ["linux", "macos"]
 
 [tools."aqua:mvdan/sh"]
-version = "3.13.1"
+version = "3.14.1"
 os = ["linux", "macos"]
 
 # Stick to 0.12.0 as 0.13.0 dropped support for macOS x86_64
@@ -132,7 +128,14 @@ hide = true
 depends = ["setup:rust"]
 env = { CI = "true", HUSKY = "1" }
 run = "pnpm install --frozen-lockfile --prefer-offline"
-sources = ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "packages/**/package.json"]
+sources = [
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "package.json",
+    "packages/**/package.json",
+    "scripts/setup-postinstall.ts",
+    "scripts/helpers/*.ts",
+]
 
 [tasks."setup:python"]
 description = "Setup Python environment with uv"
@@ -313,6 +316,8 @@ sources = ["packages/**/*.rs", "rustfmt.toml"]
 description = "Check Rust dependencies with cargo-deny"
 hide = true
 depends = ["setup:rust"]
+# An incomplete advisory clone must not let Git discover this checkout instead.
+env = { GIT_CEILING_DIRECTORIES = "{{ env.CARGO_HOME }}" }
 run = "cargo deny check"
 run_windows = "exit 0"
 sources = ["Cargo.{toml,lock}", "deny.toml"]
