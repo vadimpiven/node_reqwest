@@ -27,11 +27,6 @@ PYTHONWARNINGS = "ignore"
 SCCACHE_CACHE_SIZE = "1G"
 RUSTC_WRAPPER = "sccache"
 MISE_ACTIVE = "1"
-# Force Node's resolver to try IPv4 records first. The manylinux_2_28
-# build container reaches static IPv4 endpoints (crates.io, PyPI, GitHub
-# releases) fine but trips on AAAA-first lookups for `registry.npmjs.org`
-# during corepack/npm install of pnpm — `ipv4first` sidesteps that.
-NODE_OPTIONS = "--dns-result-order=ipv4first"
 
 # Cache directories
 CARGO_HOME = "{{ config_root }}/.cache/native/cargo"
