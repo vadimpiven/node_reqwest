@@ -35,14 +35,14 @@ runs:
         restore-keys: |
           ${{ inputs.cache-key }}-docker-${{ runner.os }}-${{ runner.arch }}-
     - name: "Login to GitHub Container Registry"
-      uses: "docker/login-action@dbcb813823bdd20940b903addbd779551569679f" # v4.6.0
+      uses: "docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6" # v4.7.0
       with:
         registry: "ghcr.io"
         username: "${{ github.actor }}"
         password: "${{ inputs.github-token }}"
     - name: "Login to Docker Hub"
       if: "${{ inputs.dockerhub-username != '' && inputs.dockerhub-token != '' }}"
-      uses: "docker/login-action@dbcb813823bdd20940b903addbd779551569679f" # v4.6.0
+      uses: "docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6" # v4.7.0
       with:
         username: "${{ inputs.dockerhub-username }}"
         password: "${{ inputs.dockerhub-token }}"
