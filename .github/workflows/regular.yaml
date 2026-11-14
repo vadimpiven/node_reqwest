@@ -120,7 +120,7 @@ jobs:
         with:
           run: "mise run --force ci-build"
       - name: "Run benchmarks"
-        uses: "CodSpeedHQ/action@821a40cd6c80e3cfe387caf55668287addd808da" # v5.5.0
+        uses: "CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f" # v5.6.3
         with:
           mode: "simulation"
           run: "pnpm -C packages/node exec vitest bench --run"
@@ -139,7 +139,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: "Run zizmor"
-        uses: "zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e" # v0.7.1
+        uses: "zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd" # v0.8.1
         with:
           persona: "auditor"
         env:
@@ -168,6 +168,6 @@ jobs:
           output: "trivy-results.sarif"
           ignore-unfixed: true
       - name: "Upload Trivy scan results to GitHub Security tab"
-        uses: "github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee" # v4.39.0
+        uses: "github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066" # v4.39.3
         with:
           sarif_file: "trivy-results.sarif"
